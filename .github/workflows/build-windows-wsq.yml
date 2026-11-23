@@ -8,8 +8,10 @@ on:
         required: false
         default: ''
   push:
-    tags:
-      - 'v*-wsq.*'
+    branches:
+      - wsq-tags
+    paths-ignore:
+      - '**.md'
 
 permissions:
   contents: write
@@ -70,13 +72,16 @@ jobs:
           name: VideoHubApp-WsQ-windows
           path: out/*
 
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
+      - name: Publish release (tag = v + version from package.json)
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ inputs.release_tag }}"
-          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
-          gh release create "$TAG" out/* --target "$GITHUB_SHA" --title "Video Hub App 3 WsQ $TAG" --notes-file RELEASE_NOTES_WSQ.md || \
-          gh release upload "$TAG" out/* --clobber
+          if [ -z "$TAG" ]; then TAG="v$(node -p "require('./package.json').version")"; fi
+          echo "Release: $TAG"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --target "$GITHUB_SHA" --title "Video Hub App 3 WsQ $TAG" --notes-file RELEASE_NOTES_WSQ.md
+          fi
