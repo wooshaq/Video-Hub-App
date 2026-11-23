@@ -57,6 +57,7 @@ export class TagPaneComponent implements OnDestroy {
   readonly filterChanged = output<void>();
   readonly favoritesToggle = output<void>();
   readonly hubsClick = output<void>();
+  readonly addFolderClick = output<void>();
   readonly openInNewTab = output<{ tag?: string, folder?: { source: number, path: string } }>();
 
   // ---------- WsQ: "Foldery" tab ----------

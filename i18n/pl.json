@@ -733,6 +733,15 @@
     "folders": "Foldery",
     "folderClear": "Pokaż wszystkie foldery",
     "tabAll": "Wszystko",
-    "newTab": "Nowa karta (kopia bieżącego widoku)"
+    "newTab": "Nowa karta (kopia bieżącego widoku)",
+    "addSourceFolder": "Dodaj folder lub drugi dysk do huba (pliki zostaną zeskanowane)",
+    "folderAdded": "Dodano folder: {{path}} – trwa skanowanie",
+    "folderAlreadyIn": "Ten folder już jest w hubie",
+    "settingsTab": "WsQ",
+    "settingsGallery": "Wygląd galerii",
+    "setTitleSize": "Wielkość czcionki nazwy pliku",
+    "setTitleLines": "Liczba linijek nazwy",
+    "setGap": "Odstęp między miniaturami",
+    "settingsHint": "Zmiany są widoczne od razu i zapamiętywane. Kolor akcentu i motyw są pod przyciskiem z paletą w pasku narzędzi."
   }
 }

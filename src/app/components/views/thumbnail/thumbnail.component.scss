@@ -78,8 +78,8 @@
 // Ritt-style tag badges (row under the picture)
 .tag-badges-row {
   display: block;
-  height: 20px;
-  margin: 7px 0 4px;
+  height: 18px;
+  margin: 5px 0 3px;
   overflow: hidden;
 }
 
@@ -94,9 +94,9 @@
 
 .wsq-title-2l {
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: var(--wsq-title-lines, 2);
   display: -webkit-box !important;
-  font-size: 12.5px !important;
+  font-size: var(--wsq-title-size, 12px) !important;
   line-height: 1.35 !important;
   overflow: hidden;
   white-space: normal !important;

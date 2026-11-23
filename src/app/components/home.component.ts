@@ -418,6 +418,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
       if (this.shortcutService.keyToActionMap.has(key)) {
         const shortcutAction: SettingsButtonKey | CustomShortcutAction = this.shortcutService.keyToActionMap.get(key);
 
+        if (!this.showVhaRibbon && this.wsqShortcut(event, shortcutAction as string)) {
+          return;
+        }
+
         if (this.shortcutService.regularShortcuts.includes(shortcutAction as SettingsButtonKey)) {
           this.toggleButton(shortcutAction as SettingsButtonKey);
         } else {
@@ -470,6 +474,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.registerTabProvider();
     this.accent = this.readLocal('wsq.accent', '#4cb4ff');
     this.applyAccent();
+    this.applyGalleryLook();
     this.translate.setDefaultLang('en');
     this.changeLanguage('en');
 
@@ -526,6 +531,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Returning Input
     (window as any).myElectron.receiveFromMain('input-folder-chosen', (filePath) => {
+      if (this.wsqAddingFolder) {   // WsQ: "Dodaj folder / dysk" from the Folders tab
+        this.wsqAddingFolder = false;
+        this.zone.run(() => this.wsqAddSourceFolder(filePath));
+        return;
+      }
       // if this happens when CURRENT HUB is open
       this.inputSorceChosenBehaviorSubject.next(filePath);
       this.inputSorceChosenBehaviorSubject.next(undefined); // allways remove right away
@@ -2058,7 +2068,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       || this.appState.currentView === 'showDetails'
       || this.appState.currentView === 'showDetails2'
     ) {
-      const margin: number = (this.settingsButtons['compactView'].toggled ? 4 : 40);
+      const margin: number = (this.settingsButtons['compactView'].toggled ? 4 : this.wsqGap);   // WsQ: adjustable gap
       this.previewWidth = (this.galleryWidth / this.currentImgsPerRow) - margin;
     } else if (
          this.appState.currentView === 'showFilmstrip'
@@ -2092,7 +2102,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
         if (this.settingsButtons.compactView.toggled) {
           this.textPaddingHeight = 0;
         } else if (this.settingsButtons.showMoreInfo.toggled) {
-          this.textPaddingHeight = 72;   // WsQ: badge row + two lines of the file name
+          // WsQ: badge row (18 + 5 + 3) + the file name lines + a little air
+          this.textPaddingHeight = Math.ceil(26 + this.wsqTitleLines * this.wsqTitleSize * 1.35 + 4);
         } else {
           this.textPaddingHeight = 20;
         }
@@ -2947,6 +2958,106 @@ export class HomeComponent implements OnInit, AfterViewInit {
       a = Math.max(0.6, Math.min(2.4, it.coverAspect));
     }
     return Math.round(this.detailsThumbWidth / a);
+  }
+
+  // ---------- WsQ: gallery look (Settings -> WsQ) ----------
+
+  wsqGap = Math.max(0, Math.min(60, parseInt(this.readLocal('wsq.gap', '16'), 10) || 0));
+  wsqTitleSize = Math.max(9, Math.min(20, parseFloat(this.readLocal('wsq.titleSize', '12')) || 12));
+  wsqTitleLines = Math.max(1, Math.min(3, parseInt(this.readLocal('wsq.titleLines', '2'), 10) || 2));
+
+  applyGalleryLook(): void {
+    const st = document.documentElement.style;
+    st.setProperty('--wsq-gap', this.wsqGap + 'px');
+    st.setProperty('--wsq-title-size', this.wsqTitleSize + 'px');
+    st.setProperty('--wsq-title-lines', String(this.wsqTitleLines));
+  }
+
+  setGalleryLook(key: 'gap' | 'titleSize' | 'titleLines', value: number): void {
+    if (key === 'gap') {
+      this.wsqGap = value;
+    } else if (key === 'titleSize') {
+      this.wsqTitleSize = value;
+    } else {
+      this.wsqTitleLines = value;
+    }
+    this.writeLocal('wsq.' + key, String(value));
+    this.applyGalleryLook();
+    this.computeTextBufferAmount();
+    this.computePreviewWidth();
+    this.virtualScroller()?.invalidateAllCachedMeasurements();
+  }
+
+  // ---------- WsQ: shortcuts of the old interface mapped to the new one ----------
+
+  /** returns true when the shortcut was handled (or swallowed) for the WsQ layout */
+  wsqShortcut(event: KeyboardEvent, action: string): boolean {
+    switch (action) {
+      case 'focusOnFile':
+      case 'focusOnMagic':
+      case 'fuzzySearch': {
+        event.preventDefault();
+        const input = document.querySelector('.wsq-search input') as HTMLInputElement;
+        if (input) {
+          input.focus();
+          input.select();
+        }
+        return true;
+      }
+      case 'showAutoTags':        // Ctrl+T: new tab (copy of the current view)
+        event.preventDefault();
+        this.tagLib.newTab();
+        return true;
+      case 'clearAllFilters':
+        event.preventDefault();
+        this.goHome();
+        return false;             // and let VHA clear its own filters too
+      case 'hideSidebar':         // old filter sidebar -> the Filters popover
+        event.preventDefault();
+        this.filtersOpen = !this.filtersOpen;
+        return true;
+      case 'startWizard':         // Ctrl+N inside the tag pane = new tag, not a new hub
+        if ((event.target as HTMLElement)?.closest?.('app-tag-pane')) {
+          return true;
+        }
+        return false;
+      case 'showTagTray':         // removed bottom tray
+      case 'toggleMinimalMode':   // would hide the toolbar
+      case 'showMoreInfo':
+      case 'compactView':
+        event.preventDefault();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // ---------- WsQ: add another source folder (e.g. a second disk) ----------
+
+  wsqAddingFolder = false;
+
+  pickSourceFolder(): void {
+    this.wsqAddingFolder = true;
+    (window as any).myElectron.sendToMain('choose-input');
+  }
+
+  wsqAddSourceFolder(filePath: string): void {
+    if (!filePath) {
+      return;
+    }
+    const folders = this.sourceFolderService.selectedSourceFolder;
+    const norm = (x: string) => (x || '').replace(/[\\/]+$/, '').toLowerCase();
+    if (Object.keys(folders).some(k => norm(folders[k].path) === norm(filePath))) {
+      this.modalService.openSnackbar(this.translate.instant('WSQ.folderAlreadyIn'), 2500);
+      return;
+    }
+    const keys = Object.keys(folders).map(k => parseInt(k, 10)).filter(n => !isNaN(n));
+    const next = keys.length ? Math.max(...keys) + 1 : 0;
+    folders[next] = { path: filePath, watch: false };
+    this.sourceFolderService.sourceFolderConnected[next] = true;
+    this.imageElementService.finalArrayNeedsSaving = true;
+    (window as any).myElectron.sendToMain('start-watching-folder', next, filePath, false);
+    this.modalService.openSnackbar(this.translate.instant('WSQ.folderAdded', { path: filePath }), 3000);
   }
 
   // ---------- WsQ: theme / accent colour ----------

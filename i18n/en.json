@@ -733,6 +733,15 @@
     "folders": "Folders",
     "folderClear": "Show all folders",
     "tabAll": "Everything",
-    "newTab": "New tab (copy of the current view)"
+    "newTab": "New tab (copy of the current view)",
+    "addSourceFolder": "Add a folder or another disk to the hub (files get scanned)",
+    "folderAdded": "Folder added: {{path}} – scanning",
+    "folderAlreadyIn": "This folder is already in the hub",
+    "settingsTab": "WsQ",
+    "settingsGallery": "Gallery look",
+    "setTitleSize": "File name font size",
+    "setTitleLines": "File name lines",
+    "setGap": "Gap between thumbnails",
+    "settingsHint": "Changes apply right away and are remembered. Accent colour and theme are under the palette button in the toolbar."
   }
 }

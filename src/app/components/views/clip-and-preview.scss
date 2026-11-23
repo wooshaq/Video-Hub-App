@@ -1,6 +1,6 @@
 .filmstrip-container {
   display: inline-block;
-  margin: 20px 20px 0;
+  margin: var(--wsq-gap, 20px) calc(var(--wsq-gap, 40px) / 2) 0;   // WsQ: adjustable gap
   overflow: hidden;
   position: relative;
   transition: 300ms;

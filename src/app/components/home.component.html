@@ -213,6 +213,9 @@
     <button (click)="settingTabToShow = 4" [ngClass]="{ 'active-tab': settingTabToShow === 4 }">
       {{ 'SETTINGS.tabShortcuts'  | translate }}
     </button>
+    <button (click)="settingTabToShow = 5" [ngClass]="{ 'active-tab': settingTabToShow === 5 }">
+      {{ 'WSQ.settingsTab'  | translate }}
+    </button>
   </div>
 
   <div
@@ -255,6 +258,36 @@
       [settingsButtons]="settingsButtons"
       [versionNumber]="versionNumber"
      />
+
+    <!-- WsQ: gallery look -->
+  @if (settingTabToShow == 5) {
+    <div class="wsq-settings" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }">
+      <h3>{{ 'WSQ.settingsGallery' | translate }}</h3>
+
+      <label class="ws-row">
+        <span class="ws-lbl">{{ 'WSQ.setTitleSize' | translate }}</span>
+        <input type="range" min="9" max="20" step="0.5" [ngModel]="wsqTitleSize" (ngModelChange)="setGalleryLook('titleSize', +$event)">
+        <span class="ws-val">{{ wsqTitleSize }} px</span>
+      </label>
+
+      <div class="ws-row">
+        <span class="ws-lbl">{{ 'WSQ.setTitleLines' | translate }}</span>
+        <span class="ws-seg">
+          @for (n of [1, 2, 3]; track n) {
+            <button [ngClass]="{ on: wsqTitleLines === n }" (click)="setGalleryLook('titleLines', n)">{{ n }}</button>
+          }
+        </span>
+      </div>
+
+      <label class="ws-row">
+        <span class="ws-lbl">{{ 'WSQ.setGap' | translate }}</span>
+        <input type="range" min="0" max="60" step="2" [ngModel]="wsqGap" (ngModelChange)="setGalleryLook('gap', +$event)">
+        <span class="ws-val">{{ wsqGap }} px</span>
+      </label>
+
+      <p class="ws-hint">{{ 'WSQ.settingsHint' | translate }}</p>
+    </div>
+  }
 
     <!-- HUB STATISTICS / Current Hub Settings -->
 
@@ -530,6 +563,7 @@
       (favoritesToggle)="toggleButton('showOnlyFavorites')"
       (hubsClick)="openHubs()"
       (openInNewTab)="openInNewTab($event)"
+      (addFolderClick)="pickSourceFolder()"
       [darkMode]="settingsButtons['darkMode'].toggled"
       [batchMode]="batchTaggingMode"
       [currentItem]="currentClickedItem"

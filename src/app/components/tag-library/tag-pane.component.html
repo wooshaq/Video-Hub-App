@@ -18,6 +18,9 @@
     <div class="tp-section">
       <span class="tp-title">{{ 'WSQ.folders' | translate }}</span>
       <span class="tp-spacer"></span>
+      <button class="tp-btn" (click)="addFolderClick.emit()" title="{{ 'WSQ.addSourceFolder' | translate }}" aria-label="Dodaj folder">
+        <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" /></svg>
+      </button>
       @if (lib.folderFilter) {
         <button class="tp-btn" (click)="lib.setFolderFilter(null); filterChanged.emit()" title="{{ 'WSQ.folderClear' | translate }}">
           <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg>
