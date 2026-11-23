@@ -15,74 +15,43 @@
 
   @if (video.fileName !== '*UP*') { <!-- else UP FOLDER TEMPLATE -->
 
-    <!-- (A) div -->
+    <!-- WsQ: Windows 11 style folder with a preview (or the folder's own desktop.ini icon) -->
     <div
-      class="video-box folder"
-      (mousemove)="mouseIsMoving($event)"
+      class="video-box folder wsq-folder-box"
       (click)="   videoClick.emit($event)"
       (dblclick)="videoClick.emit($event)"
+      (mouseenter)="folderHover(true)"
+      (mouseleave)="folderHover(false)"
       [ngStyle]="{ height: imgHeight() + 'px' }"
     >
-
-    <!-- Show one thumbnail if there is only one video inside the folder -->
-
-    @if (!folderThumbPaths[1] && folderThumbPaths[0]) {
-
-      <div
-        class="folder-item-fullsize"
-        [ngStyle]="{
-          'background-image': 'url(' + folderThumbPaths[0] + ')'
-        }"
-      ></div>
-
-    } @else {      <!-- ========================= FOUR PREVIEWS TEMPLATE ========================== -->
-
-      @if (folderThumbPaths[0]) {
-        <div
-          class="folder-item"
-          [ngStyle]="{
-            'background-image': 'url(' + folderThumbPaths[0] + ')'
-          }"
-        ></div>
+      @let icon = folderIcon;
+      @if (icon) {
+        <img class="wf-custom" [src]="icon" alt="" draggable="false">
+      } @else {
+        <div class="wf">
+          <svg class="wf-back" viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M4 14a8 8 0 0 1 8-8h50a8 8 0 0 1 5.7 2.4L80 20h108a8 8 0 0 1 8 8v110a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z" />
+          </svg>
+          @if (folderThumbPaths[folderPreviewIndex]) {
+            <div class="wf-paper">
+              <img [src]="folderThumbPaths[folderPreviewIndex]" alt="" draggable="false">
+            </div>
+          }
+          <svg class="wf-front" viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="wfg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffe08a" />
+                <stop offset="1" stop-color="#f7c843" />
+              </linearGradient>
+            </defs>
+            <path d="M4 66a8 8 0 0 1 8-8h176a8 8 0 0 1 8 8v72a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z" fill="url(#wfg)" />
+          </svg>
+        </div>
       }
-
-      @if (folderThumbPaths[1]) {
-        <div
-          class="folder-item"
-          [ngStyle]="{ left: '50%', top: '0%',
-            'background-image': 'url(' + folderThumbPaths[1] + ')'
-          }"
-        ></div>
+      @if (showMeta()) {
+        <span class="wf-count">{{ video.fileSizeDisplay }}</span>
       }
-
-      @if (folderThumbPaths[2]) {
-        <div
-          class="folder-item"
-          [ngStyle]="{ left: '0%', top: '50%',
-            'background-image': 'url(' + folderThumbPaths[2] + ')'
-          }"
-        ></div>
-      }
-
-      @if (folderThumbPaths[3]) {
-        <div
-          class="folder-item"
-          [ngStyle]="{ left: '50%', top: '50%',
-            'background-image': 'url(' + folderThumbPaths[3] + ')'
-          }"
-        ></div>
-      }
-
-    } <!-- end of `@else` -- the FOUR PREVIEWS template -->
-
-    <app-tag-badges class="tag-badges-overlay" [video]="video" [darkMode]="darkMode()" />
-
-    @if (showMeta()) {
-      <span class="time folder-time">{{ video.duration | lengthPipe : 'folder' }}</span>
-      <span class="rez folder-time">{{ video.fileSize | fileSizePipe : true }}</span>
-    }
-
-    </div> <!-- end of (A) div --->
+    </div>
 
   } @else {  <!-- ========================= UP FOLDER TEMPLATE ===================================== -->
 
@@ -100,18 +69,11 @@
   }  <!-- end of UP FOLDER TEMPLATE --->
 
 
-  @if (video.cleanName === '*FOLDER*' && video.fileName !== '*UP*') {
-    <div class="folder-icon" style="pointer-events: none;">
-      <app-icon [icon]="'icon-folder-blank'" />
-      <div class="items-in-folder">{{ video.fileSizeDisplay | folderSizePipe }}</div>
-    </div>
-  }
-
-  @if (showMeta() && video.fileName !== '*UP*') {
+  @if (video.fileName !== '*UP*') {
     <span
-      [ngClass]="{ 'larger-font': largerFont() }"
-      [ngStyle]="{ color: darkMode() ? '#BBBBBB' : '#000000' }"
-      class="title"
+      [ngStyle]="{ color: darkMode() ? '#d6d6d6' : '#222222' }"
+      class="title wsq-folder-name"
+      [title]="video.partialPath"
     >
       {{ video.fileName }}
     </span>

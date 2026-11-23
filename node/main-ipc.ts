@@ -12,6 +12,7 @@ import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
 import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
+import { folderIconOf } from './folder-icons';
 
 /**
  * Set up the listeners
@@ -51,6 +52,24 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
    */
   ipc.on('check-covers', (event, jobs: { fullPath: string, hash: string }[]) => {
     checkCovers(jobs || []);
+  });
+
+  /**
+   * WsQ: custom folder icons (desktop.ini) -- [{ key, paths: candidate absolute folder paths }]
+   */
+  ipc.on('wsq-folder-icons', (event, jobs: { key: string, paths: string[] }[]) => {
+    const out: Record<string, string> = {};
+    (jobs || []).forEach(j => {
+      let icon = '';
+      for (const p of (j.paths || [])) {
+        icon = folderIconOf(p);
+        if (icon) {
+          break;
+        }
+      }
+      out[j.key] = icon;
+    });
+    event.sender.send('wsq-folder-icons-result', out);
   });
 
   /**

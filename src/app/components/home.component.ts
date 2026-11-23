@@ -978,6 +978,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
     });
 
     // WsQ: cover art from file metadata
+    (window as any).myElectron.receiveFromMain('wsq-folder-icons-result', (map: Record<string, string>) => {
+      this.zone.run(() => {
+        Object.keys(map || {}).forEach(k => this.tagLib.folderIcons.set(k, map[k]));
+        this.tagLib.folderIconVersion++;
+      });
+    });
+
     (window as any).myElectron.receiveFromMain('cover-result', (hash: string, stamp: number) => {
       this.zone.run(() => {
         let touched = false;
@@ -3118,12 +3125,39 @@ export class HomeComponent implements OnInit, AfterViewInit {
   private aspectTimer: any;
   private aspectLoading = new Set<string>();
 
+  /** WsQ: everything in the view before folders are folded up (for tag counts / the tag bar) */
+  reportViewItems = (items: ImageElement[]): void => {
+    setTimeout(() => this.tagLib.setViewItems(items));
+  };
+
   reportGalleryItems = (items: ImageElement[]): void => {
     this.aspectItems = items;
-    setTimeout(() => this.tagLib.setViewItems(items));
+    setTimeout(() => this.requestFolderIcons(items));
+
     clearTimeout(this.aspectTimer);
     this.aspectTimer = setTimeout(() => this.updateGalleryAspect(), 30);
   };
+
+  private folderIconAsked = new Set<string>();
+
+  /** WsQ: ask Node for desktop.ini icons of the folders on screen (once per folder) */
+  private requestFolderIcons(items: ImageElement[]): void {
+    const roots = Object.keys(this.sourceFolderService.selectedSourceFolder)
+      .map(k => this.sourceFolderService.selectedSourceFolder[k].path)
+      .filter(Boolean);
+    const jobs: { key: string, paths: string[] }[] = [];
+    items.forEach(it => {
+      if (it.cleanName !== '*FOLDER*' || it.fileName === '*UP*' || this.folderIconAsked.has(it.partialPath)) {
+        return;
+      }
+      this.folderIconAsked.add(it.partialPath);
+      const rel = it.partialPath.replace(/^[\\/]+/, '');
+      jobs.push({ key: it.partialPath, paths: roots.map(r => r.replace(/[\\/]+$/, '') + '/' + rel) });
+    });
+    if (jobs.length) {
+      (window as any).myElectron.sendToMain('wsq-folder-icons', jobs);
+    }
+  }
 
   private updateGalleryAspect(): void {
     const files = this.aspectItems.filter(e => e && e.cleanName !== '*FOLDER*');

@@ -219,3 +219,101 @@
 :host-context(.wsq-layout) .video-box:hover::after {
   box-shadow: inset 0 0 0 2px rgba(var(--wsq-accent-rgb), 0.7);
 }
+
+// =====================================================================================
+// WsQ: folder tiles (Windows 11 folder with a preview inside)
+// =====================================================================================
+
+.video-box.wsq-folder-box {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  overflow: visible;
+}
+
+.wf {
+  inset: 4% 9% 2%;
+  position: absolute;
+
+  svg {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+  }
+
+  .wf-back path { fill: #e8a91c; }
+
+  .wf-front {
+    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.18));
+  }
+}
+
+.wf-paper {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  height: 52%;
+  left: 5%;
+  overflow: hidden;
+  position: absolute;
+  top: 15%;
+  width: 90%;
+
+  img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+}
+
+.wf-custom {
+  height: 96%;
+  left: 2%;
+  object-fit: contain;
+  position: absolute;
+  top: 2%;
+  width: 96%;
+}
+
+.wf-count {
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.42);
+  border-radius: 4px;
+  bottom: 8%;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 10.5px;
+  line-height: 15px;
+  padding: 0 5px;
+  pointer-events: none;
+  position: absolute;
+  right: 12%;
+}
+
+.wsq-folder-name {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box !important;
+  font-size: var(--wsq-title-size, 12px) !important;
+  line-height: 1.35 !important;
+  margin-top: 31px;
+  overflow: hidden;
+  text-align: center;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+:host-context(.wsq-layout) .video-box.wsq-folder-box:hover::after {
+  box-shadow: none;
+}
+
+.video-box.wsq-folder-box:hover .wf,
+.video-box.wsq-folder-box:hover .wf-custom {
+  filter: brightness(1.06);
+  transform: translateY(-2px);
+  transition: transform 120ms;
+}

@@ -759,6 +759,7 @@
     "stStats": "Statystyki",
     "stThumbs": "Miniatury",
     "stServer": "Serwer (VHA Remote)",
-    "stRemoveConfirm": "Usunąć folder z huba?\n\n{{path}}\n\nPliki na dysku zostaną, ale znikną z huba razem z miniaturami i tagami."
+    "stRemoveConfirm": "Usunąć folder z huba?\n\n{{path}}\n\nPliki na dysku zostaną, ale znikną z huba razem z miniaturami i tagami.",
+    "folderView": "Widok folderów (przeglądanie jak w Eksploratorze)"
   }
 }

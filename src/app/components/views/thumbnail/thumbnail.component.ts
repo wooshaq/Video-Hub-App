@@ -1,6 +1,7 @@
 import type { OnInit, ElementRef, OnDestroy } from '@angular/core';
 import { Component, Input, input, output, viewChild } from '@angular/core';
 
+import { TagLibraryService } from '../../tag-library/tag-library.service';
 import { FilePathService } from '../file-path.service';
 
 import { metaAppear, textAppear } from '../../../common/animations';
@@ -63,6 +64,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   constructor(
     public filePathService: FilePathService,
     public imageElementService: ImageElementService,
+    public tagLib: TagLibraryService,
   ) { }
 
   ngOnInit() {
@@ -100,8 +102,42 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   /** WsQ: JAV-style code from the file name (e.g. PPPE029 -> PPPE-029), shown on the cover */
   get coverCode(): string {
     const name = this.video?.fileName || '';
-    const m = name.match(/(?:^|[^A-Za-z0-9])([A-Za-z]{2,6})-?(\d{2,5})(?![0-9])/);
-    return m ? (m[1].toUpperCase() + '-' + m[2]) : '';
+    // WsQ: skip codec / format tokens (H265, X264, MP4 ...) -- only JAV-style codes
+    const NOT_CODES = /^(H|X|HEVC|AVC|AAC|AC|DTS|MP|FLAC|DDP|DD|EAC|CH|BIT|HDR|FPS|VP|AV|S|E|PART|CD|DISC|VOL|EP)$/i;
+    const re = /(?:^|[^A-Za-z0-9])([A-Za-z]{2,6})-?(\d{2,5})(?![0-9])/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(name))) {
+      if (!NOT_CODES.test(m[1])) {
+        return m[1].toUpperCase() + '-' + m[2];
+      }
+    }
+    return '';
+  }
+
+  // ---------- WsQ: folder tiles ----------
+
+  folderPreviewIndex = 0;
+  private folderTimer: any = null;
+
+  /** the folder's own icon (desktop.ini), when Node found one */
+  get folderIcon(): string {
+    const p = this.tagLib.folderIcons.get(this.video.partialPath);
+    if (!p) {
+      return '';
+    }
+    return 'file:///' + p.replace(/\\/g, '/').split('/').map((seg, i) => (i === 0 && /:$/.test(seg)) ? seg : encodeURIComponent(seg)).join('/');
+  }
+
+  /** hovering a folder flips through up to four previews */
+  folderHover(on: boolean): void {
+    clearInterval(this.folderTimer);
+    if (on && this.folderThumbPaths.length > 1) {
+      this.folderTimer = setInterval(() => {
+        this.folderPreviewIndex = (this.folderPreviewIndex + 1) % this.folderThumbPaths.length;
+      }, 700);
+    } else if (!on) {
+      this.folderPreviewIndex = 0;
+    }
   }
 
   get scrubTicks(): number[] {
@@ -143,7 +179,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
 
   /** WsQ: label in the bottom-left corner -- the code (e.g. PPPE-029) or the name */
   get cornerName(): string {
-    return this.coverCode || (this.video?.cleanName || '');
+    return this.coverCode;   // WsQ: only JAV-style codes, never the plain file name
   }
 
   mouseEntered() {
@@ -189,6 +225,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     clearInterval(this.scrollInterval);
+    clearInterval(this.folderTimer);
   }
 
   openDetailsView(leftClick: PointerEvent): void {

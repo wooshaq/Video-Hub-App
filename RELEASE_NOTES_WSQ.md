@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.14
+- **Widok folderów jak w Ritt:** przycisk z folderem w pasku narzędzi. Foldery wyglądają jak w Windows 11 – żółty folder z podglądem filmu w środku (po najechaniu przewija do 4 podglądów), liczba plików w rogu, nazwa pod spodem. Dwuklik wchodzi do folderu.
+- **Własne ikony folderów:** jeśli folder ma `desktop.ini` z `IconResource`/`IconFile` wskazującym plik .ico / .png / .jpg, kafelek pokazuje tę ikonę. Ikony z .exe/.dll są pomijane. Odśwież (⟳) czyta ikony ponownie.
+- W widoku folderów pasek tagów i liczniki w drzewie liczą pliki w folderach.
+- Kod w lewym dolnym rogu miniatury pokazuje się tylko dla nazw w stylu JAV (np. PPPE-029) – zwykłe nazwy plików nie są tam wyświetlane; tokeny typu H265/X264 nie są brane za kod.
+
 ### Nowe w wsq.13
 - **Strona „Ten HUB” od nowa:** karta huba, kafelki (pliki, foldery, łączny czas i rozmiar), lista folderów z filmami jako wiersze ze stanem (obserwowany / nieobserwowany / niepołączony), „Skanuj ponownie”, przełącznik Obserwuj i kosz (z potwierdzeniem) bez trybu „Edytuj foldery”; przycisk **Dodaj folder lub dysk**; statystyki w trzech kartach; serwer VHA Remote w osobnej karcie.
 

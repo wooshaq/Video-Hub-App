@@ -450,6 +450,11 @@ export class TagLibraryService {
     return false;
   }
 
+  // ---------- WsQ: custom folder icons (desktop.ini), key = folder partialPath ----------
+
+  folderIcons = new Map<string, string>();
+  folderIconVersion = 0;
+
   // ---------- WsQ: view tabs ----------
 
   tabs: ViewTabState[] = [{ active: [], excluded: [], search: '', folder: null }];
