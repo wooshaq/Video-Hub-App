@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.15
+- Usunięty suwak „Rozmiar” z paska narzędzi – rozmiar miniatur zmienia Ctrl + kółko myszy nad galerią.
+
 ### Nowe w wsq.14
 - **Widok folderów jak w Ritt:** przycisk z folderem w pasku narzędzi. Foldery wyglądają jak w Windows 11 – żółty folder z podglądem filmu w środku (po najechaniu przewija do 4 podglądów), liczba plików w rogu, nazwa pod spodem. Dwuklik wchodzi do folderu.
 - **Własne ikony folderów:** jeśli folder ma `desktop.ini` z `IconResource`/`IconFile` wskazującym plik .ico / .png / .jpg, kafelek pokazuje tę ikonę. Ikony z .exe/.dll są pomijane. Odśwież (⟳) czyta ikony ponownie.
