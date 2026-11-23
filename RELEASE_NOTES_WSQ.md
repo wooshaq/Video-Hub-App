@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.8
+- Import z Ritt przenosi też **aliasy**, **kolor** (pierwszy z pary kolorów Ritt) i **Dziedzicz** (głębokość, atrybut 6245). Notatki są czytane, jeśli Ritt zapisuje je jako właściwość z „Note/Notes/Description” w nazwie (jeszcze niepotwierdzone).
+
 ### Nowe w wsq.7
 - Wklejanie tagów (ikona, prawy przycisk, Ctrl+Shift+V) trafia do wszystkich zaznaczonych plików. Prawy przycisk na pliku spoza zaznaczenia wkleja tylko do niego.
 

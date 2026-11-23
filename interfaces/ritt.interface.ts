@@ -9,6 +9,10 @@ export interface RittTag {
   badge: boolean;
   separator: boolean;
   hotkey: string;
+  aliases?: string[];
+  color?: string;          // #RRGGBB
+  notes?: string;
+  inherit?: number | null; // null = all levels; undefined = not set in Ritt
   children: RittTag[];
 }
 

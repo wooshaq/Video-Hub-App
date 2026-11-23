@@ -1235,6 +1235,10 @@ export class TagLibraryService {
       if (t.encapsulate) { node.encapsulate = true; }
       if (t.badge) { node.badge = t.icon ? 'icon' : 'name'; }
       if (t.hotkey) { node.hotkey = t.hotkey; }
+      if (t.aliases && t.aliases.length) { node.aliases = t.aliases.slice(); }
+      if (t.color) { node.color = t.color; }
+      if (t.notes) { node.notes = t.notes; }
+      if (t.inherit !== undefined) { node.inherit = t.inherit === null ? undefined : t.inherit; }
       const children = t.children.map(c => convert(c, name));
       const keep = orphans.filter(o => o.type === 'separator' || !claimed.has(o.name));
       if (children.length || keep.length) {

@@ -28,7 +28,10 @@ const ATTR_ENCAPSULATE = '3217';
 const ATTR_BADGE = '4626';
 const ATTR_SEPARATOR = '4712';
 const ATTR_HOTKEY = '5183';
-const KNOWN_ATTRS = [ATTR_HIDDEN, ATTR_ENCAPSULATE, ATTR_BADGE, ATTR_SEPARATOR, ATTR_HOTKEY, '35528', '50258', '54234'];
+const ATTR_INHERIT = '6245';   // "Dziedzicz" -- value = depth (found in a test database from the user)
+const KNOWN_ATTRS = [ATTR_HIDDEN, ATTR_ENCAPSULATE, ATTR_BADGE, ATTR_SEPARATOR, ATTR_HOTKEY, ATTR_INHERIT, '35528', '50258', '54234'];
+// m.k = named properties: { "Alias": "a;b", "Color": "#AARRGGBB;#AARRGGBB", ... }
+const KNOWN_PROPS = ['Alias', 'Color'];
 
 interface Vertex {
   id: number;
@@ -38,6 +41,7 @@ interface Vertex {
   connectionId: string;   // m.c.id
   icon: string;
   attrs: Record<string, any>;
+  props: Record<string, any>;
   parents: number[];
   children: number[];
   tags: number[];
@@ -124,6 +128,7 @@ function parseVertex(idValue: any, json: string | null): Vertex | null {
     connectionId: typeof content.id === 'string' ? content.id : '',
     icon: typeof meta.i === 'string' ? meta.i : '',
     attrs: (meta.a && typeof meta.a === 'object') ? meta.a : {},
+    props: (meta.k && typeof meta.k === 'object') ? meta.k : {},
     parents: toIds(obj.p),
     children: toIds(obj.c),
     tags: toIds(obj.t),
@@ -160,6 +165,50 @@ function cleanIcon(icon: string): string {
   return icon;
 }
 
+/** "#AARRGGBB;#AARRGGBB" (or "#RRGGBB") -> first colour as #RRGGBB */
+function colorOf(v: any): string {
+  if (typeof v !== 'string') {
+    return '';
+  }
+  const first = v.split(';')[0].trim();
+  let m = /^#?([0-9a-f]{2})([0-9a-f]{6})$/i.exec(first);
+  if (m) {
+    return m[1].toLowerCase() === '00' ? '' : '#' + m[2].toUpperCase();
+  }
+  m = /^#?([0-9a-f]{6})$/i.exec(first);
+  return m ? '#' + m[1].toUpperCase() : '';
+}
+
+function aliasesOf(v: any): string[] {
+  if (Array.isArray(v)) {
+    return v.map(x => String(x).trim()).filter(Boolean);
+  }
+  if (typeof v !== 'string') {
+    return [];
+  }
+  return v.split(/[;,\n]/).map(x => x.trim()).filter(Boolean);
+}
+
+function notesOf(props: Record<string, any>): string {
+  const key = Object.keys(props).find(k => /note|notatk|desc|comment/i.test(k));
+  return key && typeof props[key] === 'string' ? props[key] : '';
+}
+
+/** Ritt "Dziedzicz": number = depth; very large / negative = all levels */
+function inheritOf(v: any): number | null | undefined {
+  if (v === undefined || v === null || v === false) {
+    return undefined;
+  }
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!isFinite(n)) {
+    return v === true ? null : undefined;
+  }
+  if (n < 0 || n >= 100) {
+    return null;
+  }
+  return Math.round(n);
+}
+
 function hotkeyOf(v: any): string {
   if (v === undefined || v === null || v === false) {
     return '';
@@ -190,6 +239,7 @@ function build(vertices: Map<number, Vertex>, result: RittImportData): void {
     placed.add(id);
     visiting.add(id);
     Object.keys(v.attrs).forEach(k => { if (!KNOWN_ATTRS.includes(k)) { unknown.add(k); } });
+    Object.keys(v.props).forEach(k => { if (!KNOWN_PROPS.includes(k) && !/note|notatk|desc|comment/i.test(k)) { unknown.add('k:' + k); } });
     const tag: RittTag = {
       id,
       name: v.name,
@@ -199,6 +249,10 @@ function build(vertices: Map<number, Vertex>, result: RittImportData): void {
       badge: truthy(v.attrs[ATTR_BADGE]),
       separator: truthy(v.attrs[ATTR_SEPARATOR]),
       hotkey: hotkeyOf(v.attrs[ATTR_HOTKEY]),
+      aliases: aliasesOf(v.props['Alias']),
+      color: colorOf(v.props['Color']),
+      notes: notesOf(v.props),
+      inherit: inheritOf(v.attrs[ATTR_INHERIT]),
       children: [],
     };
     v.children.forEach(c => {
