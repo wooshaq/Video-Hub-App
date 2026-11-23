@@ -2850,7 +2850,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   tagBarHeightPx = 0;
 
   get tagBarHeight(): number {
-    return (this.tagLib.active.length || this.tagLib.excluded.length) ? (this.tagBarHeightPx || 43) : 0;
+    return (this.tagLib.active.length || this.tagLib.excluded.length || this.tagLib.related.length) ? (this.tagBarHeightPx || 43) : 0;
   }
 
   get tagPaneWidth(): number {

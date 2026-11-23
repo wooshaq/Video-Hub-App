@@ -14,9 +14,11 @@ import { TagLibraryService } from './tag-library.service';
 <div class="tfb" [ngClass]="{ dark: darkMode() }">
   <div class="tfb-chips" #chips>
 
+    @if (lib.active.length || lib.excluded.length) {
     <button class="tfb-btn" (click)="clear()" title="{{ 'TAGLIB.clearTagFilter' | translate }}" aria-label="Wyczyść filtr">
       <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg>
     </button>
+    }
 
     <button
       class="tfb-btn"

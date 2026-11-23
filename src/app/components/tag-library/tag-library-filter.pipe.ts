@@ -19,9 +19,7 @@ export class TagLibraryFilterPipe implements PipeTransform {
    * @param filterVersion -- changes whenever the filter or tag assignments change
    */
   transform(finalArray: ImageElement[], filterVersion: number): ImageElement[] {
-    const out = this.lib.filter(finalArray);
-    this.lib.computeRelated(out);
-    return out;
+    return this.lib.filter(finalArray);   // WsQ: related tags are computed from the final view (setViewItems)
   }
 
 }

@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.10
+- **Pasek tagów na górze jest widoczny zawsze**, także bez filtra: pokazuje tagi zebrane z filmów w bieżącym widoku (po folderze, wyszukiwaniu, filtrach) z liczbą filmów, od najczęstszych. Klik = zawiera, Shift/środkowy = unika.
+
 ### Nowe w wsq.9
 - **Pasek tytułu połączony z paskiem narzędzi** – o 32 px więcej miejsca. Okno przeciąga się za puste miejsca paska, ─ ▢ ✕ są po prawej, logo po lewej (nazwa huba w podpowiedzi), karty i „+” (nowa karta) są obok przycisku Wszystko, postęp importu w pasku stanu.
 

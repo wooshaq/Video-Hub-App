@@ -560,13 +560,8 @@ export class TagLibraryService {
   }
 
   /** compute related tags from the current results */
+  /** WsQ: tags of everything in the current view (also with no filter at all) */
   computeRelated(results: ImageElement[]): void {
-    if (!this.active.length && !this.excluded.length) {
-      if (this.related.length) {
-        Promise.resolve().then(() => this.related = []);
-      }
-      return;
-    }
     const counts = new Map<string, number>();
     results.forEach(item => {
       this.getEffective(item).all.forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
@@ -596,6 +591,7 @@ export class TagLibraryService {
     this.viewItems = files;
     this.viewFiltered = files.length < live;
     this.viewVersion++;
+    this.computeRelated(files);
   }
 
   getViewCount(name: string): number {
