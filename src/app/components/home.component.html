@@ -195,7 +195,7 @@
 
 @if (settingsModalOpen) {
   <div class="wsq-dlg-back" (mousedown)="toggleSettings()"></div>
-  <div class="wsq-dlg" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }" role="dialog" aria-label="Ustawienia" @modalAnimation>
+  <div class="wsq-dlg" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }" role="dialog" aria-label="Ustawienia">
 
     <nav class="dlg-nav">
       <div class="dlg-title">{{ 'SETTINGS.settings' | translate }}</div>

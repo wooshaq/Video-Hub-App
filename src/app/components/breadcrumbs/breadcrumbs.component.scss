@@ -10,8 +10,6 @@
   padding: 5px 5px 5px 28px;
   position: absolute;
   top: 48px;
-  transition-duration: 300ms;
-  transition-property: left, width;
   width: calc(100vw - #{variables.$sidebar-width} - var(--tp, 0px));
   z-index: 100;
 
@@ -88,4 +86,39 @@
   span:last-child {
     color: variables.$light-blue;
   }
+}
+
+// WsQ: flat breadcrumbs matching the toolbar
+.breadcrumbs {
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  gap: 2px;
+  padding: 0 10px 0 12px;
+}
+
+.breadcrumbs-dark-mode {
+  background: #1d1d1d !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+.breadcrumb-folder-word {
+  border-radius: 4px;
+  font-size: 12.5px;
+  margin-right: 0;
+  padding: 2px 6px;
+  transition: none;
+
+  &:hover {
+    background: rgba(127, 127, 127, 0.15);
+  }
+}
+
+.breadcrumbs span:last-child {
+  color: var(--wsq-accent);
+}
+
+.breadcrumb-folder-icon {
+  margin-right: 6px;
 }

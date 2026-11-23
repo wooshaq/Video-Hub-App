@@ -836,6 +836,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
       setTimeout(() => {
         this.checkCoversOf(this.imageElementService.imageElements.filter(e => e.cover === undefined));
       }, 3000);
+      // WsQ: finish thumbnails that were never made (e.g. the app was closed / updated during an import)
+      setTimeout(() => {
+        (window as any).myElectron.sendToMain(
+          'add-missing-thumbnails',
+          this.imageElementService.imageElements.filter(e => !e.deleted),
+          this.currentScreenshotSettings && this.currentScreenshotSettings.clipSnippets > 0);
+      }, 6000);
 
       this.setTags(finalObject.addTags, finalObject.removeTags); // auto-tags
 

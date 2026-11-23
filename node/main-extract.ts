@@ -364,7 +364,9 @@ export function extractAll(
       done();
     })
     .catch((err) => {
-      // console.log('===> ERROR - RESTARTING: ' + err);
+      if (!(err && err.message === 'USER DOES NOT WANT CLIPS')) {
+        console.log('EXTRACT STOPPED: ' + currentElement.fileName + ' -- ' + (err && err.message));
+      }
       done();
     });
 }
@@ -518,6 +520,12 @@ function spawn_ffmpeg_and_run(
       if (GLOBALS.debug) {
         console.log('grep stderr: ' + data);
       }
+    });
+    // WsQ: if ffmpeg cannot start at all (missing / blocked binary) 'exit' never fires -- don't hang the queue
+    ffmpeg_process.on('error', (err) => {
+      clearTimeout(killProcessTimeout);
+      console.log(description + ' FFMPEG ERROR: ' + (err && err.message));
+      return resolve(false);
     });
     ffmpeg_process.on('exit', () => {
       clearTimeout(killProcessTimeout);

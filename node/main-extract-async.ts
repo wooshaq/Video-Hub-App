@@ -158,7 +158,21 @@ export function resetAllQueues(): void {
  * @param element -- ImageElement to extract screenshots for
  * @param done    -- callback to indicate the current extraction finished
  */
-function thumbQueueRunner(element: ImageElement, done): void {
+function thumbQueueRunner(element: ImageElement, queueDone): void {
+  // WsQ: watchdog -- one broken file must never stop the whole queue
+  let finished = false;
+  const done = () => {
+    if (!finished) {
+      finished = true;
+      clearTimeout(watchdog);
+      queueDone();
+    }
+  };
+  const watchdog = setTimeout(() => {
+    console.log('THUMB WATCHDOG: skipping', element.fileName);
+    done();
+  }, 10 * 60 * 1000);
+
   const screenshotOutputFolder: string = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName);
   const shouldExtractClips: boolean = GLOBALS.screenshotSettings.clipSnippets > 0;
 
@@ -311,6 +325,13 @@ function superFastSystemScan(inputDir: string, inputSource: number): void {
       thumbQueue.resume();
     }
 
+  }).catch((err) => {
+    // WsQ: folder missing / disk not connected -- don't leave both queues paused forever
+    console.log('SCAN FAILED for', inputDir, err && err.message);
+    metadataQueue.resume();
+    if (metadataQueue.idle()) {
+      thumbQueue.resume();
+    }
   });
 
 }
@@ -533,8 +554,14 @@ function hasAllThumbs(
 export function extractAnyMissingThumbs(fullArray: ImageElement[]): void {
   preventSleep();
   fullArray.forEach((element: ImageElement) => {
-    thumbQueue.push(element);
+    if (element && element.hash && !(element as any).deleted && element.cleanName !== '*FOLDER*') {
+      thumbQueue.push(element);
+    }
   });
+  // WsQ: the queue may still be paused after a folder scan -- go on if nothing is being imported
+  if (metadataQueue.idle()) {
+    thumbQueue.resume();
+  }
 }
 
 /**

@@ -1,5 +1,10 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.17
+- **Miniatury nie stają w połowie:** po otwarciu huba brakujące miniatury (np. po zamknięciu / aktualizacji programu w trakcie importu) są robione automatycznie. Kolejka nie zatrzymuje się już, gdy ffmpeg nie może wystartować, gdy folder/dysk jest niedostępny podczas skanowania ani na jednym uszkodzonym pliku (limit 10 min na plik).
+- **Płynniejsze animacje bez jasnych błysków:** okno ustawień pojawia się jednym płynnym ruchem (wcześniej skakało), galeria, pasek tagów i okruszki zmieniają rozmiar od razu zamiast „pływać”, tło galerii nie miga na jasno, prawy panel i okienka wsuwają się delikatnie, ciemne paski przewijania.
+- Okruszki w widoku folderów w ciemnym, płaskim stylu.
+
 ### Nowe w wsq.16
 - Foldery w widoku folderów mają proporcje jak w Ritt (216 × 170, nie rozciągają się na szerokość kafelka); podgląd zajmuje górną część folderu, przednia klapka zaczyna się w połowie. Własna ikona z desktop.ini jest w tym samym prostokącie. Pod folderem są odznaki tagów folderu.
 
