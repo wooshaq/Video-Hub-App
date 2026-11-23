@@ -64,6 +64,12 @@ import { SvgDefinitionsComponent } from './components/icon/svg-definitions.compo
 import { TagColorPickerComponent } from './components/tag-color-picker/tag-color-picker.component';
 import { TagsComponent } from './components/tags-auto/tags.component';
 import { TagTrayComponent } from './components/tag-tray/tag-tray.component';
+import { TagPaneComponent } from './components/tag-library/tag-pane.component';
+import { TagFilterBarComponent } from './components/tag-library/tag-filter-bar.component';
+import { TagBadgesComponent } from './components/tag-library/tag-badges.component';
+import { ItemTagsComponent } from './components/tag-library/item-tags.component';
+import { TagLibraryFilterPipe } from './components/tag-library/tag-library-filter.pipe';
+import { TagLibraryService } from './components/tag-library/tag-library.service';
 import { ThumbnailComponent } from './components/views/thumbnail/thumbnail.component';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TopComponent } from './components/top/top.component';
@@ -183,6 +189,11 @@ import { YearPipe } from './pipes/year.pipe';
     TagsComponent,
     TagsDisplayPipe,
     TagTrayComponent,
+    TagPaneComponent,
+    TagFilterBarComponent,
+    TagBadgesComponent,
+    ItemTagsComponent,
+    TagLibraryFilterPipe,
     ThumbnailComponent,
     TimesPlayedFilterPipe,
     TimesPlayedPipe,
@@ -216,6 +227,7 @@ import { YearPipe } from './pipes/year.pipe';
     FilePathService,
     ImageElementService,
     ManualTagsService,
+    TagLibraryService,
     ModalService,
     PipeSideEffectService,
     ResolutionFilterService,

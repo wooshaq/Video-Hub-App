@@ -74,3 +74,17 @@
   opacity: 1 !important;
   cursor: not-allowed;
 }
+
+// Ritt-style tag badges
+.tag-badges-overlay {
+  left: 4px;
+  max-width: calc(100% - 40px);
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+
+  &.with-heart {
+    left: 30px;
+    max-width: calc(100% - 66px);
+  }
+}

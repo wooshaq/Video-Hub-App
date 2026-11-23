@@ -75,6 +75,8 @@
 
     } <!-- end of `@else` -- the FOUR PREVIEWS template -->
 
+    <app-tag-badges class="tag-badges-overlay" [video]="video" [darkMode]="darkMode()" />
+
     @if (showMeta()) {
       <span class="time folder-time">{{ video.duration | lengthPipe : 'folder' }}</span>
       <span class="rez folder-time">{{ video.fileSize | fileSizePipe : true }}</span>
@@ -185,6 +187,8 @@
   @if (!connected()) {
     <span class="not-connected" title="{{ 'STATISTICS.notConnected' | translate }}"></span>
   }
+
+    <app-tag-badges class="tag-badges-overlay" [ngClass]="{ 'with-heart': showFavorites() }" [video]="video" [darkMode]="darkMode()" />
 
   </div> <!-- end of (B) div --->
 

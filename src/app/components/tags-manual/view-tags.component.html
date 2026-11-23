@@ -14,7 +14,7 @@
     [draggable]='draggable()'
     (dragstart)="tagDragStart($event, tag)"
   >
-    {{ tag.name }}
+    @if (tagLib.iconOf(tag.name)) { <span class="tag-lib-icon">{{ tagLib.iconOf(tag.name) }}</span> }{{ tag.name }}
   </span>
 
 @if (displayFrequency()) {

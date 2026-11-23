@@ -14,6 +14,7 @@ import { AutoTagsSaveService } from './tags-auto/tags-save.service';
 import { FilePathService } from './views/file-path.service';
 import { ImageElementService } from '../services/image-element.service';
 import { ManualTagsService } from './tags-manual/manual-tags.service';
+import { TagLibraryService } from './tag-library/tag-library.service';
 import { ModalService } from './modal/modal.service';
 import { PipeSideEffectService } from '../pipes/pipe-side-effect.service';
 import { ResolutionFilterService } from '../pipes/resolution-filter.service';
@@ -352,6 +353,24 @@ export class HomeComponent implements OnInit, AfterViewInit {
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
 
+    // Ritt-style tag hot keys: 1 ... 0 toggle a tag on the current video (or the selected ones in batch mode)
+    if (   !event.ctrlKey && !event.metaKey && !event.altKey
+        && /^[0-9]$/.test(event.key)
+        && !this.isTypingIn(event.target as HTMLElement)) {
+      const node = this.tagLib.tagForHotkey(event.key);
+      if (node) {
+        const targets: ImageElement[] = this.batchTaggingMode
+          ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
+          : (this.currentClickedItem ? [this.currentClickedItem] : []);
+        if (targets.length) {
+          event.preventDefault();
+          this.tagLib.toggleTagOn(targets, node.name);
+          this.modalService.openSnackbar((node.icon ? node.icon + ' ' : '') + node.name, 900);
+        }
+        return;
+      }
+    }
+
     if (event.ctrlKey && event.key === ' ' && this.settingsButtons['spacePlaysRandom'].toggled) {
       const randomIndex: number = Math.floor(Math.random() * this.pipeSideEffectService.galleryShowing.length);
       const video: ImageElement = this.pipeSideEffectService.galleryShowing[randomIndex];
@@ -400,6 +419,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     public filePathService: FilePathService,
     public imageElementService: ImageElementService,
     public manualTagsService: ManualTagsService,
+    public tagLib: TagLibraryService,
     public modalService: ModalService,
     public pipeSideEffectService: PipeSideEffectService,
     public resolutionFilterService: ResolutionFilterService,
@@ -414,6 +434,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     this.translate.setDefaultLang('en');
     this.changeLanguage('en');
+
+    // Ritt-style tag library
+    this.tagLib.init();
+    this.tagLib.changed.subscribe(() => {
+      this.ifShowDetailsViewRefreshTags();
+    });
 
     // this.modalService.openWelcomeMessage(); // WIP
 
@@ -753,6 +779,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.manualTagsService.removeAllTags();
       this.manualTagsService.populateManualTagsService(finalObject.images);
       this.manualTagsService.loadTagColors(finalObject.tagColors);
+      this.tagLib.onHubLoaded(finalObject.folderTags);
 
       this.setTags(finalObject.addTags, finalObject.removeTags); // auto-tags
 
@@ -999,6 +1026,19 @@ export class HomeComponent implements OnInit, AfterViewInit {
    */
   droppedSomethingOverVideo(event, galleryItem: ImageElement) {
 
+    // a separator dragged from the tag tree -- nothing to do
+    if (event.dataTransfer.types.includes('application/x-vha-tag-node') && !event.dataTransfer.getData('text')) {
+      return;
+    }
+
+    // tag dropped on a FOLDER (folder view) -- everything inside inherits it
+    if (event.dataTransfer.getData('text') && galleryItem.cleanName === '*FOLDER*') {
+      if (galleryItem.fileName !== '*UP*') {
+        this.tagLib.tagFolder(galleryItem.partialPath, event.dataTransfer.getData('text').trim());
+      }
+      return;
+    }
+
     // this occurs when a tag is dropped on a video from the tag tray
     if (event.dataTransfer.getData('text')) {
       // tag previously set by `dragStart` in `view-tags.component`
@@ -1111,6 +1151,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.isClosing = true;
     this.savePreviousViewSize();
     this.appState.imgsPerRow = this.imgsPerRow;
+    this.tagLib.saveNow();
     (window as any).myElectron.sendToMain('close-window', this.getSettingsForSave(), this.getFinalObjectForSaving());
   }
 
@@ -1138,6 +1179,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         removeTags: this.autoTagsSaveService.getRemoveTags(),
         screenshotSettings: this.currentScreenshotSettings,
         tagColors: this.manualTagsService.getTagColors(),
+        folderTags: this.tagLib.getFolderTagsForSaving(),
         version: 3,
       };
       return propsToReturn;
@@ -1771,7 +1813,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       if (uniqueKey === 'showMoreInfo') {
         this.computeTextBufferAmount();
       }
-      if (uniqueKey === 'hideSidebar') {
+      if (uniqueKey === 'hideSidebar' || uniqueKey === 'showTagPane') {
         setTimeout(() => {
           this.virtualScroller().refresh();
           this.computePreviewWidth();
@@ -2545,6 +2587,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
    * It resets all filter arrays, bounds, and toggles all filter buttons off
    */
   clearAllFilters(): void {
+    this.tagLib.clearFilter();
     // Clear all filter arrays and bools
     this.filters.forEach((filter) => {
       filter.array = [];
@@ -2647,6 +2690,36 @@ export class HomeComponent implements OnInit, AfterViewInit {
           this.settingsButtons['showTagTray'].toggled = true;
         }, 0);
       }
+  }
+
+
+  // =============================================================================================
+  // Ritt-style tag library helpers
+  // =============================================================================================
+
+  isTypingIn(el: HTMLElement): boolean {
+    return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+  }
+
+  /** height of the active-tags bar above the gallery */
+  get tagBarHeight(): number {
+    return (this.tagLib.active.length || this.tagLib.excluded.length) ? 40 : 0;
+  }
+
+  get tagPaneWidth(): number {
+    return this.settingsButtons['showTagPane'] && this.settingsButtons['showTagPane'].toggled ? 250 : 0;
+  }
+
+  onTagFilterChanged(): void {
+    this.scrollToTop();
+    setTimeout(() => {
+      this.virtualScroller()?.refresh();
+    });
+  }
+
+  onTagsAssigned(): void {
+    this.ifShowDetailsViewRefreshTags();
+    this.cd.detectChanges();
   }
 
 }

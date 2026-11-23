@@ -1,0 +1,82 @@
+name: Build Windows (WsQ)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to publish (empty = only build artifacts)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*-wsq.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # ---- VHA Remote (phone / tablet UI), pinned commit of whyboris/Video-Hub-App-remote ----
+      - name: Checkout Remote
+        uses: actions/checkout@v4
+        with:
+          repository: whyboris/Video-Hub-App-remote
+          ref: 558d89945e10fdbbffc2de0cfbe53709d1b676bb
+          path: _remote_src
+
+      - name: Build Remote
+        shell: bash
+        working-directory: _remote_src
+        run: |
+          git log -1 --format='Remote commit: %H'
+          npm ci
+          npm run build
+          OUT=dist/remote
+          if [ -d dist/remote/browser ]; then OUT=dist/remote/browser; fi
+          cp -r $OUT/* ../remote/
+          ls ../remote
+
+      # ---- Video Hub App ----
+      - name: Install
+        run: npm install --legacy-peer-deps
+
+      - name: Build Angular + main
+        run: npm run build:prod
+
+      - name: Package (NSIS installer + portable)
+        run: npx electron-builder build --win --x64 --publish never
+
+      - name: Collect
+        shell: bash
+        run: |
+          ls -la release
+          mkdir out
+          cp release/*.exe out/
+          cd out && sha256sum *.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoHubApp-WsQ-windows
+          path: out/*
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.release_tag }}"
+          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
+          gh release create "$TAG" out/* --target "$GITHUB_SHA" --title "Video Hub App 3 WsQ $TAG" --notes-file RELEASE_NOTES_WSQ.md || \
+          gh release upload "$TAG" out/* --clobber

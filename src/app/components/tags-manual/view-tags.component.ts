@@ -2,6 +2,7 @@ import { Component, Input, input, output, viewChild } from '@angular/core';
 import type { ElementRef } from '@angular/core';
 
 import { ManualTagsService } from './manual-tags.service';
+import { TagLibraryService } from '../tag-library/tag-library.service';
 
 import type { Tag, TagEmit } from '../../../../interfaces/shared-interfaces';
 
@@ -52,7 +53,8 @@ export class ViewTagsComponent {
   readonly dragHack = viewChild<ElementRef>('dragHack');
 
   constructor(
-    public tagService: ManualTagsService
+    public tagService: ManualTagsService,
+    public tagLib: TagLibraryService,
   ) { }
 
   /**

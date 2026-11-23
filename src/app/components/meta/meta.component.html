@@ -176,6 +176,13 @@
     (tagRightClick)="onTagRightClick($event)"
    />
 
+  <app-item-tags
+    [video]="video"
+    [darkMode]="darkMode()"
+    (filter)="filterInheritedTag($event)"
+    (tagsAdded)="refreshTagsView()"
+   />
+
 @if (showVideoNotes()) {
   <textarea
     #videoNotes

@@ -12,6 +12,10 @@ export class ManualTagsService {
   tagsFrequencyMap: Map<string, number> = new Map(); // map tag name to its frequency
   tagsList: string[] = []; // list of all tags
 
+  // hooks for the Ritt-style tag library (set by `TagLibraryService`)
+  onTagAdded?: (tag: string, isNew: boolean) => void;
+  onTagsChanged?: () => void;
+
   // Color picker state - shared across all components
   showColorPickerSubject = new Subject<{ tagName: string, currentColor: string, position: ContextMenuCoordinate }>();
   hideColorPickerSubject = new Subject<void>();
@@ -24,14 +28,19 @@ export class ManualTagsService {
    * @param tag - tag to be added
    */
   addTag(tag: string): void {
+    let isNew = false;
     if (this.tagsFrequencyMap.get(tag)) {
       const count = this.tagsFrequencyMap.get(tag);
       this.tagsFrequencyMap.set(tag, count + 1);
     } else {
       this.tagsFrequencyMap.set(tag, 1);
       this.tagsList.push(tag);
+      isNew = true;
     }
     this.forceTagSortPipeUpdate();
+    if (this.onTagAdded) {
+      this.onTagAdded(tag, isNew);
+    }
   }
 
   removeTag(tag: string): void {
@@ -42,12 +51,18 @@ export class ManualTagsService {
       this.tagsList.splice(this.tagsList.indexOf(tag), 1);
     }
     this.forceTagSortPipeUpdate();
+    if (this.onTagsChanged) {
+      this.onTagsChanged();
+    }
   }
 
   removeTagBatch(tag: string) {
     this.tagsFrequencyMap.set(tag, 0);
     this.tagsList.splice(this.tagsList.indexOf(tag), 1);
     this.forceTagSortPipeUpdate();
+    if (this.onTagsChanged) {
+      this.onTagsChanged();
+    }
   }
 
   /**

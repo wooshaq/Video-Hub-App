@@ -138,6 +138,7 @@
   overflow-y: scroll;
   padding: 4px 0 60px 10px;
   position: absolute;
+  left: var(--tp, 0px);
   top: variables.$settings-height;
   transform: translate(0, 0);
   transition: 300ms;
@@ -154,17 +155,18 @@
 .sidebar-hidden {
   transform: translate(-(variables.$sidebar-width), 0);
   transition: 300ms;
+  visibility: hidden;
 }
 
 .gallery-container {
   background: variables.$gray-20;
   box-sizing: border-box;
-  left: variables.$sidebar-width;
+  left: calc(#{variables.$sidebar-width} + var(--tp, 0px));
   overflow-y: scroll;
   position: absolute;
   top: variables.$settings-height;
   transition: 300ms;
-  width: calc(100vw - #{variables.$sidebar-width});
+  width: calc(100vw - #{variables.$sidebar-width} - var(--tp, 0px));
 
   @include variables.scrollBar;
   @include variables.scrollBarSquare;
@@ -175,9 +177,37 @@
 }
 
 .gallery-container-full-width {
-  left: 0;
+  left: var(--tp, 0px);
   transition: 300ms;
-  width: 100vw;
+  width: calc(100vw - var(--tp, 0px));
+}
+
+// ===== Ritt-style tag tree & active tags bar =====
+
+.tag-pane-container {
+  left: 0;
+  position: absolute;
+  top: variables.$settings-height;
+  width: 250px;
+  z-index: 5;
+}
+
+.tag-filter-bar-container {
+  left: calc(#{variables.$sidebar-width} + var(--tp, 0px));
+  position: absolute;
+  top: variables.$settings-height;
+  transition: 300ms;
+  width: calc(100vw - #{variables.$sidebar-width} - var(--tp, 0px));
+  z-index: 4;
+}
+
+.tag-filter-bar-full-width {
+  left: var(--tp, 0px);
+  width: calc(100vw - var(--tp, 0px));
+}
+
+.tag-filter-bar-below-breadcrumbs {
+  top: calc(#{variables.$settings-height} + 30px);
 }
 
 .bottom-of-scroller-spacer {

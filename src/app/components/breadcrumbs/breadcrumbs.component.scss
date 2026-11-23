@@ -5,14 +5,14 @@
   border-bottom: 1px solid variables.$gray-40;
   box-sizing: border-box;
   height: 30px;
-  left: #{variables.$sidebar-width};
+  left: calc(#{variables.$sidebar-width} + var(--tp, 0px));
   overflow: hidden;
   padding: 5px 5px 5px 28px;
   position: absolute;
   top: 32px;
   transition-duration: 300ms;
   transition-property: left, width;
-  width: calc(100vw - #{variables.$sidebar-width});
+  width: calc(100vw - #{variables.$sidebar-width} - var(--tp, 0px));
   z-index: 100;
 
   span:last-child {
@@ -39,8 +39,8 @@
 }
 
 .breadcrumbs-full-width {
-  left: 0;
-  width: 100vw;
+  left: var(--tp, 0px);
+  width: calc(100vw - var(--tp, 0px));
 }
 
 .breadcrumb-folder-word {

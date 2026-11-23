@@ -66,6 +66,7 @@ export type SettingsButtonKey = 'autoFileTags'
  | 'showRelatedVideosTray'
  | 'showTags'
  | 'showTagTray'
+ | 'showTagPane'
  | 'showThumbnails'
  | 'showVideoNotes'
  | 'shuffleGalleryNow'
@@ -163,6 +164,7 @@ export const SettingsButtonsGroups: SettingsButtonKey[][] = [
     'showClips',
   ],
   [ // 5 - Explore videos
+    'showTagPane',
     'showFolders',
     'randomizeFoldersScreenshots',
     'showTags',
@@ -775,6 +777,14 @@ export const SettingsButtons: SettingsButtonsType = {
     moreInfo: 'BUTTONS.showTagsMoreInfo',
     title: 'BUTTONS.showTagsHint',
     toggled: false
+  },
+  'showTagPane': {
+    description: 'BUTTONS.tagPaneDescription',
+    hidden: false,
+    iconName: 'icon-tag-tray',
+    moreInfo: 'BUTTONS.tagPaneMoreInfo',
+    title: 'BUTTONS.tagPaneHint',
+    toggled: true
   },
   'showTagTray': {
     description: 'BUTTONS.tagTrayDescription',

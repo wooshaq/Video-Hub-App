@@ -21,6 +21,47 @@ import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNo
  */
 export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
 
+  // ===========================================================================================
+  // Ritt-style tag library -- global file next to `settings.json`
+  // ===========================================================================================
+
+  ipc.on('load-tag-library', (event) => {
+    const filePath = path.join(GLOBALS.settingsPath, 'tag-library.json');
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      let parsed = null;
+      if (!err) {
+        try {
+          parsed = JSON.parse(data);
+        } catch (e) {
+          console.log('tag-library.json is corrupt, trying backup');
+          try {
+            parsed = JSON.parse(fs.readFileSync(filePath + '.bak', 'utf8'));
+          } catch (e2) {
+            parsed = null;
+          }
+        }
+      }
+      event.sender.send('tag-library-loaded', parsed);
+    });
+  });
+
+  ipc.on('save-tag-library', (event, library) => {
+    try {
+      if (!fs.existsSync(GLOBALS.settingsPath)) {
+        fs.mkdirSync(GLOBALS.settingsPath, { recursive: true });
+      }
+      const filePath = path.join(GLOBALS.settingsPath, 'tag-library.json');
+      const tmpPath = filePath + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(library, null, 1), 'utf8');
+      if (fs.existsSync(filePath)) {
+        fs.copyFileSync(filePath, filePath + '.bak');
+      }
+      fs.renameSync(tmpPath, filePath);
+    } catch (e) {
+      console.log('could not save tag library', e);
+    }
+  });
+
   /**
    * Un-Maximize the window
    */

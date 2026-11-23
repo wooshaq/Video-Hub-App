@@ -312,7 +312,8 @@
   <div
     class="window-content"
     [ngStyle]="{
-      transform: appState.menuHidden ? 'translate(0, -32px)' : 'translate(0, 0)'
+      transform: appState.menuHidden ? 'translate(0, -32px)' : 'translate(0, 0)',
+      '--tp': tagPaneWidth + 'px'
     }"
   >
 
@@ -375,6 +376,34 @@
       [folderViewNavigationPath]="folderViewNavigationPath"
       [settingsButtons]="settingsButtons"
      />
+
+    <!-- ============================================== -->
+    <!-- ===========   TAG TREE (Ritt-style)  ========= -->
+    <!-- ============================================== -->
+
+  @if (settingsButtons['showTagPane'].toggled) {
+    <app-tag-pane
+      class="tag-pane-container"
+      [ngStyle]="{
+          'height': 'calc(100vh - ' + (
+                        appState.menuHidden | sidebarHeightPipe
+                          : settingsButtons['hideTop'].toggled
+                          : (
+                                 settingsButtons['showDetailsTray'].toggled
+                              || settingsButtons['showFreq'].toggled
+                              || settingsButtons['showRecentlyPlayed'].toggled
+                              || settingsButtons['showRelatedVideosTray'].toggled
+                              || settingsButtons['showTagTray'].toggled
+                            )
+                      ) + 'px)'
+        }"
+      [darkMode]="settingsButtons['darkMode'].toggled"
+      [batchMode]="batchTaggingMode"
+      [currentItem]="currentClickedItem"
+      (filterChanged)="onTagFilterChanged()"
+      (tagsAssigned)="onTagsAssigned()"
+    />
+  }
 
     <!-- ============================================== -->
     <!-- ===========         SIDEBAR        =========== -->
@@ -774,6 +803,22 @@
 
     </div> <!-- closing the SIDEBAR -->
 
+    <!-- ===========  ACTIVE TAGS BAR (Ritt-style)  =========== -->
+  @if (tagBarHeight) {
+    <app-tag-filter-bar
+      class="tag-filter-bar-container"
+      [ngClass]="{
+          'tag-filter-bar-full-width': settingsButtons['hideSidebar'].toggled,
+          'tag-filter-bar-below-breadcrumbs': settingsButtons['showFolders'].toggled
+                                         && (appState.currentView === 'showThumbnails' ||
+                                             appState.currentView === 'showFiles' ||
+                                             appState.currentView === 'showClips')
+        }"
+      [darkMode]="settingsButtons['darkMode'].toggled"
+      (changed)="onTagFilterChanged()"
+    />
+  }
+
     <!-- ============================================== -->
     <!-- ===========    THE GALLERY PANE    =========== -->
     <!-- ============================================== -->
@@ -794,7 +839,12 @@
                               || settingsButtons['showRelatedVideosTray'].toggled
                               || settingsButtons['showTagTray'].toggled
                             )
-                      ) + 'px)'
+                      ) + 'px - ' + tagBarHeight + 'px)',
+          'margin-top': tagBarHeight ? (tagBarHeight + (
+                                         settingsButtons['showFolders'].toggled
+                                         && (appState.currentView === 'showThumbnails' ||
+                                             appState.currentView === 'showFiles' ||
+                                             appState.currentView === 'showClips') ? 30 : 0)) + 'px' : null
         }"
 
       [enableUnequalChildrenSizes]="appState.currentView === 'showFullView'"
@@ -850,6 +900,8 @@
                                  : settingsButtons['autoFolderTags'].toggled
 
                 | fileSearchPipe : filters[9].array : filters[9].bool : false : 'notes'  : false
+
+                | tagLibraryFilterPipe : tagLib.filterVersion
 
                 | magicSearchPipe : magicSearchString
 
@@ -1172,6 +1224,7 @@
 
 <div
   class="all-settings-tabs bottom-tray-tabs"
+  [ngStyle]="{ 'margin-left': tagPaneWidth + 'px' }"
   [ngClass]="{
     'bottom-tray-tabs-dark': settingsButtons['darkMode'].toggled,
     'bottom-tray-tabs-open': settingsButtons['showDetailsTray'].toggled

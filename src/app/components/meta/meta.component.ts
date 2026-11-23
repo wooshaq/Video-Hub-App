@@ -7,6 +7,7 @@ import type { Subscription, Observable } from 'rxjs';
 import { FilePathService } from '../views/file-path.service';
 import { ImageElementService } from './../../services/image-element.service';
 import { ManualTagsService } from '../tags-manual/manual-tags.service';
+import { TagLibraryService } from '../tag-library/tag-library.service';
 
 import type { StarRating, ImageElement } from '../../../../interfaces/final-object.interface';
 import type { TagEmit, RenameFileResponse } from '../../../../interfaces/shared-interfaces';
@@ -66,7 +67,8 @@ export class MetaComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     public filePathService: FilePathService,
     public imageElementService: ImageElementService,
-    public manualTagsService: ManualTagsService
+    public manualTagsService: ManualTagsService,
+    public tagLib: TagLibraryService,
   ) { }
 
   ngOnInit() {
@@ -117,6 +119,15 @@ export class MetaComponent implements OnInit, OnDestroy {
 
   filterThisTag(event: TagEmit) {
     this.filterTag.emit(event);
+  }
+
+  /** inherited tag clicked -- activate it in the Ritt-style tag tree */
+  filterInheritedTag(e: { name: string, event: MouseEvent }) {
+    this.tagLib.activate(e.name, e.event.shiftKey ? 'exclude' : (e.event.ctrlKey ? 'toggle' : 'replace'));
+  }
+
+  refreshTagsView() {
+    this.tagViewUpdateTrigger = !this.tagViewUpdateTrigger;
   }
 
   removeThisTag(tag: string) {

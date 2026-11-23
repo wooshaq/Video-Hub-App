@@ -1,0 +1,324 @@
+<div
+  class="tag-pane"
+  [ngClass]="{ dark: darkMode() }"
+  tabindex="0"
+  (keydown)="keydown($event)"
+>
+
+  <!-- ============ header ============ -->
+  <div class="tp-header">
+    <span class="tp-title">{{ 'TAGLIB.tags' | translate }}</span>
+
+    <button class="tp-btn" (click)="addTag(null, 'after')" title="{{ 'TAGLIB.addTag' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
+    </button>
+
+    <button class="tp-btn" (click)="runAutoTag()" title="{{ 'TAGLIB.autoTagHint' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M9 1 3 9h4l-1 6 6-8H8z" /></svg>
+    </button>
+
+    <span class="tp-spacer"></span>
+
+    <button class="tp-btn" (click)="collapseAll(true)" title="{{ 'TAGLIB.collapseAll' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M4 6l4-4 4 4M4 14l4-4 4 4" /></svg>
+    </button>
+
+    <button
+      class="tp-btn"
+      [ngClass]="{ on: lib.lib.showHidden }"
+      (click)="lib.toggleShowHidden()"
+      title="{{ 'TAGLIB.showHidden' | translate }}"
+    >
+      <svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></svg>
+    </button>
+
+    <button
+      class="tp-btn"
+      [ngClass]="{ on: lib.lib.unionMode }"
+      (click)="lib.toggleUnionMode(); filterChanged.emit()"
+      title="{{ (lib.lib.unionMode ? 'TAGLIB.unionMode' : 'TAGLIB.intersectionMode') | translate }}"
+    >
+      <svg viewBox="0 0 16 16">
+        <circle cx="6" cy="8" r="4.5" />
+        <circle cx="10" cy="8" r="4.5" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="tp-filter">
+    <input
+      #filterInput
+      type="text"
+      [(ngModel)]="filterText"
+      (keyup.escape)="filterText = ''"
+      placeholder="{{ 'TAGLIB.filterTags' | translate }}"
+    >
+  </div>
+
+  @if (batchMode()) {
+    <div class="tp-hint">{{ 'TAGLIB.batchHint' | translate }}</div>
+  }
+
+  <!-- ============ tree ============ -->
+  <div
+    class="tp-tree"
+    (contextmenu)="openMenu($event, null)"
+    (dragover)="dragOverEmpty($event)"
+    (drop)="dropOnEmpty($event)"
+  >
+
+  @for (row of rows; track row.node.id) {
+
+    @if (row.node.type === 'separator') {
+
+      <div
+        class="tp-row tp-separator-row"
+        [ngClass]="{
+          selected: selectedId === row.node.id,
+          'drop-before': dropTargetId === row.node.id && dropZone === 'before',
+          'drop-after':  dropTargetId === row.node.id && dropZone === 'after'
+        }"
+        draggable="true"
+        (dragstart)="dragStart($event, row.node)"
+        (dragend)="dragEnd()"
+        (dragover)="dragOver($event, row)"
+        (drop)="drop($event, row)"
+        (click)="rowClick($event, row)"
+        (contextmenu)="openMenu($event, row.node)"
+      >
+        @for (d of depthArray(row.depth); track d) { <span class="tp-guide"></span> }
+        <span class="tp-separator"></span>
+      </div>
+
+    } @else {
+
+      <div
+        class="tp-row"
+        [ngClass]="{
+          selected: selectedId === row.node.id,
+          active: isActive(row.node),
+          excluded: isExcluded(row.node),
+          'is-hidden': row.node.hidden,
+          'drop-before': dropTargetId === row.node.id && dropZone === 'before',
+          'drop-after':  dropTargetId === row.node.id && dropZone === 'after',
+          'drop-child':  dropTargetId === row.node.id && dropZone === 'child'
+        }"
+        [draggable]="editingId !== row.node.id"
+        (dragstart)="dragStart($event, row.node)"
+        (dragend)="dragEnd()"
+        (dragover)="dragOver($event, row)"
+        (drop)="drop($event, row)"
+        (click)="rowClick($event, row)"
+        (auxclick)="rowAuxClick($event, row)"
+        (dblclick)="startRename(row.node)"
+        (contextmenu)="openMenu($event, row.node)"
+        [title]="row.node.aliases ? ('@ ' + row.node.aliases.join(', ')) : ''"
+      >
+        @for (d of depthArray(row.depth); track d) { <span class="tp-guide"></span> }
+
+        @if (row.hasChildren) {
+          <span class="tp-chevron" [ngClass]="{ open: !row.node.collapsed || filterText }" (click)="toggleCollapse($event, row.node)">
+            <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" /></svg>
+          </span>
+        } @else {
+          <span class="tp-chevron-space"></span>
+        }
+
+        @let cs = circleState(row.node);
+        @if (cs) {
+          <span
+            class="tp-circle"
+            [ngClass]="cs"
+            (click)="circleClick($event, row.node)"
+            [title]="(cs === 'batch' ? 'TAGLIB.circleBatch' : cs === 'direct' ? 'TAGLIB.circleRemove' : 'TAGLIB.circleAdd') | translate"
+          ></span>
+        }
+
+        <span class="tp-icon">{{ row.node.icon || '' }}</span>
+
+        @if (editingId === row.node.id) {
+          <input
+            class="rename-input"
+            [ngClass]="{ error: editError }"
+            [(ngModel)]="editText"
+            (keydown.enter)="commitRename(row.node)"
+            (keydown.escape)="cancelRename(); $event.stopPropagation()"
+            (blur)="editError ? cancelRename() : commitRename(row.node)"
+            (click)="$event.stopPropagation()"
+            [title]="editError"
+          >
+        } @else {
+          <span class="tp-name">{{ row.node.name }}</span>
+          <span class="tp-count">({{ lib.getCount(row.node.name) | number }})</span>
+        }
+
+        <span class="tp-attrs">
+          @if (row.node.badge) {
+            <svg class="attr" viewBox="0 0 16 16"><title>{{ 'TAGLIB.badge' | translate }}</title><path d="M8 1.5 2.5 3.5v4c0 3.5 2.4 5.8 5.5 7 3.1-1.2 5.5-3.5 5.5-7v-4z" /></svg>
+          }
+          @if (row.node.aliases?.length) {
+            <span class="attr attr-at" [title]="row.node.aliases.join(', ')">&#64;</span>
+          }
+          @if (row.node.encapsulate) {
+            <svg class="attr" viewBox="0 0 16 16"><title>{{ 'TAGLIB.encapsulate' | translate }}</title><path d="M6 2h4v3H6zM1.5 11h4v3h-4zM10.5 11h4v3h-4zM8 5v3M3.5 11V8h9v3" /></svg>
+          }
+          @if (row.node.hotkey) {
+            <span class="attr attr-key">{{ row.node.hotkey }}</span>
+          }
+          @if (row.node.hidden) {
+            <svg class="attr" viewBox="0 0 16 16"><path d="M2 2l12 12M1 8s2.5-5 7-5c1.4 0 2.6.5 3.6 1.1M15 8s-2.5 5-7 5c-1.4 0-2.6-.5-3.6-1.1" /></svg>
+          }
+        </span>
+
+        <span class="tp-hover-add" (click)="$event.stopPropagation(); addTag(row.node, 'child')" title="{{ 'TAGLIB.addChild' | translate }}">
+          <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" /></svg>
+        </span>
+      </div>
+
+    }
+
+  } <!-- end @for rows -->
+
+  @if (!rows.length) {
+    <div class="tp-empty">
+      @if (filterText) {
+        {{ 'TAGLIB.noMatch' | translate }}
+      } @else {
+        {{ 'TAGLIB.emptyLibrary' | translate }}
+      }
+    </div>
+  }
+
+    <div class="tp-bottom-space"></div>
+  </div>
+
+</div>
+
+
+<!-- ============ context menu ============ -->
+@if (menu) {
+  <div class="tp-popup tp-menu" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: menu.x + 'px', top: menu.y + 'px' }">
+
+  @if (!menu.node) {
+
+    <div class="mi" (click)="addTag(null, 'after')">{{ 'TAGLIB.addTag' | translate }}</div>
+    <div class="mi" (click)="addSeparator(null)">{{ 'TAGLIB.addSeparator' | translate }}</div>
+
+  } @else if (menu.node.type === 'separator') {
+
+    <div class="mi" (click)="addTag(menu.node, 'after')">{{ 'TAGLIB.addTagBelow' | translate }}</div>
+    <div class="mi danger" (click)="deleteNode(menu.node)">{{ 'TAGLIB.remove' | translate }} <span class="kbd">Del</span></div>
+
+  } @else {
+
+    <div class="mi-title">{{ menu.node.icon }} {{ menu.node.name }}</div>
+
+    <div class="mi" (click)="addTag(menu.node, 'after')">{{ 'TAGLIB.addTagBelow' | translate }}</div>
+    <div class="mi" (click)="addTag(menu.node, 'child')">{{ 'TAGLIB.addChild' | translate }}</div>
+    <div class="mi" (click)="addSeparator(menu.node)">{{ 'TAGLIB.addSeparator' | translate }}</div>
+    <div class="mi-sep"></div>
+    <div class="mi" (click)="startRename(menu.node)">{{ 'TAGLIB.rename' | translate }} <span class="kbd">F2</span></div>
+    <div class="mi" (click)="openIconEditor($event, menu.node)">{{ 'TAGLIB.icon' | translate }}…</div>
+    <div class="mi" (click)="openAliasEditor($event, menu.node)">{{ 'TAGLIB.aliases' | translate }}…</div>
+    <div class="mi" (click)="duplicate(menu.node)">{{ 'TAGLIB.duplicate' | translate }}</div>
+    <div class="mi-sep"></div>
+
+    <div class="mi-label">{{ 'TAGLIB.badge' | translate }}</div>
+    <div class="mi-row">
+      <span class="chip" [ngClass]="{ on: !menu.node.badge }"           (click)="setBadge(menu.node, null)">{{ 'TAGLIB.badgeNone' | translate }}</span>
+      <span class="chip" [ngClass]="{ on: menu.node.badge === 'icon' }" (click)="setBadge(menu.node, 'icon')">{{ 'TAGLIB.badgeIcon' | translate }}</span>
+      <span class="chip" [ngClass]="{ on: menu.node.badge === 'name' }" (click)="setBadge(menu.node, 'name')">{{ 'TAGLIB.badgeName' | translate }}</span>
+      <span class="chip" [ngClass]="{ on: menu.node.badge === 'both' }" (click)="setBadge(menu.node, 'both')">{{ 'TAGLIB.badgeBoth' | translate }}</span>
+    </div>
+
+    <div class="mi check" (click)="toggleEncapsulate(menu.node)">
+      <span class="box" [ngClass]="{ on: menu.node.encapsulate }"></span>{{ 'TAGLIB.encapsulate' | translate }}
+    </div>
+    <div class="mi check" (click)="toggleHidden(menu.node)">
+      <span class="box" [ngClass]="{ on: menu.node.hidden }"></span>{{ 'TAGLIB.hidden' | translate }}
+    </div>
+
+    <div class="mi-label">{{ 'TAGLIB.hotkey' | translate }}</div>
+    <div class="mi-row">
+      @for (k of hotkeys; track k) {
+        <span class="chip key" [ngClass]="{ on: menu.node.hotkey === k }" (click)="setHotkey(menu.node, k)">{{ k }}</span>
+      }
+    </div>
+
+    <div class="mi-sep"></div>
+    <div class="mi" (click)="runAutoTag(menu.node.name)">{{ 'TAGLIB.autoTagThis' | translate }}</div>
+    <div class="mi" (click)="openFolderList($event, menu.node)">
+      {{ 'TAGLIB.taggedFolders' | translate }} ({{ lib.foldersWithTag(menu.node.name).length }})
+    </div>
+    <div class="mi-sep"></div>
+    <div class="mi danger" (click)="deleteNode(menu.node)">{{ 'TAGLIB.remove' | translate }} <span class="kbd">Del</span></div>
+
+  }
+  </div>
+}
+
+<!-- ============ icon editor ============ -->
+@if (iconEditor) {
+  <div class="tp-popup tp-icon-editor" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: iconEditor.x + 'px', top: iconEditor.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.icon' | translate }}: {{ iconEditor.node.name }}</div>
+    <div class="ie-row">
+      <input
+        class="icon-input"
+        [(ngModel)]="iconEditor.text"
+        (keydown.enter)="pickIcon(iconEditor.text)"
+        placeholder="{{ 'TAGLIB.iconPlaceholder' | translate }}"
+      >
+      <button (click)="pickIcon(iconEditor.text)">OK</button>
+      <button (click)="pickIcon('')">{{ 'TAGLIB.noIcon' | translate }}</button>
+    </div>
+    <div class="ie-hint">{{ 'TAGLIB.iconHint' | translate }}</div>
+
+    @if (lib.lib.recentIcons.length) {
+      <div class="mi-label">{{ 'TAGLIB.recentIcons' | translate }}</div>
+      <div class="ie-grid">
+        @for (ic of lib.lib.recentIcons; track ic) {
+          <span class="ie-cell" (click)="pickIcon(ic)">{{ ic }}</span>
+        }
+      </div>
+    }
+
+    <div class="mi-label">{{ 'TAGLIB.icons' | translate }}</div>
+    <div class="ie-grid">
+      @for (ic of presetIcons; track ic) {
+        <span class="ie-cell" (click)="pickIcon(ic)">{{ ic }}</span>
+      }
+    </div>
+  </div>
+}
+
+<!-- ============ alias editor ============ -->
+@if (aliasEditor) {
+  <div class="tp-popup tp-alias-editor" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: aliasEditor.x + 'px', top: aliasEditor.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.aliases' | translate }}: {{ aliasEditor.node.name }}</div>
+    <input
+      class="alias-input"
+      [(ngModel)]="aliasEditor.text"
+      (keydown.enter)="saveAliases()"
+      placeholder="{{ 'TAGLIB.aliasPlaceholder' | translate }}"
+    >
+    <div class="ie-hint">{{ 'TAGLIB.aliasHint' | translate }}</div>
+    <div class="ie-row right">
+      <button (click)="saveAliases()">OK</button>
+    </div>
+  </div>
+}
+
+<!-- ============ folders tagged ============ -->
+@if (folderList) {
+  <div class="tp-popup tp-folder-list" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: folderList.x + 'px', top: folderList.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.taggedFolders' | translate }}: {{ folderList.node.name }}</div>
+    @for (f of lib.foldersWithTag(folderList.node.name); track f) {
+      <div class="fl-row">
+        <span class="fl-path" [title]="f">{{ f }}</span>
+        <span class="fl-x" (click)="lib.untagFolder(f, folderList.node.name); tagsAssigned.emit()" title="{{ 'TAGLIB.remove' | translate }}">✕</span>
+      </div>
+    } @empty {
+      <div class="ie-hint">{{ 'TAGLIB.noFolders' | translate }}</div>
+    }
+  </div>
+}
