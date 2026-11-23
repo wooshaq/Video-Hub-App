@@ -1060,7 +1060,9 @@
                                                                 || settingsButtons['duplicateHash'].toggled
                                                                 || (sortType === 'default' && fuzzySearchString.length > 2))
 
-                | playlistPipe"
+                | playlistPipe
+
+                | wsqAspectPipe : reportGalleryItems : coverVersion"
     >
 
       <!-- ==================================== THUMBNAILS ==================================== -->

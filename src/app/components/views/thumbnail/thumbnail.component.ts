@@ -117,8 +117,33 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   onCoverLoad(event: Event): void {
     const img = event.target as HTMLImageElement;
     if (img && img.naturalHeight) {
-      this.coverWide = img.naturalWidth / img.naturalHeight >= 1.3;
+      const a = img.naturalWidth / img.naturalHeight;
+      if (!this.video.coverAspect) {
+        this.video.coverAspect = Math.round(a * 1000) / 1000;
+      }
+      // fill the tile unless the cover is much narrower than the tile (then: centered on a blurred copy)
+      const box = (this.elWidth() || 1) / (this.imgHeight() || 1);
+      this.coverWide = a >= box * 0.78;
     }
+  }
+
+  /** WsQ: frames are 16:9 -- scale them to cover the tile (any shape) and keep the shown frame centered */
+  get stripStyle(): Record<string, string> {
+    const boxW = this.elWidth() || 1;
+    const boxH = this.imgHeight() || 1;
+    const fa = 16 / 9;
+    const frameH = Math.max(boxH, boxW / fa);
+    const frameW = frameH * fa;
+    const n = Math.max(1, this.video.screens || 1);
+    const idx = this.hover ? Math.round(this.percentOffset / 100 * n) : 0;
+    const tx = -idx * frameW + (boxW - frameW) / 2;
+    const ty = (boxH - frameH) / 2;
+    return { height: frameH + 'px', transform: 'translate(' + tx + 'px, ' + ty + 'px)' };
+  }
+
+  /** WsQ: label in the bottom-left corner -- the code (e.g. PPPE-029) or the name */
+  get cornerName(): string {
+    return this.coverCode || (this.video?.cleanName || '');
   }
 
   mouseEntered() {

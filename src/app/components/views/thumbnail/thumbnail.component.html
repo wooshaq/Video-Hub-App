@@ -139,8 +139,7 @@
 
     <img
       class="full-filmstrip"
-      [ngStyle]="{ height: imgHeight() + 'px',
-                  transform: 'translate(' + (-percentOffset) + '%, 0)' }"
+      [ngStyle]="stripStyle"
       src="{{ hover ? fullFilePath : firstFilePath }}"
     >
 
@@ -196,15 +195,15 @@
       @if (video.resolution) { <span class="time rez-new">{{ video.resolution }}</span>}
     </span>
 
-    <span class="time" [ngClass]="{ 'dark-style': darkMode() }">{{ video.durationDisplay }}</span>
+    <span class="time wsq-pill" [ngClass]="{ 'dark-style': darkMode() }">{{ video.durationDisplay }}</span>
   }
 
   @if (!connected()) {
     <span class="not-connected" title="{{ 'STATISTICS.notConnected' | translate }}"></span>
   }
 
-    @if (coverSrc && !inside && coverCode) {
-      <span class="cover-code">{{ coverCode }}</span>
+    @if (!inside && cornerName) {
+      <span class="wsq-pill wsq-name" [title]="video.fileName">{{ cornerName }}</span>
     }
 
   </div> <!-- end of (B) div --->

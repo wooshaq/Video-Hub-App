@@ -953,6 +953,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         this.imageElementService.imageElements.forEach((el: ImageElement) => {
           if (el.hash === hash && el.cover !== stamp) {
             el.cover = stamp;
+            el.coverAspect = undefined;
             touched = true;
           }
         });
@@ -1067,6 +1068,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     destination.timesPlayed = origin.timesPlayed;
     destination.year        = origin.year;
     destination.cover       = origin.cover;       // WsQ: same hash = same cover file
+    destination.coverAspect = origin.coverAspect;
   }
 
   /**
@@ -2043,7 +2045,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.previewWidth = ((this.galleryWidth - 30) / this.currentImgsPerRow);
     }
 
-    this.previewHeight = this.previewWidth * (9 / 16);
+    this.previewHeight = this.previewWidth / (this.wsqAspect || 16 / 9);   // WsQ: follows the covers on screen
 
     // compute preview dimensions for thumbs in the most similar tab:
     if (
@@ -2917,7 +2919,79 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   get detailsThumbHeight(): number {
-    return Math.round(this.detailsThumbWidth * 9 / 16);
+    const it = this.currentClickedItem;
+    let a = 16 / 9;
+    if (it && it.cover > 0 && it.coverAspect) {
+      a = Math.max(0.6, Math.min(2.4, it.coverAspect));
+    }
+    return Math.round(this.detailsThumbWidth / a);
+  }
+
+  // ---------- WsQ: tile shape follows the covers in the current view ----------
+
+  wsqAspect = 16 / 9;
+  private aspectItems: ImageElement[] = [];
+  private aspectTimer: any;
+  private aspectLoading = new Set<string>();
+
+  reportGalleryItems = (items: ImageElement[]): void => {
+    this.aspectItems = items;
+    clearTimeout(this.aspectTimer);
+    this.aspectTimer = setTimeout(() => this.updateGalleryAspect(), 30);
+  };
+
+  private updateGalleryAspect(): void {
+    const files = this.aspectItems.filter(e => e && e.cleanName !== '*FOLDER*');
+    const covered = files.filter(e => e.cover > 0);
+    let target = 16 / 9;
+
+    if (covered.length && covered.length * 2 >= files.length) {
+      const known: number[] = [];
+      let toLoad = 0;
+      covered.forEach(e => {
+        if (e.coverAspect) {
+          known.push(e.coverAspect);
+        } else if (toLoad < 300) {
+          toLoad++;
+          this.measureCover(e);
+        }
+      });
+      if (!known.length) {
+        return;   // wait for the first measurements
+      }
+      known.sort((a, b) => a - b);
+      target = known[Math.floor(known.length / 2)];
+    }
+
+    target = Math.max(0.6, Math.min(2.4, target));
+    if (Math.abs(target - this.wsqAspect) > 0.01) {
+      this.wsqAspect = target;
+      this.computePreviewWidth();
+      this.virtualScroller()?.invalidateAllCachedMeasurements();
+    }
+  }
+
+  private measureCover(e: ImageElement): void {
+    const key = e.hash + ':' + e.cover;
+    if (this.aspectLoading.has(key)) {
+      return;
+    }
+    this.aspectLoading.add(key);
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalHeight) {
+        const a = Math.round(img.naturalWidth / img.naturalHeight * 1000) / 1000;
+        this.imageElementService.imageElements.forEach(x => {
+          if (x.hash === e.hash) {
+            x.coverAspect = a;
+          }
+        });
+        this.imageElementService.finalArrayNeedsSaving = true;
+      }
+      clearTimeout(this.aspectTimer);
+      this.aspectTimer = setTimeout(() => this.zone.run(() => this.updateGalleryAspect()), 120);
+    };
+    img.src = this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'covers', e.hash) + '?v=' + e.cover;
   }
 
   activeFilterCount(): number {

@@ -1,5 +1,10 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.4
+- **Kształt kafelków dopasowuje się do zawartości widoku:** gdy większość plików na ekranie ma okładki, kafelki przyjmują proporcje okładek (mediana, np. JAV 800×538), więc okładki nie są przycinane. Bez okładek zostaje 16:9. Klatki przy przewijaniu wypełniają kafelek i są wyśrodkowane.
+- **Nazwa w lewym dolnym rogu** (kod typu PPPE-029, a gdy go nie ma – nazwa pliku), tej samej wielkości co czas po prawej; oba znaczniki mają półprzezroczyste tło.
+- Prawy panel pokazuje podgląd w proporcjach okładki danego pliku.
+
 ### Nowe w wsq.3
 - **Dolne zakładki usunięte** (Chmura słów, Tagi, Podobne, Ostatnie, Detale).
 - **Ekran główny przebudowany według wizualizacji:**

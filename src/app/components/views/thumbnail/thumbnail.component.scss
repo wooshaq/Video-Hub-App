@@ -103,17 +103,42 @@
   word-break: break-word;
 }
 
-.cover-code {
-  bottom: 8px;
-  color: #fff;
+// WsQ: corner labels -- same size, translucent background
+.video-box .wsq-pill,
+.video-box .wsq-pill.dark-style {
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.42);
+  border-radius: 4px;
+  bottom: 6px;
+  color: rgba(255, 255, 255, 0.92);
   font-family: 'JetBrains Mono', Consolas, monospace;
-  font-size: 11px;
-  left: 9px;
-  letter-spacing: 0.5px;
-  opacity: 0.85;
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+  line-height: 15px;
+  padding: 0 5px;
   pointer-events: none;
   position: absolute;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+}
+
+.video-box .time.wsq-pill {
+  right: 6px;
+}
+
+.video-box .wsq-name {
+  left: 6px;
+  max-width: calc(100% - 76px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-box .full-filmstrip {
+  left: 0;
+  max-width: none;
+  position: absolute;
+  top: 0;
 }
 
 // WsQ: cover art from metadata

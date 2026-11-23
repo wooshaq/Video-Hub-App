@@ -70,6 +70,7 @@ import { TagBadgesComponent } from './components/tag-library/tag-badges.componen
 import { ItemTagsComponent } from './components/tag-library/item-tags.component';
 import { TagLibraryFilterPipe } from './components/tag-library/tag-library-filter.pipe';
 import { WsqSearchPipe } from './components/tag-library/wsq-search.pipe';
+import { WsqAspectPipe } from './components/tag-library/wsq-aspect.pipe';
 import { TagLibraryService } from './components/tag-library/tag-library.service';
 import { ThumbnailComponent } from './components/views/thumbnail/thumbnail.component';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
@@ -196,6 +197,7 @@ import { YearPipe } from './pipes/year.pipe';
     ItemTagsComponent,
     TagLibraryFilterPipe,
     WsqSearchPipe,
+    WsqAspectPipe,
     ThumbnailComponent,
     TimesPlayedFilterPipe,
     TimesPlayedPipe,
