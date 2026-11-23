@@ -348,6 +348,10 @@
       }"
     >
 
+    <!-- WsQ: Electron applies drag regions in document order -- this later "no-drag" block keeps the
+         toolbar's drag region off the ─ ▢ ✕ buttons (they float above it from the title bar component) -->
+    <span class="wsq-winbtn-nodrag" aria-hidden="true"></span>
+
     @if (showVhaRibbon) {
       <!-- ALL THE BUTTONS IN THE RIBBON -->
       <div class="wsq-ribbon-row">

@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.20
+- Naprawione przyciski ─ ▢ ✕: po połączeniu paska tytułu z paskiem narzędzi obszar przeciągania okna przykrywał je i kliknięcia nie działały.
+
 ### Nowe w wsq.19
 - **Okładka zawsze w całości** (jak w Ritt): nic nie jest przycinane; jeśli proporcje okładki różnią się od kafelka, wolne miejsce wypełnia rozmyta kopia okładki.
 - **Koniec z białym błyskiem przy pasku przewijania:** cały dokument przechodzi w ciemny schemat (natywne paski, tło pod odświeżaniem), tory pasków przewijania są przezroczyste.
