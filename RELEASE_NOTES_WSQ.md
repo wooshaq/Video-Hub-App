@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.12
+- **Nowe okno ustawień:** wyśrodkowane, półprzezroczyste, z menu sekcji po lewej (Wygląd, Główne, Wyświetlanie, Wyszukiwanie, Ten HUB, Skróty) i nagłówkiem sekcji. Opcje VHA są w kartach w jednym stylu, przyciski i pola w kolorach motywu, przełączniki podświetlone kolorem akcentu. Otwiera się na ostatnio używanej sekcji; klik obok okna albo Esc zamyka.
+
 ### Nowe w wsq.11
 - **Stare skróty VHA nie otwierają już starego interfejsu:** Ctrl+F (oraz Ctrl+G, Ctrl+R) przechodzi do wyszukiwarki, Ctrl+B otwiera okienko Filtry, Ctrl+T otwiera nową kartę, Ctrl+0 czyści wszystko (jak przycisk Wszystko). Ctrl+Y, Ctrl+K, Ctrl+I i Ctrl+L nic nie robią (zmieniały układ). Ctrl+N w panelu tagów tworzy tag zamiast nowego huba.
 - **Drugi dysk / kolejny folder:** w zakładce Foldery przycisk „+” dodaje folder do bieżącego huba i od razu go skanuje.

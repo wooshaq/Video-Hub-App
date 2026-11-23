@@ -1364,3 +1364,347 @@
     opacity: 0.6;
   }
 }
+
+// =====================================================================================
+// WsQ: settings window (replaces the old tabs + modal look)
+// =====================================================================================
+
+.wsq-dlg-back {
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.35);
+  inset: -200vh -200vw;
+  position: fixed;
+  z-index: 600;
+}
+
+.wsq-dlg {
+  --d-bg: rgba(246, 246, 246, 0.9);
+  --d-nav: rgba(0, 0, 0, 0.03);
+  --d-fg: #1f1f1f;
+  --d-dim: #6b6b6b;
+  --d-line: rgba(0, 0, 0, 0.09);
+  --d-card: rgba(255, 255, 255, 0.7);
+  --d-hover: rgba(0, 0, 0, 0.05);
+
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  backdrop-filter: blur(30px) saturate(160%);
+  background: var(--d-bg);
+  border: 1px solid var(--d-line);
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  color: var(--d-fg);
+  display: flex;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  font-size: 13px;
+  height: min(760px, calc(100vh - 90px));
+  left: 50%;
+  overflow: hidden;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1040px, calc(100vw - 60px));
+  z-index: 601;
+
+  &.dark {
+    --d-bg: rgba(30, 30, 30, 0.86);
+    --d-nav: rgba(255, 255, 255, 0.025);
+    --d-fg: #e6e6e6;
+    --d-dim: #8f8f8f;
+    --d-line: rgba(255, 255, 255, 0.08);
+    --d-card: rgba(255, 255, 255, 0.04);
+    --d-hover: rgba(255, 255, 255, 0.06);
+  }
+
+  // ----- left navigation -----
+  .dlg-nav {
+    background: var(--d-nav);
+    border-right: 1px solid var(--d-line);
+    box-sizing: border-box;
+    display: flex;
+    flex: 0 0 220px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 10px;
+  }
+
+  .dlg-title {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 4px 10px 14px;
+  }
+
+  .dlg-nav-item {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    gap: 10px;
+    padding: 7px 10px;
+    position: relative;
+    text-align: left;
+
+    svg {
+      fill: none;
+      flex: 0 0 auto;
+      height: 15px;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.3;
+      width: 15px;
+    }
+
+    &:hover { background: var(--d-hover); }
+
+    &.on {
+      background: var(--d-hover);
+
+      &::before {
+        background: var(--wsq-accent);
+        border-radius: 2px;
+        content: '';
+        height: 16px;
+        left: 0;
+        position: absolute;
+        top: calc(50% - 8px);
+        width: 3px;
+      }
+    }
+  }
+
+  // ----- right side -----
+  .dlg-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .dlg-head {
+    align-items: center;
+    display: flex;
+    font-size: 20px;
+    font-weight: 600;
+    justify-content: space-between;
+    padding: 18px 16px 10px 28px;
+  }
+
+  .dlg-close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    height: 30px;
+    justify-content: center;
+    width: 30px;
+
+    svg { fill: none; height: 14px; stroke: currentColor; stroke-width: 1.4; width: 14px; }
+
+    &:hover { background: var(--d-hover); }
+  }
+
+  .dlg-body {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 28px 28px;
+
+    &::-webkit-scrollbar { width: 10px; }
+    &::-webkit-scrollbar-thumb { background: rgba(127, 127, 127, 0.3); border: 3px solid transparent; border-radius: 6px; background-clip: padding-box; }
+  }
+
+  // ----- VHA settings content restyled -----
+  ::ng-deep {
+    app-settings, app-statistics, app-shortcuts, .wsq-settings {
+      color: var(--d-fg);
+      font-family: inherit;
+    }
+
+    // the section title is already in the header
+    app-settings > div > div > .setting-heading:first-child {
+      display: none;
+    }
+
+    .setting-heading {
+      border-top: 0 !important;
+      color: var(--d-dim);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      margin: 22px 2px 8px !important;
+      padding-top: 0 !important;
+      text-align: left !important;
+      text-transform: uppercase;
+    }
+
+    .search-buttons-settings {
+      left: 0 !important;
+      max-width: 100% !important;
+      top: 0 !important;
+      transform: none !important;
+    }
+
+    .button-description {
+      align-items: center;
+      background: var(--d-card);
+      border: 1px solid var(--d-line);
+      border-radius: 8px;
+      box-sizing: border-box;
+      display: flex !important;
+      gap: 12px;
+      margin-bottom: 4px !important;
+      max-height: none !important;
+      min-height: 48px !important;
+      padding: 7px 12px;
+    }
+
+    .button-description-text {
+      color: var(--d-fg) !important;
+      flex: 1;
+      font-size: 13px !important;
+      left: auto !important;
+      line-height: 1.35;
+      order: 2;
+      position: static !important;
+      top: auto !important;
+      transform: none !important;
+    }
+
+    .eye-icon-container {
+      left: auto !important;
+      opacity: 0.55;
+      order: 3;
+      position: static !important;
+
+      &:hover { opacity: 1; }
+    }
+
+    .tooltip-text {
+      color: var(--d-dim);
+      display: block;
+      font-size: 12px;
+    }
+
+    .more-info {
+      border-color: var(--wsq-accent) !important;
+      color: var(--wsq-accent) !important;
+    }
+
+    app-button {
+      order: 1;
+
+      button {
+        align-items: center;
+        background: transparent !important;
+        border: 1px solid var(--d-line) !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        display: inline-flex;
+        height: 34px !important;
+        justify-content: center;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 34px !important;
+
+        .icon, svg {
+          fill: var(--d-fg) !important;
+          height: 18px !important;
+          width: 18px !important;
+        }
+
+        &:hover { border-color: var(--wsq-accent) !important; }
+      }
+
+      .defaultSettingsButtonToggled,
+      .flatSettingsButtonToggled,
+      .defaultSettingsButtonDarkToggled {
+        background: rgba(var(--wsq-accent-rgb), 0.22) !important;
+        border-color: var(--wsq-accent) !important;
+
+        .icon, svg { fill: var(--wsq-accent) !important; }
+      }
+    }
+
+    .shortcut-menu {
+      color: var(--d-fg);
+      margin: 0 !important;
+      padding: 0 !important;
+      width: auto !important;
+    }
+
+    input[type=text], input[type=number], select, textarea {
+      background: var(--d-card);
+      border: 1px solid var(--d-line);
+      border-radius: 6px;
+      color: var(--d-fg);
+      font: inherit;
+      padding: 4px 8px;
+    }
+
+    button:not(.dlg-nav-item):not(.dlg-close) {
+      font-family: inherit;
+    }
+  }
+}
+
+.wsq-settings {
+  margin: 4px 0 30px;
+  max-width: none;
+  padding: 0;
+}
+
+.wsq-dlg .wsq-settings {
+  h3 {
+    color: var(--d-dim);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    margin: 6px 2px 8px;
+    text-transform: uppercase;
+  }
+
+  .ws-row {
+    background: var(--d-card);
+    border: 1px solid var(--d-line);
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-bottom: 4px;
+    min-height: 52px;
+    padding: 8px 16px;
+  }
+
+  .ws-lbl { flex: 1; width: auto; }
+
+  .ws-row input[type=range] { flex: 0 0 240px; }
+
+  .ws-hint { color: var(--d-dim); opacity: 1; margin-top: 12px; }
+}
+
+.wsq-dlg ::ng-deep {
+  app-statistics, app-settings, app-shortcuts {
+    :is(h1, h2, h3, h4, h5, p, span, div, td, th, label) {
+      color: var(--d-fg);
+    }
+
+    button:not(app-button button) {
+      background: var(--d-card) !important;
+      border: 1px solid var(--d-line) !important;
+      border-radius: 6px !important;
+      box-shadow: none !important;
+      color: var(--d-fg) !important;
+      cursor: pointer;
+      font: inherit !important;
+      padding: 5px 12px !important;
+
+      &:hover { border-color: var(--wsq-accent) !important; }
+    }
+  }
+}

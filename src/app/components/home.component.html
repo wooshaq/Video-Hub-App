@@ -194,50 +194,28 @@
   <!-- Clickable tabs -->
 
 @if (settingsModalOpen) {
-  <div
-    class="all-settings-tabs"
-    @modalAnimation
-  >
-    <button (click)="settingTabToShow = 0" [ngClass]="{ 'active-tab': settingTabToShow === 0 }">
-      {{ 'SETTINGS.tabFilter'     | translate }}
-    </button>
-    <button (click)="settingTabToShow = 1" [ngClass]="{ 'active-tab': settingTabToShow === 1 }">
-      {{ 'SETTINGS.tabView'       | translate }}
-    </button>
-    <button (click)="settingTabToShow = 2" [ngClass]="{ 'active-tab': settingTabToShow === 2 }">
-      {{ 'SETTINGS.tabMain'       | translate }}
-    </button>
-    <button (click)="settingTabToShow = 3" [ngClass]="{ 'active-tab': settingTabToShow === 3 }">
-      {{ 'SETTINGS.tabCurrentHub' | translate }}
-    </button>
-    <button (click)="settingTabToShow = 4" [ngClass]="{ 'active-tab': settingTabToShow === 4 }">
-      {{ 'SETTINGS.tabShortcuts'  | translate }}
-    </button>
-    <button (click)="settingTabToShow = 5" [ngClass]="{ 'active-tab': settingTabToShow === 5 }">
-      {{ 'WSQ.settingsTab'  | translate }}
-    </button>
-  </div>
+  <div class="wsq-dlg-back" (mousedown)="toggleSettings()"></div>
+  <div class="wsq-dlg" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }" role="dialog" aria-label="Ustawienia" @modalAnimation>
 
-  <div
-    class="settings-modal"
-    @modalAnimation
-    #settingsModal
-  >
+    <nav class="dlg-nav">
+      <div class="dlg-title">{{ 'SETTINGS.settings' | translate }}</div>
+      @for (sec of settingsSections; track sec.tab) {
+        <button class="dlg-nav-item" [ngClass]="{ on: settingTabToShow === sec.tab }" (click)="settingTabToShow = sec.tab; scrollSettingsToTop()">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path [attr.d]="sec.icon" /></svg>
+          <span>{{ sec.label | translate }}</span>
+        </button>
+      }
+    </nav>
 
-    <!-- fade out & close button -->
-
-    <div class="modal-fade-out">
-      <div
-        (click)="toggleSettings()"
-        class="close-settings close-settings-fade-out-override"
-        title="{{ 'SETTINGS.closeSettings' | translate }}"
-      >
-        <app-icon class="close-modal-icon" [icon]="'icon-close'" />
+    <div class="dlg-main">
+      <div class="dlg-head">
+        <span>{{ settingsSectionLabel() | translate }}</span>
+        <button class="dlg-close" (click)="toggleSettings()" title="{{ 'SETTINGS.closeSettings' | translate }}" aria-label="Zamknij">
+          <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
       </div>
-    </div>
 
-    <!-- BUTTONS -->
-
+      <div class="dlg-body" #settingsModal>
     <app-settings
       (changeLanguage)="changeLanguage($any($event))"
       (checkForNewVersion)="checkForNewVersion()"
@@ -259,7 +237,6 @@
       [versionNumber]="versionNumber"
      />
 
-    <!-- WsQ: gallery look -->
   @if (settingTabToShow == 5) {
     <div class="wsq-settings" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }">
       <h3>{{ 'WSQ.settingsGallery' | translate }}</h3>
@@ -289,7 +266,6 @@
     </div>
   }
 
-    <!-- HUB STATISTICS / Current Hub Settings -->
 
   @if (settingTabToShow == 3) {
     <div class="shortcut-menu">
@@ -312,12 +288,14 @@
        />
     </div>
   }
-    <!-- KEYBOARD SHORTCUTS -->
+
   @if (settingTabToShow == 4) {
     <div class="shortcut-menu">
       <app-shortcuts [macVersion]="macVersion" />
     </div>
   }
+      </div>
+    </div>
   </div>
 }
 

@@ -737,7 +737,7 @@
     "addSourceFolder": "Dodaj folder lub drugi dysk do huba (pliki zostaną zeskanowane)",
     "folderAdded": "Dodano folder: {{path}} – trwa skanowanie",
     "folderAlreadyIn": "Ten folder już jest w hubie",
-    "settingsTab": "WsQ",
+    "settingsTab": "Wygląd",
     "settingsGallery": "Wygląd galerii",
     "setTitleSize": "Wielkość czcionki nazwy pliku",
     "setTitleLines": "Liczba linijek nazwy",
