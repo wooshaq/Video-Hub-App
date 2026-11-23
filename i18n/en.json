@@ -666,6 +666,24 @@
     "tagsCopied": "Copied {{n}} tags",
     "tagsPasted": "Pasted {{n}} tags onto {{files}} files",
     "rescan": "Refresh — rescan folders (new, changed and renamed files)",
-    "rescanning": "Rescanning folders…"
+    "rescanning": "Rescanning folders…",
+    "back": "Back",
+    "forward": "Forward",
+    "home": "Everything (home)",
+    "sortAdded": "Date added",
+    "size": "Size",
+    "tags": "Tags",
+    "addTagPlaceholder": "Add tag… (Tab completes)",
+    "path": "Path",
+    "notes": "Notes",
+    "notesPlaceholder": "Notes about this file…",
+    "tagsCount": "tags",
+    "items": "items",
+    "selected": "selected",
+    "thumbs": "Thumbnails",
+    "hubs": "Hubs",
+    "favorites": "Favorites",
+    "bookmarks": "Bookmarks",
+    "addBookmark": "Save current filter as bookmark"
   }
 }

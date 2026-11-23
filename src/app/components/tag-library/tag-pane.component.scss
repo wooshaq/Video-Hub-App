@@ -25,7 +25,7 @@
   user-select: none;
 
   &.dark {
-    --tp-bg: #1c1c1c;
+    --tp-bg: #1d1d1d;
     --tp-fg: #e2e2e2;
     --tp-dim: #8a8a8a;
     --tp-line: #3a3a3a;
@@ -735,4 +735,71 @@
   color: #ff6b6b;
   cursor: pointer;
   padding: 0 4px;
+}
+
+// ---------- WsQ: tabs, bookmarks ----------
+.tp-tabs {
+  align-items: center;
+  border-bottom: 1px solid var(--tp-line);
+  display: flex;
+  gap: 2px;
+  padding: 8px 8px 6px 10px;
+}
+
+.tp-tab {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--tp-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 3px 8px;
+
+  &:hover { background: var(--tp-hover); color: var(--tp-fg); }
+  &.on { background: var(--tp-sel); color: var(--tp-fg); }
+}
+
+.tp-btn.txt {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tp-section {
+  align-items: center;
+  display: flex;
+  padding: 10px 8px 2px 24px;
+}
+
+.tp-bookmark {
+  align-items: center;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  margin: 0 6px;
+  padding: 3px 6px 3px 18px;
+
+  svg {
+    fill: none;
+    flex: 0 0 auto;
+    height: 12px;
+    stroke: var(--tp-dim);
+    stroke-width: 1.3;
+    width: 12px;
+  }
+
+  .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .x {
+    background: transparent;
+    border: 0;
+    color: var(--tp-dim);
+    cursor: pointer;
+    font-size: 10px;
+    opacity: 0;
+  }
+
+  &:hover { background: var(--tp-hover); .x { opacity: 1; } }
+  &.on { background: var(--tp-sel); }
 }

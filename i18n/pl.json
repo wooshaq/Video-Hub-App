@@ -666,6 +666,24 @@
     "tagsCopied": "Skopiowano tagów: {{n}}",
     "tagsPasted": "Wklejono {{n}} tagów do {{files}} plików",
     "rescan": "Odśwież — przeskanuj foldery (nowe, zmienione i przemianowane pliki)",
-    "rescanning": "Skanuję foldery…"
+    "rescanning": "Skanuję foldery…",
+    "back": "Wstecz",
+    "forward": "Dalej",
+    "home": "Wszystko (start)",
+    "sortAdded": "Data dodania",
+    "size": "Rozmiar",
+    "tags": "Tagi",
+    "addTagPlaceholder": "Dodaj tag… (Tab podpowiada)",
+    "path": "Ścieżka",
+    "notes": "Notatki",
+    "notesPlaceholder": "Notatki do pliku…",
+    "tagsCount": "tagów",
+    "items": "elementów",
+    "selected": "zaznaczono",
+    "thumbs": "Miniatury",
+    "hubs": "Huby",
+    "favorites": "Ulubione",
+    "bookmarks": "Zakładki",
+    "addBookmark": "Zapisz bieżący filtr jako zakładkę"
   }
 }

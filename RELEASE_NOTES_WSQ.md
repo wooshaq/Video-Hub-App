@@ -1,5 +1,16 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.3
+- **Dolne zakładki usunięte** (Chmura słów, Tagi, Podobne, Ostatnie, Detale).
+- **Ekran główny przebudowany według wizualizacji:**
+  - pasek tytułu: „Video Hub App 3 WsQ”, nazwa huba, aktywne tagi na środku;
+  - pasek narzędzi: Wstecz / Dalej (historia filtrów), Odśwież, Wszystko, wyszukiwarka, Filtry, sortowanie (także „Data dodania”), widoki, suwak **Rozmiar**, panel, tryb ciemny, •••, ustawienia;
+  - lewy panel: zakładki **Huby / Tagi / Ulubione**, ∪/∩, ukryte tagi, sekcja **Zakładki** (zapisane filtry, „+” zapisuje bieżący);
+  - kafelki: zaokrąglone, odznaki tagów pod obrazkiem, nazwa pliku w 2 linijkach, kod (np. PPPE-029) na okładce, niebieska ramka po najechaniu i przy zaznaczeniu;
+  - prawy panel od nowa: podgląd, tytuł, czas/rozmiar/rozdzielczość/fps, gwiazdki, ramka **Tagi** (usuwanie ✕, dodawanie z podpowiedzią Tab, odziedziczone, kopiuj/wklej), **Ścieżka**, **Klatki**, **Notatki**;
+  - pasek stanu na dole: liczba tagów, elementów i zaznaczonych, zoom miniatur i panelu;
+  - tryb ciemny domyślnie.
+
 ### Nowe w wsq.2
 - **Układ jak w Ritt:**
   - pasek narzędzi z jedną wyszukiwarką: nazwa, folder i tag; `OR`, `-wyklucz`, `NOT`, `"fraza"`, `*`;

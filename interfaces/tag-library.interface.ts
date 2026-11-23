@@ -26,6 +26,7 @@ export interface TagLibrary {
   unionMode?: boolean;          // false = intersection (default), true = union
   showHidden?: boolean;
   paneWidth?: number;
+  bookmarks?: { name: string, active: string[], excluded: string[] }[];
 }
 
 export function NewTagLibrary(): TagLibrary {

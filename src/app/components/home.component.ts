@@ -875,7 +875,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
         this.remoteSettings = settingsObject.remoteSettings;
       }
       if (settingsObject.wizardOptions) {
+        const wasShown = this.wizard.showWizard;
         this.wizard = settingsObject.wizardOptions;
+        this.wizard.showWizard = wasShown; // WsQ: don't reopen the wizard over a loaded hub
       }
     });
 
@@ -1804,6 +1806,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
    * @param   fromIpc     boolean value indicate, call from IPC
    */
   toggleButton(uniqueKey: SettingsButtonKey | SupportedView | SupportedTrayView, fromIpc = false): void {
+    // WsQ: the bottom tray (word cloud, tags, similar, recent, details) is removed
+    if (AllSupportedBottomTrayViews.includes(<SupportedTrayView>uniqueKey) && !this.showVhaRibbon) {
+      return;
+    }
     // ======== View buttons ================
     if (AllSupportedViews.includes(<SupportedView>uniqueKey)) {
       this.savePreviousViewSize();
@@ -1968,6 +1974,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.toggleSettings();
   }
 
+  /** WsQ: "Huby" tab -- recent hubs + new hub (the wizard) */
+  public openHubs(): void {
+    if (this.settingsModalOpen) {
+      this.toggleSettings();
+    }
+    this.wizard.showWizard = true;
+  }
+
 
   // ==========================================================================================
   // Methods for RESCAN
@@ -2054,7 +2068,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         if (this.settingsButtons.compactView.toggled) {
           this.textPaddingHeight = 0;
         } else if (this.settingsButtons.showMoreInfo.toggled) {
-          this.textPaddingHeight = 55;
+          this.textPaddingHeight = 72;   // WsQ: badge row + two lines of the file name
         } else {
           this.textPaddingHeight = 20;
         }
@@ -2820,6 +2834,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   onTagFilterChanged(): void {
+    this.pushHistory();
     this.scrollToTop();
     setTimeout(() => {
       this.virtualScroller()?.refresh();
@@ -2876,6 +2891,19 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.settingsButtons['hideSidebar'].toggled = true;
     this.settingsButtons['doubleClickMode'].toggled = true;
     this.settingsButtons['sortOrder'].toggled = true;
+    this.settingsButtons['hideTop'].toggled = true;
+    this.settingsButtons['showMoreInfo'].toggled = true;
+    this.settingsButtons['compactView'].toggled = false;
+    this.appState.menuHidden = false;
+    ['showFreq', 'showTagTray', 'showRelatedVideosTray', 'showRecentlyPlayed', 'showDetailsTray'].forEach(k => {
+      this.settingsButtons[k].toggled = false;
+    });
+    // dark by default, once (the user can switch it off later)
+    if (this.readLocal('wsq.darkInit', '') !== '1') {
+      this.writeLocal('wsq.darkInit', '1');
+      this.settingsButtons['darkMode'].toggled = true;
+    }
+    this.computeTextBufferAmount();
     setTimeout(() => this.computePreviewWidth(), 50);
   }
 
@@ -2981,6 +3009,168 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.framesCache = { key, frames };
     }
     return this.framesCache.frames;
+  }
+
+
+  // =============================================================================================
+  // WsQ: toolbar history, home, size slider, details panel helpers, status bar
+  // =============================================================================================
+
+  /** title bar + toolbar + status bar (px) -- used by the tag pane / details panel heights */
+  get wsqChromeHeight(): number {
+    return (this.appState.menuHidden ? -48 : 0) + (this.settingsButtons['hideTop'].toggled ? 106 : 151);
+  }
+
+  private history: { active: string[], excluded: string[], search: string }[] = [{ active: [], excluded: [], search: '' }];
+  private historyIndex = 0;
+  private historyLock = false;
+  private searchHistoryTimer: any;
+
+  private snapshot() {
+    return { active: this.tagLib.active.slice(), excluded: this.tagLib.excluded.slice(), search: this.wsqSearch };
+  }
+
+  pushHistory(): void {
+    if (this.historyLock) {
+      return;
+    }
+    const snap = this.snapshot();
+    const cur = this.history[this.historyIndex];
+    if (cur && JSON.stringify(cur) === JSON.stringify(snap)) {
+      return;
+    }
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(snap);
+    if (this.history.length > 100) {
+      this.history.shift();
+    }
+    this.historyIndex = this.history.length - 1;
+  }
+
+  canGoBack(): boolean {
+    return this.historyIndex > 0;
+  }
+
+  canGoForward(): boolean {
+    return this.historyIndex < this.history.length - 1;
+  }
+
+  private restoreSnapshot(snap: { active: string[], excluded: string[], search: string }): void {
+    this.historyLock = true;
+    this.tagLib.active = snap.active.slice();
+    this.tagLib.excluded = snap.excluded.slice();
+    this.tagLib.filterVersion++;
+    this.wsqSearch = snap.search;
+    this.onTagFilterChanged();
+    this.historyLock = false;
+  }
+
+  historyBack(): void {
+    if (this.canGoBack()) {
+      this.historyIndex--;
+      this.restoreSnapshot(this.history[this.historyIndex]);
+    }
+  }
+
+  historyForward(): void {
+    if (this.canGoForward()) {
+      this.historyIndex++;
+      this.restoreSnapshot(this.history[this.historyIndex]);
+    }
+  }
+
+  /** everything: no tag filter, no search, top folder */
+  goHome(): void {
+    this.tagLib.clearFilter();
+    this.wsqSearch = '';
+    this.folderViewNavigationPath = '';
+    this.onTagFilterChanged();
+  }
+
+  searchChanged(): void {
+    clearTimeout(this.searchHistoryTimer);
+    this.searchHistoryTimer = setTimeout(() => this.pushHistory(), 700);
+    this.scrollToTop();
+  }
+
+  setImgsPerRow(n: number): void {
+    n = Math.max(1, Math.min(12, Math.round(n)));
+    if (n === this.currentImgsPerRow) {
+      return;
+    }
+    this.currentImgsPerRow = n;
+    this.computePreviewWidth();
+    this.virtualScroller()?.invalidateAllCachedMeasurements();
+  }
+
+  galleryZoomPercent(): number {
+    return Math.round(5 / Math.max(1, this.currentImgsPerRow) * 100);
+  }
+
+  selectedCount(): number {
+    if (this.batchTaggingMode) {
+      return this.imageElementService.imageElements.filter(e => e.selected && !e.deleted).length;
+    }
+    return this.currentClickedItem ? 1 : 0;
+  }
+
+  starsOf(item: ImageElement): number {
+    return item && item.stars ? Math.max(0, Math.round(item.stars - 0.5)) : 0;
+  }
+
+  setStars(item: ImageElement, n: number): void {
+    const value = (this.starsOf(item) === n ? 0.5 : n + 0.5) as any;
+    this.imageElementService.HandleEmission({ index: item.index, stars: value });
+  }
+
+  detailsTagText = '';
+  detailsTypeahead = '';
+
+  /** first tag from the library (then the manual tags) that starts with the typed text */
+  tagTypeahead(text: string): string {
+    const t = (text || '').trim().toLowerCase();
+    if (!t) {
+      return '';
+    }
+    const have = new Set((this.currentClickedItem?.tags || []).map(x => x.toLowerCase()));
+    const hit = this.tagLib.orderedNames().find(n => n.toLowerCase().startsWith(t) && !have.has(n.toLowerCase()));
+    return hit || this.manualTagsService.getTypeahead(text) || '';
+  }
+
+  acceptDetailsTypeahead(event: KeyboardEvent): void {
+    if (this.detailsTypeahead && this.detailsTypeahead !== this.detailsTagText) {
+      event.preventDefault();
+      this.detailsTagText = this.detailsTypeahead;
+    }
+  }
+
+  addDetailsTag(): void {
+    const t = (this.detailsTagText || '').trim();
+    if (t && this.currentClickedItem) {
+      this.tagLib.addTagTo([this.currentClickedItem], t);
+    }
+    this.detailsTagText = '';
+    this.detailsTypeahead = '';
+  }
+
+  removeTagFromCurrent(t: string): void {
+    if (this.currentClickedItem) {
+      this.tagLib.removeTagFrom([this.currentClickedItem], t);
+    }
+  }
+
+  folderPathOf(item: ImageElement): string {
+    const full = this.filePathService.getPathFromImageElement(item);
+    const cut = Math.max(full.lastIndexOf('/'), full.lastIndexOf('\\'));
+    return cut > 0 ? full.substring(0, cut + 1) : full;
+  }
+
+  saveNotesOf(item: ImageElement, text: string): void {
+    const t = (text || '').trim();
+    if ((item.notes || '') !== t) {
+      item.notes = t || undefined;
+      this.imageElementService.finalArrayNeedsSaving = true;
+    }
   }
 
 }

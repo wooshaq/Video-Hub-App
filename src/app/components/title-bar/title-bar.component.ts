@@ -2,6 +2,7 @@ import { Component, input, output } from '@angular/core';
 
 import type { AppStateInterface } from '../../common/app-state';
 import type { SettingsButtonsType } from '../../common/settings-buttons';
+import { TagLibraryService } from '../tag-library/tag-library.service';
 
 @Component({
   standalone: false,
@@ -22,6 +23,6 @@ export class TitleBarComponent {
   readonly progressString = input();
   readonly settingsButtons = input<SettingsButtonsType>();
 
-  constructor() { }
+  constructor(public lib: TagLibraryService) { }
 
 }

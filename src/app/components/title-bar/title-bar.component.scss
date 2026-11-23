@@ -1,137 +1,133 @@
 @use "../variables";
 
-.title-bar {
-  background-color: variables.$gray-40;
-  border-bottom: 1px solid variables.$gray-60;
-  height: 20px;
+// WsQ title bar (Ritt-style)
+
+.wsq-title {
+  --tb-bg: #ececec;
+  --tb-fg: #222;
+  --tb-dim: #777;
+  --tb-border: #d4d4d4;
+
+  align-items: center;
+  background: var(--tb-bg);
+  border-bottom: 1px solid var(--tb-border);
+  box-sizing: border-box;
+  color: var(--tb-fg);
+  display: flex;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  height: 32px;
   position: relative;
-  transition: 300ms;
   width: 100%;
   z-index: 9999;
 
-  img {
-    position: relative;
-    top: 1px;
+  &.dark {
+    --tb-bg: #161616;
+    --tb-fg: #e3e3e3;
+    --tb-dim: #8f8f8f;
+    --tb-border: #262626;
   }
 }
 
 .draggable {
   -webkit-app-region: drag;
-  color: variables.$gray-70;
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  height: 100%;
+  min-width: 0;
+  padding-left: 12px;
+  position: relative;
+}
+
+.t-logo {
+  align-items: center;
+  background: #c62f2f;
+  border-radius: 4px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 16px;
+  justify-content: center;
+  width: 16px;
+
+  svg {
+    fill: #fff;
+    height: 9px;
+    width: 9px;
+  }
+}
+
+.t-app {
   font-size: 12px;
-  margin-top: 4px;
-  overflow: hidden;
-  position: absolute;
-  text-align: center;
-  transition: 300ms;
+  font-weight: 600;
   white-space: nowrap;
-  width: calc(100vw - 70px);
 }
 
-.window-button {
-  display: inline-block;
-  width: 15px;
+.t-hub {
+  color: var(--tb-dim);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.top-logo {
-  margin: -2px 8px 0 4px;
+.t-center {
+  display: flex;
+  font-size: 12px;
+  gap: 10px;
+  left: 50%;
+  max-width: 40%;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
-.heading-title {
-  display: inline-block;
-  transform: translate(0, -3px);
+.t-tag {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+
+  &.exc {
+    color: #e06a6a;
+    text-decoration: line-through;
+  }
+}
+
+.ic {
+  font-family: 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 .windows-button {
+  -webkit-app-region: no-drag;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--tb-fg);
   cursor: pointer;
-  fill: variables.$gray-80;
-  position: fixed;
-  transition: 600ms;
-  transition-property: fill;
-
-  &.closeButton {
-    padding-right: 7px;
-    padding-top: 2px;
-    right: 0;
-  }
-
-  &.maximizeButton {
-    padding-top: 2px;
-    right: 26px;
-  }
-
-  &.minimizeButton {
-    padding-top: 2px;
-    right: 46px;
-  }
-
-  &:hover {
-    fill: variables.$pretty-red;
-    transition: 200ms;
-    transition-property: fill;
-  }
-}
-
-.mac-button {
-  border-radius: 50%;
-  box-sizing: border-box;
-  cursor: pointer;
-  height: 13px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 32px;
+  justify-content: center;
   padding: 0;
-  position: fixed;
-  top: 4px;
-  transition: 400ms;
-  width: 13px;
+  width: 46px;
 
-  &.closeButton {
-    background: variables.$close-button;
-    fill: variables.$close-button;
-    left: 6px;
-
-    & .window-button {
-      transform: translate(-1px, -1px) !important;
-    }
-  }
-
-  &.maximizeButton {
-    background: variables.$maximize-button;
-    fill: variables.$maximize-button;
-    left: 46px;
-
-    & .window-button {
-      transform: translate(-1px, -1px) !important;
-    }
-  }
-
-  &.minimizeButton {
-    background: variables.$minimize-botton;
-    fill: variables.$minimize-botton;
-    left: 26px;
-
-    & .window-button {
-      transform: translate(-1px, -1px) !important;
-    }
+  svg {
+    fill: none;
+    height: 11px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.1;
+    width: 11px;
   }
 
   &:hover {
-    fill: variables.$black;
-    transition: 200ms;
-  }
-}
-
-.dark-mode-override { // needs to be after titleBar and windows-button and draggable
-  background: variables.$gray-85;
-
-  & .draggable {
-    fill: variables.$gray-50;
+    background: rgba(127, 127, 127, 0.18);
   }
 
-  & .windows-button {
-    fill: variables.$gray-30;
-
-    &:hover {
-      fill: variables.$pretty-red;
-      transition: 200ms;
-    }
+  &.closeButton:hover {
+    background: #c42b1c;
+    color: #fff;
   }
 }

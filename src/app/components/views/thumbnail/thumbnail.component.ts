@@ -97,6 +97,13 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     return this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'covers', v.hash) + '?v=' + v.cover;
   }
 
+  /** WsQ: JAV-style code from the file name (e.g. PPPE029 -> PPPE-029), shown on the cover */
+  get coverCode(): string {
+    const name = this.video?.fileName || '';
+    const m = name.match(/(?:^|[^A-Za-z0-9])([A-Za-z]{2,6})-?(\d{2,5})(?![0-9])/);
+    return m ? (m[1].toUpperCase() + '-' + m[2]) : '';
+  }
+
   get scrubTicks(): number[] {
     const n = Math.min(Math.max(this.video?.screens || 0, 1), 30);
     return Array.from({ length: n }, (_, i) => i);

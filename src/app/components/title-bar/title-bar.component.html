@@ -1,53 +1,31 @@
 <div
-  class="title-bar"
-  [ngClass]="{ 'dark-mode-override': settingsButtons().darkMode.toggled }"
+  class="title-bar wsq-title"
+  [ngClass]="{ dark: settingsButtons().darkMode.toggled, mac: macVersion() }"
 >
-  <div
-    class="draggable"
-    [ngStyle]="{
-        left: macVersion() ? '65px' : '5px',
-        'text-align': macVersion() ? 'center' : 'left'
-      }"
-  >
-    <img width="16px" height="16px" class="top-logo" src="./assets/logo.png">
-    <span
-      class="heading-title"
-      [ngStyle]="{ 'color': settingsButtons().darkMode.toggled ? '#AAAAAA' : '#111111' }"
-    >
-      Video Hub App 3
-      <b>{{ demo() ? ' demo - limited to 50 video files ' : '' }}</b>
-      {{ importStage() !== 'done' ? ' - ' + progressString() + ' - ' : ' - ' }}
-      {{ appState().hubName }}
+  <div class="draggable">
+    <span class="t-logo" aria-hidden="true">
+      <svg viewBox="0 0 10 10"><path d="M2.5 1.5v7l6-3.5z" /></svg>
+    </span>
+    <span class="t-app">Video Hub App 3 WsQ</span>
+    <span class="t-hub">
+      {{ demo() ? 'demo · ' : '' }}{{ appState().hubName ? appState().hubName + '.vha2' : '' }}{{ importStage() !== 'done' ? ' · ' + progressString() : '' }}
+    </span>
+    <span class="t-center">
+      @for (t of lib.active; track t) {
+        <span class="t-tag">@if (lib.iconOf(t)) { <span class="ic">{{ lib.iconOf(t) }}</span> }{{ t }}</span>
+      }
+      @for (t of lib.excluded; track t) {
+        <span class="t-tag exc">@if (lib.iconOf(t)) { <span class="ic">{{ lib.iconOf(t) }}</span> }{{ t }}</span>
+      }
     </span>
   </div>
-  <div
-    (click)="initiateMinimize.emit()"
-    [ngClass]="{
-        'windows-button': !macVersion(),
-        'mac-button': macVersion()
-      }"
-    class="minimizeButton"
-  >
-    <app-icon class="window-button" [icon]="'icon-minus'" />
-  </div>
-  <div
-    (click)="initiateMaximize.emit()"
-    [ngClass]="{
-        'windows-button': !macVersion(),
-        'mac-button': macVersion()
-      }"
-    class="maximizeButton"
-  >
-    <app-icon class="window-button" [icon]="'icon-maximize'" />
-  </div>
-  <div
-    (click)="initiateClose.emit()"
-    [ngClass]="{
-        'windows-button': !macVersion(),
-        'mac-button': macVersion()
-      }"
-    class="closeButton"
-  >
-    <app-icon class="window-button" [icon]="'icon-close'" />
-  </div>
+  <button class="windows-button minimizeButton" (click)="initiateMinimize.emit()" aria-label="Minimalizuj">
+    <svg viewBox="0 0 12 12"><path d="M2 6h8" /></svg>
+  </button>
+  <button class="windows-button maximizeButton" (click)="initiateMaximize.emit()" aria-label="Maksymalizuj">
+    <svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1" /></svg>
+  </button>
+  <button class="windows-button closeButton" (click)="initiateClose.emit()" aria-label="Zamknij">
+    <svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" /></svg>
+  </button>
 </div>

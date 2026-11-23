@@ -36,7 +36,48 @@ export class TagPaneComponent implements OnDestroy {
   readonly batchMode = input<boolean>(false);
   readonly currentItem = input<ImageElement | null>(null);
 
+  readonly favoritesOnly = input<boolean>(false);
   readonly filterChanged = output<void>();
+  readonly favoritesToggle = output<void>();
+  readonly hubsClick = output<void>();
+
+  // ---------- WsQ: bookmarks (saved filter states) ----------
+  addingBookmark = false;
+  bookmarkName = '';
+
+  startBookmark(): void {
+    this.addingBookmark = true;
+    this.bookmarkName = this.lib.active.concat(this.lib.excluded.map(t => '−' + t)).join(' ') || 'Zakładka';
+    setTimeout(() => (this.host.nativeElement.querySelector('.bm-input') as HTMLInputElement)?.select());
+  }
+
+  saveBookmark(): void {
+    const name = (this.bookmarkName || '').trim();
+    if (name) {
+      this.lib.lib.bookmarks = this.lib.lib.bookmarks || [];
+      this.lib.lib.bookmarks.push({ name, active: this.lib.active.slice(), excluded: this.lib.excluded.slice() });
+      this.lib.touchLib();
+    }
+    this.addingBookmark = false;
+  }
+
+  openBookmark(b: { active: string[], excluded: string[] }): void {
+    this.lib.active = b.active.slice();
+    this.lib.excluded = b.excluded.slice();
+    this.lib.filterVersion++;
+    this.filterChanged.emit();
+  }
+
+  removeBookmark(i: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.lib.lib.bookmarks.splice(i, 1);
+    this.lib.touchLib();
+  }
+
+  isBookmarkActive(b: { active: string[], excluded: string[] }): boolean {
+    return b.active.join('\u0000') === this.lib.active.join('\u0000')
+        && b.excluded.join('\u0000') === this.lib.excluded.join('\u0000');
+  }
   readonly tagsAssigned = output<void>();
 
   readonly filterInput = viewChild<ElementRef<HTMLInputElement>>('filterInput');

@@ -203,18 +203,23 @@
     <span class="not-connected" title="{{ 'STATISTICS.notConnected' | translate }}"></span>
   }
 
-    <app-tag-badges class="tag-badges-overlay" [ngClass]="{ 'with-heart': showFavorites() }" [video]="video" [darkMode]="darkMode()" />
+    @if (coverSrc && !inside && coverCode) {
+      <span class="cover-code">{{ coverCode }}</span>
+    }
 
   </div> <!-- end of (B) div --->
+
+  <app-tag-badges class="tag-badges-row" [video]="video" [darkMode]="darkMode()" />
 
 
 @if (showMeta()) {
   <span
     [ngClass]="{ 'larger-font': largerFont() }"
-    [ngStyle]="{ color: darkMode() ? '#BBBBBB' : '#000000' }"
-    class="title"
+    [ngStyle]="{ color: darkMode() ? '#d6d6d6' : '#222222' }"
+    class="title wsq-title-2l"
+    [title]="video.fileName"
   >
-    {{ video.cleanName }}
+    {{ video.fileName }}
   </span>
 }
 

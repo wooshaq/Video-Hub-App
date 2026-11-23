@@ -20,8 +20,8 @@ export class SidebarHeightPipe implements PipeTransform {
   ): string {
 
     return (
-        (menuHidden     ? -40 :   0)
-      + (hideTop        ?  61 : 106)
+        (menuHidden     ? -48 :   0)
+      + (hideTop        ? 106 : 151)   // WsQ: title bar 32 + toolbar 48 + status bar 26 (+ top 45)
       + (showBottomTray ? 170 :  0)
       ).toString();
 

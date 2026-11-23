@@ -5,25 +5,18 @@
   (keydown)="keydown($event)"
 >
 
-  <!-- ============ header ============ -->
-  <div class="tp-header">
-    <span class="tp-title">{{ 'TAGLIB.tags' | translate }}</span>
-
-    <button class="tp-btn" (click)="addTag(null, 'after')" title="{{ 'TAGLIB.addTag' | translate }}">
-      <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
-    </button>
-
-
-    <button class="tp-btn" (click)="importRitt()" title="{{ 'TAGLIB.rittImport' | translate }}">
-      <svg viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11" /></svg>
-    </button>
-
+  <!-- ============ WsQ: top tabs (Huby / Tagi / Ulubione) ============ -->
+  <div class="tp-tabs">
+    <button class="tp-tab" (click)="hubsClick.emit()">{{ 'WSQ.hubs' | translate }}</button>
+    <button class="tp-tab" [ngClass]="{ on: !favoritesOnly() }" (click)="favoritesOnly() && favoritesToggle.emit()">{{ 'TAGLIB.tags' | translate }}</button>
+    <button class="tp-tab" [ngClass]="{ on: favoritesOnly() }" (click)="favoritesToggle.emit()">{{ 'WSQ.favorites' | translate }}</button>
     <span class="tp-spacer"></span>
-
-    <button class="tp-btn" (click)="collapseAll(true)" title="{{ 'TAGLIB.collapseAll' | translate }}">
-      <svg viewBox="0 0 16 16"><path d="M4 6l4-4 4 4M4 14l4-4 4 4" /></svg>
-    </button>
-
+    <button
+      class="tp-btn txt"
+      [ngClass]="{ on: lib.lib.unionMode }"
+      (click)="lib.toggleUnionMode(); filterChanged.emit()"
+      title="{{ (lib.lib.unionMode ? 'TAGLIB.unionMode' : 'TAGLIB.intersectionMode') | translate }}"
+    >{{ lib.lib.unionMode ? '∪' : '∩' }}</button>
     <button
       class="tp-btn"
       [ngClass]="{ on: lib.lib.showHidden }"
@@ -32,17 +25,48 @@
     >
       <svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></svg>
     </button>
+  </div>
 
-    <button
-      class="tp-btn"
-      [ngClass]="{ on: lib.lib.unionMode }"
-      (click)="lib.toggleUnionMode(); filterChanged.emit()"
-      title="{{ (lib.lib.unionMode ? 'TAGLIB.unionMode' : 'TAGLIB.intersectionMode') | translate }}"
-    >
-      <svg viewBox="0 0 16 16">
-        <circle cx="6" cy="8" r="4.5" />
-        <circle cx="10" cy="8" r="4.5" />
-      </svg>
+  <!-- ============ WsQ: bookmarks ============ -->
+  <div class="tp-section">
+    <span class="tp-title">{{ 'WSQ.bookmarks' | translate }}</span>
+    <span class="tp-spacer"></span>
+    <button class="tp-btn" (click)="startBookmark()" title="{{ 'WSQ.addBookmark' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
+    </button>
+  </div>
+  @if (addingBookmark) {
+    <div class="tp-filter">
+      <input
+        class="bm-input"
+        type="text"
+        [(ngModel)]="bookmarkName"
+        (keydown.enter)="saveBookmark()"
+        (keydown.escape)="addingBookmark = false"
+        (blur)="saveBookmark()"
+      >
+    </div>
+  }
+  @for (b of (lib.lib.bookmarks || []); track $index; let i = $index) {
+    <div class="tp-bookmark" [ngClass]="{ on: isBookmarkActive(b) }" (click)="openBookmark(b)" [title]="b.active.join(', ')">
+      <svg viewBox="0 0 16 16"><path d="M4 2h8v12l-4-3-4 3z" /></svg>
+      <span class="nm">{{ b.name }}</span>
+      <button class="x" (click)="removeBookmark(i, $event)" aria-label="Usuń zakładkę">✕</button>
+    </div>
+  }
+
+  <!-- ============ header ============ -->
+  <div class="tp-header">
+    <span class="tp-title">{{ 'TAGLIB.tags' | translate }}</span>
+    <span class="tp-spacer"></span>
+    <button class="tp-btn" (click)="addTag(null, 'after')" title="{{ 'TAGLIB.addTag' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
+    </button>
+    <button class="tp-btn" (click)="importRitt()" title="{{ 'TAGLIB.rittImport' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11" /></svg>
+    </button>
+    <button class="tp-btn" (click)="collapseAll(true)" title="{{ 'TAGLIB.collapseAll' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M4 6l4-4 4 4M4 14l4-4 4 4" /></svg>
     </button>
   </div>
 
