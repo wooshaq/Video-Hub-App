@@ -93,14 +93,14 @@ import { TagLibraryService } from './tag-library.service';
 :host { display: block; }
 
 .tfb {
-  --bg: #ececec; --fg: #222; --dim: #777; --chip: #fff; --border: #cfcfcf; --accent: #3b8eea; --red: #d9534f;
+  --bg: #ececec; --fg: #222; --dim: #777; --chip: #fff; --border: #cfcfcf; --accent: var(--wsq-accent); --red: #d9534f;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   box-sizing: border-box;
   padding: 7px 10px 7px 10px;
   position: relative;
 }
-.tfb.dark { --bg: #181818; --fg: #e0e0e0; --dim: #8a8a8a; --chip: #232323; --border: #2e2e2e; --accent: #4cb4ff; --red: #e06a6a; }
+.tfb.dark { --bg: #181818; --fg: #e0e0e0; --dim: #8a8a8a; --chip: #232323; --border: #2e2e2e; --accent: var(--wsq-accent); --red: #e06a6a; }
 
 .tfb-chips {
   align-items: center;

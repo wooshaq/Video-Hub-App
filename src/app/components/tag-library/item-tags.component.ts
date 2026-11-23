@@ -35,8 +35,8 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
   `,
   styles: [`
 :host { display: block; }
-.it { --fg: #222; --dim: #777; --chip: #fff; --border: #cfcfcf; --accent: #3b8eea; color: var(--fg); font-size: 12px; margin-top: 6px; }
-.it.dark { --fg: #ddd; --dim: #8a8a8a; --chip: #262626; --border: #3a3a3a; --accent: #4cb4ff; }
+.it { --fg: #222; --dim: #777; --chip: #fff; --border: #cfcfcf; --accent: var(--wsq-accent); color: var(--fg); font-size: 12px; margin-top: 6px; }
+.it.dark { --fg: #ddd; --dim: #8a8a8a; --chip: #262626; --border: #3a3a3a; --accent: var(--wsq-accent); }
 .row { align-items: center; display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .lbl { color: var(--dim); font-size: 11px; margin-right: 2px; }
 .chip {

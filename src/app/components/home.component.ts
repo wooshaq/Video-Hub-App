@@ -15,6 +15,7 @@ import { FilePathService } from './views/file-path.service';
 import { ImageElementService } from '../services/image-element.service';
 import { ManualTagsService } from './tags-manual/manual-tags.service';
 import { TagLibraryService } from './tag-library/tag-library.service';
+import type { ViewTabState } from './tag-library/tag-library.service';
 import { ModalService } from './modal/modal.service';
 import { PipeSideEffectService } from '../pipes/pipe-side-effect.service';
 import { ResolutionFilterService } from '../pipes/resolution-filter.service';
@@ -353,6 +354,25 @@ export class HomeComponent implements OnInit, AfterViewInit {
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
 
+    // WsQ: select everything in the view / clear the selection / quick tag
+    if (!this.isTypingIn(event.target as HTMLElement) && !this.wizard.showWizard && !this.settingsModalOpen) {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault();
+        const all = this.aspectItems.filter(e => e.cleanName !== '*FOLDER*');
+        this.tagLib.setSelection(all, all[0] || null);
+        return;
+      }
+      if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 't' && this.wsqTargets().length) {
+        event.preventDefault();
+        this.openQuickTag();
+        return;
+      }
+      if (event.key === 'Escape' && this.tagLib.selection.length > 1 && !this.rightClickShowing && !this.filtersOpen) {
+        this.tagLib.setSelection(this.currentClickedItem ? [this.currentClickedItem] : []);
+        return;
+      }
+    }
+
     // WsQ: copy / paste all tags
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && !this.isTypingIn(event.target as HTMLElement)) {
       const k = event.key.toLowerCase();
@@ -374,9 +394,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         && !this.isTypingIn(event.target as HTMLElement)) {
       const node = this.tagLib.tagForHotkey(event.key);
       if (node) {
-        const targets: ImageElement[] = this.batchTaggingMode
-          ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
-          : (this.currentClickedItem ? [this.currentClickedItem] : []);
+        const targets: ImageElement[] = this.wsqTargets();
         if (targets.length) {
           event.preventDefault();
           this.tagLib.toggleTagOn(targets, node.name);
@@ -449,6 +467,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
   ) { }
 
   ngOnInit() {
+    this.registerTabProvider();
+    this.accent = this.readLocal('wsq.accent', '#4cb4ff');
+    this.applyAccent();
     this.translate.setDefaultLang('en');
     this.changeLanguage('en');
 
@@ -1319,6 +1340,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     if (this.settingsButtons.doubleClickMode.toggled && !(eventObject.doubleClick || doubleClick)) {
       // when double-clicking, this runs twice anyway
+      this.wsqSelectClick(eventObject.mouseEvent, item);
       this.assignSelectedFile(item);
 
       return;
@@ -2927,6 +2949,43 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return Math.round(this.detailsThumbWidth / a);
   }
 
+  // ---------- WsQ: theme / accent colour ----------
+
+  themeOpen = false;
+  themeRight = 8;
+
+  toggleTheme(ev: MouseEvent): void {
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    this.themeRight = Math.max(8, window.innerWidth - r.right);
+    this.themeOpen = !this.themeOpen;
+  }
+  accent = '#4cb4ff';
+  accentPresets: { name: string, color: string }[] = [
+    { name: 'WSQ.accentBlue', color: '#4cb4ff' },
+    { name: 'WSQ.accentIndigo', color: '#6c8cff' },
+    { name: 'WSQ.accentViolet', color: '#a371f7' },
+    { name: 'WSQ.accentPink', color: '#db61a2' },
+    { name: 'WSQ.accentRed', color: '#e5534b' },
+    { name: 'WSQ.accentOrange', color: '#f0883e' },
+    { name: 'WSQ.accentGold', color: '#d4a72c' },
+    { name: 'WSQ.accentGreen', color: '#57ab5a' },
+    { name: 'WSQ.accentTeal', color: '#39c5cf' },
+    { name: 'WSQ.accentGray', color: '#9aa4ae' },
+  ];
+
+  applyAccent(): void {
+    const c = /^#[0-9a-f]{6}$/i.test(this.accent) ? this.accent : '#4cb4ff';
+    const rgb = [1, 3, 5].map(i => parseInt(c.substring(i, i + 2), 16)).join(', ');
+    document.documentElement.style.setProperty('--wsq-accent', c);
+    document.documentElement.style.setProperty('--wsq-accent-rgb', rgb);
+  }
+
+  setAccent(color: string): void {
+    this.accent = color;
+    this.writeLocal('wsq.accent', color);
+    this.applyAccent();
+  }
+
   // ---------- WsQ: tile shape follows the covers in the current view ----------
 
   wsqAspect = 16 / 9;
@@ -2936,6 +2995,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   reportGalleryItems = (items: ImageElement[]): void => {
     this.aspectItems = items;
+    setTimeout(() => this.tagLib.setViewItems(items));
     clearTimeout(this.aspectTimer);
     this.aspectTimer = setTimeout(() => this.updateGalleryAspect(), 30);
   };
@@ -3095,13 +3155,31 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return (this.appState.menuHidden ? -48 : 0) + (this.settingsButtons['hideTop'].toggled ? 106 : 151);
   }
 
-  private history: { active: string[], excluded: string[], search: string }[] = [{ active: [], excluded: [], search: '' }];
+  private history: ViewTabState[] = [{ active: [], excluded: [], search: '', folder: null }];
   private historyIndex = 0;
   private historyLock = false;
   private searchHistoryTimer: any;
 
-  private snapshot() {
-    return { active: this.tagLib.active.slice(), excluded: this.tagLib.excluded.slice(), search: this.wsqSearch };
+  private snapshot(): ViewTabState {
+    const f = this.tagLib.folderFilter;
+    return { active: this.tagLib.active.slice(), excluded: this.tagLib.excluded.slice(), search: this.wsqSearch, folder: f ? { ...f } : null };
+  }
+
+  /** WsQ: tabs -- the service asks for / applies the current view state */
+  private registerTabProvider(): void {
+    this.tagLib.tabProvider = {
+      get: () => this.snapshot(),
+      set: (st: ViewTabState) => this.restoreSnapshot(st),
+    };
+  }
+
+  openInNewTab(ev: { tag?: string, folder?: { source: number, path: string } }): void {
+    this.tagLib.newTab({
+      active: ev.tag ? [ev.tag] : [],
+      excluded: [],
+      search: '',
+      folder: ev.folder ? { ...ev.folder } : null,
+    });
   }
 
   pushHistory(): void {
@@ -3129,10 +3207,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return this.historyIndex < this.history.length - 1;
   }
 
-  private restoreSnapshot(snap: { active: string[], excluded: string[], search: string }): void {
+  private restoreSnapshot(snap: ViewTabState): void {
     this.historyLock = true;
     this.tagLib.active = snap.active.slice();
     this.tagLib.excluded = snap.excluded.slice();
+    this.tagLib.folderFilter = snap.folder ? { ...snap.folder } : null;
     this.tagLib.filterVersion++;
     this.wsqSearch = snap.search;
     this.onTagFilterChanged();
@@ -3182,10 +3261,178 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   selectedCount(): number {
+    return this.wsqTargets().length;
+  }
+
+  // ---------- WsQ: multi-selection (Ctrl / Shift + click, rubber band, Ctrl+A) ----------
+
+  /** what tagging actions apply to: batch-mode picks, else the selection, else the clicked file */
+  wsqTargets(): ImageElement[] {
     if (this.batchTaggingMode) {
-      return this.imageElementService.imageElements.filter(e => e.selected && !e.deleted).length;
+      return this.imageElementService.imageElements.filter(e => e.selected && !e.deleted);
     }
-    return this.currentClickedItem ? 1 : 0;
+    if (this.tagLib.selection.length) {
+      return this.tagLib.selection;
+    }
+    return this.currentClickedItem && this.currentClickedItem.cleanName !== '*FOLDER*' ? [this.currentClickedItem] : [];
+  }
+
+  wsqSelectClick(ev: MouseEvent | undefined, item: ImageElement): void {
+    const sel = this.tagLib.selection;
+    if (ev && (ev.ctrlKey || ev.metaKey)) {
+      this.tagLib.setSelection(sel.includes(item) ? sel.filter(x => x !== item) : [...sel, item], item);
+    } else if (ev && ev.shiftKey && this.tagLib.selectionAnchor) {
+      const list = this.aspectItems.filter(e => e.cleanName !== '*FOLDER*');
+      const a = list.indexOf(this.tagLib.selectionAnchor);
+      const b = list.indexOf(item);
+      if (a >= 0 && b >= 0) {
+        this.tagLib.setSelection(list.slice(Math.min(a, b), Math.max(a, b) + 1));
+      } else {
+        this.tagLib.setSelection([item], item);
+      }
+    } else {
+      this.tagLib.setSelection([item], item);
+    }
+  }
+
+  band: { x0: number, y0: number, x1: number, y1: number, ox: number, oy: number, base: ImageElement[] } | null = null;
+
+  galleryMouseDown(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement;
+    if (ev.button !== 0 || !t || t.closest('app-thumbnail, app-file-item, app-clip, app-details, app-filmstrip, app-full-view')) {
+      return;
+    }
+    if (ev.offsetX > (t.clientWidth || 1e9)) {
+      return;   // on the scroll bar
+    }
+    const host = document.querySelector('.window-content') as HTMLElement;
+    const o = host ? host.getBoundingClientRect() : { left: 0, top: 0 } as DOMRect;
+    const base = (ev.ctrlKey || ev.metaKey) ? this.tagLib.selection.slice() : [];
+    this.band = { x0: ev.clientX, y0: ev.clientY, x1: ev.clientX, y1: ev.clientY, ox: o.left, oy: o.top, base };
+    if (!base.length) {
+      this.tagLib.setSelection([]);
+    }
+    ev.preventDefault();
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  bandMove(ev: MouseEvent): void {
+    if (!this.band) {
+      return;
+    }
+    this.band.x1 = ev.clientX;
+    this.band.y1 = ev.clientY;
+    const l = Math.min(this.band.x0, this.band.x1);
+    const r = Math.max(this.band.x0, this.band.x1);
+    const tp = Math.min(this.band.y0, this.band.y1);
+    const bt = Math.max(this.band.y0, this.band.y1);
+    if (r - l < 4 && bt - tp < 4) {
+      return;
+    }
+    const hit: ImageElement[] = [];
+    document.querySelectorAll('#scrollDiv app-thumbnail[data-wsq-idx]').forEach((el: Element) => {
+      const rc = el.getBoundingClientRect();
+      if (rc.right > l && rc.left < r && rc.bottom > tp && rc.top < bt) {
+        const it = this.imageElementService.imageElements[+(el.getAttribute('data-wsq-idx') as string)];
+        if (it) {
+          hit.push(it);
+        }
+      }
+    });
+    const merged = this.band.base.slice();
+    hit.forEach(h => { if (!merged.includes(h)) { merged.push(h); } });
+    this.tagLib.setSelection(merged, merged[0] || null);
+  }
+
+  @HostListener('document:mouseup')
+  bandEnd(): void {
+    if (this.band) {
+      const sel = this.tagLib.selection;
+      if (sel.length && !sel.includes(this.currentClickedItem)) {
+        this.assignSelectedFile(sel[sel.length - 1]);
+      }
+      this.band = null;
+    }
+  }
+
+  bandStyle(): Record<string, string> {
+    const b = this.band;
+    return {
+      left: (Math.min(b.x0, b.x1) - b.ox) + 'px',
+      top: (Math.min(b.y0, b.y1) - b.oy) + 'px',
+      width: Math.abs(b.x1 - b.x0) + 'px',
+      height: Math.abs(b.y1 - b.y0) + 'px',
+    };
+  }
+
+  // ---------- WsQ: quick tag (T) ----------
+
+  quickTag: { text: string, index: number } | null = null;
+
+  openQuickTag(): void {
+    this.quickTag = { text: '', index: 0 };
+    setTimeout(() => (document.querySelector('.wsq-qt-input') as HTMLInputElement)?.focus());
+  }
+
+  quickTagSuggestions(): { name: string, icon: string, has: string }[] {
+    const q = (this.quickTag?.text || '').trim().toLowerCase();
+    const targets = this.wsqTargets();
+    const names = this.tagLib.orderedNames();
+    let hits: string[];
+    if (!q) {
+      hits = (this.tagLib.lib.recentTags || []).filter(n => names.includes(n)).slice(0, 10);
+    } else {
+      const starts = names.filter(n => n.toLowerCase().startsWith(q));
+      const inner = names.filter(n => !n.toLowerCase().startsWith(q) && (n.toLowerCase().includes(q) || this.tagLib.aliasMatches(n, q)));
+      hits = [...starts, ...inner].slice(0, 10);
+    }
+    return hits.map(name => {
+      const n = targets.filter(t => (t.tags || []).includes(name)).length;
+      return { name, icon: this.tagLib.iconOf(name), has: n === 0 ? '' : (n === targets.length ? 'all' : 'some') };
+    });
+  }
+
+  quickTagKey(ev: KeyboardEvent): void {
+    if (!this.quickTag) {
+      return;
+    }
+    const list = this.quickTagSuggestions();
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.quickTag.index = Math.min(list.length - 1, this.quickTag.index + 1);
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.quickTag.index = Math.max(0, this.quickTag.index - 1);
+    } else if (ev.key === 'Tab' && list[this.quickTag.index]) {
+      ev.preventDefault();
+      this.quickTag.text = list[this.quickTag.index].name;
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const pick = list[this.quickTag.index];
+      const name = pick && (ev.shiftKey === false) ? pick.name : this.quickTag.text.trim();
+      this.applyQuickTag(name, ev.ctrlKey || ev.metaKey);
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.quickTag = null;
+    }
+  }
+
+  /** Enter: add (or remove when every target has it); Ctrl+Enter: add and close */
+  applyQuickTag(name: string, close: boolean): void {
+    if (!name || !this.quickTag) {
+      return;
+    }
+    const targets = this.wsqTargets();
+    if (targets.length) {
+      this.tagLib.toggleTagOn(targets, name);
+      this.tagLib.noteRecentTag(name);
+    }
+    this.quickTag.text = '';
+    this.quickTag.index = 0;
+    if (close) {
+      this.quickTag = null;
+    }
   }
 
   starsOf(item: ImageElement): number {
@@ -3220,17 +3467,31 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   addDetailsTag(): void {
     const t = (this.detailsTagText || '').trim();
-    if (t && this.currentClickedItem) {
-      this.tagLib.addTagTo([this.currentClickedItem], t);
+    const targets = this.wsqTargets();
+    if (t && targets.length) {
+      this.tagLib.addTagTo(targets, t);
+      this.tagLib.noteRecentTag(t);
     }
     this.detailsTagText = '';
     this.detailsTypeahead = '';
   }
 
   removeTagFromCurrent(t: string): void {
-    if (this.currentClickedItem) {
-      this.tagLib.removeTagFrom([this.currentClickedItem], t);
+    const targets = this.wsqTargets();
+    if (targets.length) {
+      this.tagLib.removeTagFrom(targets, t);
     }
+  }
+
+  /** tags shown in the details panel: for several files, every tag any of them has (with how many) */
+  detailsTags(): { name: string, n: number }[] {
+    const targets = this.wsqTargets();
+    if (targets.length <= 1) {
+      return (this.currentClickedItem?.tags || []).map(name => ({ name, n: 1 }));
+    }
+    const m = new Map<string, number>();
+    targets.forEach(t => (t.tags || []).forEach(name => m.set(name, (m.get(name) || 0) + 1)));
+    return [...m.entries()].map(([name, n]) => ({ name, n }));
   }
 
   folderPathOf(item: ImageElement): string {

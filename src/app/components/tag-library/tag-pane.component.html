@@ -8,24 +8,48 @@
   <!-- ============ WsQ: top tabs (Huby / Tagi / Ulubione) ============ -->
   <div class="tp-tabs">
     <button class="tp-tab" (click)="hubsClick.emit()">{{ 'WSQ.hubs' | translate }}</button>
-    <button class="tp-tab" [ngClass]="{ on: !favoritesOnly() }" (click)="favoritesOnly() && favoritesToggle.emit()">{{ 'TAGLIB.tags' | translate }}</button>
+    <button class="tp-tab" [ngClass]="{ on: paneMode === 'tags' }" (click)="paneMode = 'tags'">{{ 'TAGLIB.tags' | translate }}</button>
+    <button class="tp-tab" [ngClass]="{ on: paneMode === 'folders' }" (click)="paneMode = 'folders'">{{ 'WSQ.folders' | translate }}</button>
     <button class="tp-tab" [ngClass]="{ on: favoritesOnly() }" (click)="favoritesToggle.emit()">{{ 'WSQ.favorites' | translate }}</button>
-    <span class="tp-spacer"></span>
-    <button
-      class="tp-btn txt"
-      [ngClass]="{ on: lib.lib.unionMode }"
-      (click)="lib.toggleUnionMode(); filterChanged.emit()"
-      title="{{ (lib.lib.unionMode ? 'TAGLIB.unionMode' : 'TAGLIB.intersectionMode') | translate }}"
-    >{{ lib.lib.unionMode ? '∪' : '∩' }}</button>
-    <button
-      class="tp-btn"
-      [ngClass]="{ on: lib.lib.showHidden }"
-      (click)="lib.toggleShowHidden()"
-      title="{{ 'TAGLIB.showHidden' | translate }}"
-    >
-      <svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></svg>
-    </button>
   </div>
+
+  @if (paneMode === 'folders') {
+    <!-- ============ WsQ: folder tree ============ -->
+    <div class="tp-section">
+      <span class="tp-title">{{ 'WSQ.folders' | translate }}</span>
+      <span class="tp-spacer"></span>
+      @if (lib.folderFilter) {
+        <button class="tp-btn" (click)="lib.setFolderFilter(null); filterChanged.emit()" title="{{ 'WSQ.folderClear' | translate }}">
+          <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
+      }
+    </div>
+    <div class="tp-tree tp-folders">
+      @for (r of folderRows(); track r.node.key) {
+        <div
+          class="tp-row tp-folder-row"
+          [ngClass]="{ active: isFolderActive(r.node) }"
+          [ngStyle]="{ 'padding-left': (6 + r.depth * 14) + 'px' }"
+          (click)="folderClick(r.node)"
+          (auxclick)="folderMiddle($event, r.node)"
+          (mousedown)="$event.button === 1 && $event.preventDefault()"
+          [title]="r.node.path"
+        >
+          @if (r.node.children.length) {
+            <span class="tp-chevron" [ngClass]="{ open: folderOpen.has(r.node.key) }" (click)="toggleFolderOpen(r.node, $event)">
+              <svg viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" /></svg>
+            </span>
+          } @else {
+            <span class="tp-chevron-space"></span>
+          }
+          <svg class="tp-folder-ic" viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg>
+          <span class="tp-name">{{ r.node.name }}</span>
+          <span class="tp-count">({{ r.node.count | number }})</span>
+        </div>
+      }
+      <div class="tp-bottom-space"></div>
+    </div>
+  } @else {
 
   <!-- ============ WsQ: bookmarks ============ -->
   <div class="tp-section">
@@ -59,6 +83,20 @@
   <div class="tp-header">
     <span class="tp-title">{{ 'TAGLIB.tags' | translate }}</span>
     <span class="tp-spacer"></span>
+    <button
+      class="tp-btn txt"
+      [ngClass]="{ on: lib.lib.unionMode }"
+      (click)="lib.toggleUnionMode(); filterChanged.emit()"
+      title="{{ (lib.lib.unionMode ? 'TAGLIB.unionMode' : 'TAGLIB.intersectionMode') | translate }}"
+    >{{ lib.lib.unionMode ? '∪' : '∩' }}</button>
+    <button
+      class="tp-btn"
+      [ngClass]="{ on: lib.lib.showHidden }"
+      (click)="lib.toggleShowHidden()"
+      title="{{ 'TAGLIB.showHidden' | translate }}"
+    >
+      <svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></svg>
+    </button>
     <button class="tp-btn" (click)="addTag(null, 'after')" title="{{ 'TAGLIB.addTag' | translate }}">
       <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
     </button>
@@ -120,6 +158,7 @@
       <div
         class="tp-row"
         [ngClass]="{
+          empty: lib.viewFiltered && !isActive(row.node) && lib.getViewCount(row.node.name) === 0,
           selected: selectedId === row.node.id,
           active: isActive(row.node),
           excluded: isExcluded(row.node),
@@ -135,6 +174,7 @@
         (drop)="drop($event, row)"
         (click)="rowClick($event, row)"
         (auxclick)="rowAuxClick($event, row)"
+        (mousedown)="$event.button === 1 && $event.preventDefault()"
         (dblclick)="startRename(row.node)"
         (contextmenu)="openMenu($event, row.node)"
         [title]="rowTitle(row.node)"
@@ -155,7 +195,7 @@
             class="tp-circle"
             [ngClass]="cs"
             (click)="circleClick($event, row.node)"
-            [title]="(cs === 'batch' ? 'TAGLIB.circleBatch' : cs === 'direct' ? 'TAGLIB.circleRemove' : 'TAGLIB.circleAdd') | translate"
+            [title]="(cs === 'batch' ? 'TAGLIB.circleBatch' : cs === 'direct' ? 'TAGLIB.circleRemove' : cs === 'partial' ? 'TAGLIB.circlePartial' : 'TAGLIB.circleAdd') | translate"
           ></span>
         }
 
@@ -174,7 +214,8 @@
           >
         } @else {
           <span class="tp-name" [ngStyle]="{ color: row.node.color || null }">{{ row.node.name }}</span>
-          <span class="tp-count">({{ lib.getCount(row.node.name) | number }})</span>
+          @let vc = lib.viewFiltered ? lib.getViewCount(row.node.name) : lib.getCount(row.node.name);
+          <span class="tp-count" [title]="lib.viewFiltered ? ('TAGLIB.countInView' | translate) + ' · ' + ('TAGLIB.countTotal' | translate) + ': ' + lib.getCount(row.node.name) : ''">({{ vc | number }})</span>
         }
 
         <span class="tp-attrs">
@@ -220,6 +261,8 @@
     <div class="tp-bottom-space"></div>
   </div>
 
+  } <!-- end of paneMode === 'tags' -->
+
 </div>
 
 
@@ -241,6 +284,8 @@
 
   } @else {
 
+    <div class="mi" (click)="openInNewTab.emit({ tag: menu.node.name }); closePopups()"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 9.5v3.5a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1H7" /></svg>{{ 'TAGLIB.openInNewTab' | translate }}<span class="kbd">{{ 'TAGLIB.middleClick' | translate }}</span></div>
+    <div class="mi-sep"></div>
     <div class="mi" (click)="startRename(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v10H2zM5 6h3M6.5 6v4.5M10 6v5" /></svg>{{ 'TAGLIB.rename' | translate }} <span class="kbd">F2</span></div>
     <div class="mi" (click)="duplicate(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 5h8v8H5zM3 11V3h8" /></svg>{{ 'TAGLIB.duplicate' | translate }}</div>
     <div class="mi" (click)="deleteNode(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>{{ 'TAGLIB.remove' | translate }} <span class="kbd">Delete</span></div>

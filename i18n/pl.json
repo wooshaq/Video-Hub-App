@@ -651,7 +651,12 @@
     "iconTabTravel": "Podróże i miejsca",
     "iconTabObjects": "Przedmioty",
     "iconTabSymbols": "Symbole",
-    "iconTabFlags": "Flagi"
+    "iconTabFlags": "Flagi",
+    "circlePartial": "Część zaznaczonych ma ten tag – kliknij, aby dodać do wszystkich",
+    "countInView": "W bieżącym widoku",
+    "countTotal": "Wszystkich",
+    "openInNewTab": "Otwórz w nowej karcie",
+    "middleClick": "śr. przycisk"
   },
   "WSQ": {
     "refreshCover": "Odśwież okładkę",
@@ -701,6 +706,33 @@
     "hubs": "Huby",
     "favorites": "Ulubione",
     "bookmarks": "Zakładki",
-    "addBookmark": "Zapisz bieżący filtr jako zakładkę"
+    "addBookmark": "Zapisz bieżący filtr jako zakładkę",
+    "theme": "Motyw",
+    "themeDark": "Ciemny",
+    "themeLight": "Jasny",
+    "accent": "Kolor akcentowy",
+    "accentCustom": "Własny kolor",
+    "accentBlue": "Niebieski (Ritt)",
+    "accentIndigo": "Indygo",
+    "accentViolet": "Fioletowy",
+    "accentPink": "Różowy",
+    "accentRed": "Czerwony",
+    "accentOrange": "Pomarańczowy",
+    "accentGold": "Złoty",
+    "accentGreen": "Zielony",
+    "accentTeal": "Turkusowy",
+    "accentGray": "Szary",
+    "quickTag": "Szybkie tagowanie",
+    "files": "plików",
+    "quickTagPlaceholder": "Wpisz tag…",
+    "quickTagHint": "↑↓ wybór · Enter dodaje/usuwa (zostaje otwarte) · Ctrl+Enter dodaje i zamyka · Tab uzupełnia · Esc zamyka",
+    "qtRemove": "ma (Enter usuwa)",
+    "qtSome": "część ma",
+    "qtNew": "Nowy tag",
+    "addToAll": "Dodaj do wszystkich zaznaczonych",
+    "folders": "Foldery",
+    "folderClear": "Pokaż wszystkie foldery",
+    "tabAll": "Wszystko",
+    "newTab": "Nowa karta (kopia bieżącego widoku)"
   }
 }

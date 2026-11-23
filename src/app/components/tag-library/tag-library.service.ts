@@ -36,6 +36,13 @@ interface CacheEntry {
 
 export const HOTKEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
+export interface ViewTabState {
+  active: string[];
+  excluded: string[];
+  search: string;
+  folder: { source: number, path: string } | null;
+}
+
 @Injectable()
 export class TagLibraryService {
 
@@ -443,8 +450,98 @@ export class TagLibraryService {
     return false;
   }
 
+  // ---------- WsQ: view tabs ----------
+
+  tabs: ViewTabState[] = [{ active: [], excluded: [], search: '', folder: null }];
+  tabIndex = 0;
+  tabProvider: { get: () => ViewTabState, set: (s: ViewTabState) => void } | null = null;
+
+  private saveCurrentTab(): void {
+    if (this.tabProvider) {
+      this.tabs[this.tabIndex] = this.tabProvider.get();
+    }
+  }
+
+  switchTab(i: number): void {
+    if (i === this.tabIndex || i < 0 || i >= this.tabs.length) {
+      return;
+    }
+    this.saveCurrentTab();
+    this.tabIndex = i;
+    this.tabProvider?.set(this.tabs[i]);
+  }
+
+  newTab(state?: ViewTabState): void {
+    this.saveCurrentTab();
+    const s = state || this.tabs[this.tabIndex];
+    this.tabs.push({ active: s.active.slice(), excluded: s.excluded.slice(), search: s.search, folder: s.folder ? { ...s.folder } : null });
+    this.tabIndex = this.tabs.length - 1;
+    this.tabProvider?.set(this.tabs[this.tabIndex]);
+  }
+
+  closeTab(i: number): void {
+    if (this.tabs.length < 2) {
+      return;
+    }
+    this.saveCurrentTab();
+    this.tabs.splice(i, 1);
+    if (i < this.tabIndex || this.tabIndex >= this.tabs.length) {
+      this.tabIndex = Math.max(0, this.tabIndex - 1);
+    }
+    if (i <= this.tabIndex || i === this.tabIndex + 1) {
+      this.tabProvider?.set(this.tabs[this.tabIndex]);
+    }
+  }
+
+  /** label of a tab -- the live state for the current one */
+  tabLabel(i: number): string {
+    const s = (i === this.tabIndex && this.tabProvider) ? this.tabProvider.get() : this.tabs[i];
+    const parts: string[] = [];
+    s.active.forEach(t => parts.push(((this.iconOf(t) || '') + ' ' + t).trim()));
+    s.excluded.forEach(t => parts.push('−' + t));
+    if (s.folder) {
+      const p = s.folder.path === '/' ? '/' : s.folder.path.substring(s.folder.path.lastIndexOf('/') + 1);
+      parts.unshift('📁 ' + p);
+    }
+    if (s.search) {
+      parts.push('"' + s.search + '"');
+    }
+    return parts.join(' · ');
+  }
+
+  // ---------- WsQ: folder filter (left pane "Foldery") ----------
+
+  folderFilter: { source: number, path: string } | null = null;
+
+  static normPath(p: string): string {
+    return (p || '').replace(/\\/g, '/').replace(/\/+$/, '').replace(/^(?!\/)/, '/');
+  }
+
+  setFolderFilter(f: { source: number, path: string } | null): void {
+    this.folderFilter = f ? { source: f.source, path: TagLibraryService.normPath(f.path) } : null;
+    this.filterVersion++;
+  }
+
+  inFolder(item: ImageElement): boolean {
+    const f = this.folderFilter;
+    if (!f) {
+      return true;
+    }
+    if (+item.inputSource !== +f.source) {
+      return false;
+    }
+    if (f.path === '/') {
+      return true;
+    }
+    const p = TagLibraryService.normPath(item.partialPath);
+    return p === f.path || p.startsWith(f.path + '/');
+  }
+
   /** filter used by the gallery pipe */
   filter(items: ImageElement[]): ImageElement[] {
+    if (this.folderFilter) {
+      items = items.filter(i => i.cleanName === '*FOLDER*' || this.inFolder(i));
+    }
     if (!this.active.length && !this.excluded.length) {
       return items;
     }
@@ -486,6 +583,44 @@ export class TagLibraryService {
   }
 
   /** number of files per tag in the whole hub (encapsulated tags count their children too) */
+  // ---------- WsQ: counts inside the current view (what you get when you add the tag) ----------
+
+  viewItems: ImageElement[] = [];
+  viewFiltered = false;
+  private viewVersion = 0;
+  private viewCache: { key: string, counts: Map<string, number> } = { key: '', counts: new Map() };
+
+  setViewItems(items: ImageElement[]): void {
+    const files = items.filter(i => i && i.cleanName !== '*FOLDER*');
+    const live = this.imageElementService.imageElements.filter(i => !i.deleted).length;
+    this.viewItems = files;
+    this.viewFiltered = files.length < live;
+    this.viewVersion++;
+  }
+
+  getViewCount(name: string): number {
+    const key = this.dataVersion + ':' + this.libVersion + ':' + this.viewVersion;
+    if (this.viewCache.key !== key) {
+      const counts = new Map<string, number>();
+      this.viewItems.forEach(item => {
+        this.getEffective(item).all.forEach(t => counts.set(t, (counts.get(t) || 0) + 1));
+      });
+      this.byName.forEach((node, n) => {
+        if (node.encapsulate && node.children && node.children.length) {
+          let c = 0;
+          this.viewItems.forEach(item => { if (this.matches(item, n)) { c++; } });
+          counts.set('\u0000enc:' + n, c);
+        }
+      });
+      this.viewCache = { key, counts };
+    }
+    const node = this.byName.get(name);
+    if (node && node.encapsulate && node.children && node.children.length) {
+      return this.viewCache.counts.get('\u0000enc:' + name) || 0;
+    }
+    return this.viewCache.counts.get(name) || 0;
+  }
+
   getCount(name: string): number {
     const items = this.imageElementService.imageElements;
     const key = this.dataVersion + ':' + this.libVersion + ':' + items.length;
@@ -601,6 +736,7 @@ export class TagLibraryService {
   clearFilter(): void {
     this.active = [];
     this.excluded = [];
+    this.folderFilter = null;
     this.filterVersion++;
   }
 
@@ -918,6 +1054,34 @@ export class TagLibraryService {
       delete node.icon;
     }
     this.touchLib();
+  }
+
+  // ---------- WsQ: gallery selection (not saved) ----------
+
+  selection: ImageElement[] = [];
+  selectionAnchor: ImageElement | null = null;
+  selVersion = 0;
+
+  setSelection(items: ImageElement[], anchor?: ImageElement | null): void {
+    this.selection = items.filter(i => i && i.cleanName !== '*FOLDER*');
+    if (anchor !== undefined) {
+      this.selectionAnchor = anchor;
+    }
+    this.selVersion++;
+  }
+
+  isSelected(item: ImageElement): boolean {
+    return this.selection.includes(item);
+  }
+
+  noteRecentTag(name: string): void {
+    this.lib.recentTags = [name, ...(this.lib.recentTags || []).filter(n => n !== name)].slice(0, 20);
+    this.touchLib();
+  }
+
+  aliasMatches(name: string, q: string): boolean {
+    const n = this.byName.get(name);
+    return !!n && !!n.aliases && n.aliases.some(a => a.toLowerCase().includes(q));
   }
 
   removeRecentIcon(icon: string): void {

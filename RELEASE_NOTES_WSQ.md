@@ -1,5 +1,14 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.6
+- **Motyw i kolor akcentowy:** przycisk z paletą w pasku narzędzi – Ciemny / Jasny i 10 kolorów akcentu (lub własny). Kolor obejmuje zaznaczenia, aktywne tagi, suwaki, ramki itd.
+- **Wielozaznaczenie jak w Eksploratorze:** Ctrl+klik, Shift+klik (zakres), ramka myszą od pustego miejsca galerii, Ctrl+A (cały widok), Esc czyści. Kółka w drzewie tagów działają na całe zaznaczenie: pełne = wszystkie mają, kropka = część ma, puste = żaden; klik dodaje do wszystkich albo usuwa ze wszystkich. Prawy panel pokazuje „zaznaczono: N” i tagi z licznikiem 1/2 (klik w licznik dodaje do wszystkich). Skróty 1–0 i kopiuj/wklej też działają na zaznaczenie.
+- **Szybkie tagowanie klawiszem T:** okienko z podpowiedziami (nazwy i aliasy), ↑↓ wybór, Enter dodaje/usuwa i zostaje otwarte, Ctrl+Enter dodaje i zamyka, Shift+Enter tworzy dokładnie wpisany tag, Esc zamyka.
+- **Liczniki w drzewie według bieżącego widoku:** przy filtrze liczba przy tagu to tyle wyników, ile zostanie po jego dodaniu; tagi bez wyników są wyszarzone (całkowita liczba w podpowiedzi).
+- **Zakładka Foldery** w lewym panelu: drzewo folderów huba z licznikami; klik filtruje folder razem z podfolderami, ponowny klik albo ✕ zdejmuje filtr.
+- **Karty widoków** na pasku tytułu: każda karta pamięta tagi, wyszukiwanie i folder. „Otwórz w nowej karcie” w menu tagu, środkowy przycisk na tagu lub folderze, „+” kopiuje bieżący widok, środkowy przycisk lub ✕ zamyka kartę. (Środkowy przycisk na tagu w drzewie nie dodaje go już do filtra – do tego jest Ctrl+klik.)
+- Wstecz/Dalej pamiętają też filtr folderu.
+
 ### Nowe w wsq.5
 - **Menu prawego przycisku** (tagi i filmy) jest bardziej zwarte i półprzezroczyste z rozmyciem tła, jak w Windows 11 / Ritt.
 - **Wybór ikony jak w Ritt:** bieżąca ikona z koszem, kategorie (Ostatnie, Buźki, Ludzie, Zwierzęta, Jedzenie, Aktywności, Podróże, Przedmioty, Symbole, Flagi), wyszukiwarka po polsku i angielsku (np. „flaga”, „japonia”, „cherry”). Środkowy przycisk myszy usuwa ikonę z ostatnich. Na dole pole **Niestandardowa ikona**: emoji albo tekst, np. `06` jako wiek.

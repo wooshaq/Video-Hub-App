@@ -194,7 +194,7 @@
     height: 3px;
 
     &.on {
-      background: #4cb4ff;
+      background: var(--wsq-accent);
     }
   }
 }
@@ -213,9 +213,9 @@
 }
 
 :host(.wsq-selected) .video-box::after {
-  box-shadow: inset 0 0 0 2px #4cb4ff;
+  box-shadow: inset 0 0 0 2px var(--wsq-accent);
 }
 
 :host-context(.wsq-layout) .video-box:hover::after {
-  box-shadow: inset 0 0 0 2px rgba(76, 180, 255, 0.7);
+  box-shadow: inset 0 0 0 2px rgba(var(--wsq-accent-rgb), 0.7);
 }

@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, OnDestroy, input, output, viewChil
 import type { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
+import { SourceFolderService } from '../statistics/source-folder.service';
 import { HOTKEYS, TagLibraryService } from './tag-library.service';
 import { ImageElementService } from '../../services/image-element.service';
 
@@ -10,6 +11,15 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
 import type { TagBadgeMode, TagNode } from '../../../../interfaces/tag-library.interface';
 
 type DropZone = 'before' | 'after' | 'child';
+
+interface FolderNode {
+  key: string;
+  source: number;
+  path: string;
+  name: string;
+  count: number;
+  children: FolderNode[];
+}
 
 const DRAG_TYPE = 'application/x-vha-tag-node';
 
@@ -47,6 +57,106 @@ export class TagPaneComponent implements OnDestroy {
   readonly filterChanged = output<void>();
   readonly favoritesToggle = output<void>();
   readonly hubsClick = output<void>();
+  readonly openInNewTab = output<{ tag?: string, folder?: { source: number, path: string } }>();
+
+  // ---------- WsQ: "Foldery" tab ----------
+
+  paneMode: 'tags' | 'folders' = 'tags';
+  folderOpen = new Set<string>();
+  private folderKey = '';
+  private folderTree: FolderNode[] = [];
+
+  private buildFolderTree(): FolderNode[] {
+    const items = this.imageElementService.imageElements;
+    const key = items.length + ':' + this.lib.dataVersion + ':' + Object.keys(this.sourceFolderService.selectedSourceFolder).join(',');
+    if (key === this.folderKey) {
+      return this.folderTree;
+    }
+    this.folderKey = key;
+    const roots = new Map<string, FolderNode>();
+    const getNode = (source: number, path: string): FolderNode => {
+      const k = source + ':' + path;
+      let n = roots.get(k);
+      if (!n) {
+        const src = this.sourceFolderService.selectedSourceFolder[source];
+        const name = path === '/'
+          ? ((src && src.path) ? src.path.replace(/\\/g, '/').replace(/\/+$/, '') : ('#' + source))
+          : path.substring(path.lastIndexOf('/') + 1);
+        n = { key: k, source, path, name, count: 0, children: [] };
+        roots.set(k, n);
+        if (path !== '/') {
+          const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+          getNode(source, parentPath).children.push(n);
+        }
+      }
+      return n;
+    };
+    items.forEach(it => {
+      if (it.deleted || it.cleanName === '*FOLDER*') {
+        return;
+      }
+      const src = +it.inputSource;
+      let path = TagLibraryService.normPath(it.partialPath);
+      getNode(src, path);
+      // count up the chain
+      for (;;) {
+        roots.get(src + ':' + path).count++;
+        if (path === '/') {
+          break;
+        }
+        path = path.substring(0, path.lastIndexOf('/')) || '/';
+      }
+    });
+    const sortRec = (n: FolderNode) => {
+      n.children.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+      n.children.forEach(sortRec);
+    };
+    const top = [...roots.values()].filter(n => n.path === '/').sort((a, b) => a.source - b.source);
+    top.forEach(sortRec);
+    if (!this.folderOpen.size) {
+      top.forEach(n => this.folderOpen.add(n.key));
+    }
+    this.folderTree = top;
+    return top;
+  }
+
+  folderRows(): { node: FolderNode, depth: number }[] {
+    const out: { node: FolderNode, depth: number }[] = [];
+    const walk = (n: FolderNode, d: number) => {
+      out.push({ node: n, depth: d });
+      if (this.folderOpen.has(n.key)) {
+        n.children.forEach(c => walk(c, d + 1));
+      }
+    };
+    this.buildFolderTree().forEach(n => walk(n, 0));
+    return out;
+  }
+
+  toggleFolderOpen(n: FolderNode, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.folderOpen.has(n.key)) {
+      this.folderOpen.delete(n.key);
+    } else {
+      this.folderOpen.add(n.key);
+    }
+  }
+
+  isFolderActive(n: FolderNode): boolean {
+    const f = this.lib.folderFilter;
+    return !!f && +f.source === n.source && f.path === n.path;
+  }
+
+  folderClick(n: FolderNode): void {
+    this.lib.setFolderFilter(this.isFolderActive(n) ? null : { source: n.source, path: n.path });
+    this.filterChanged.emit();
+  }
+
+  folderMiddle(event: MouseEvent, n: FolderNode): void {
+    if (event.button === 1) {
+      event.preventDefault();
+      this.openInNewTab.emit({ folder: { source: n.source, path: n.path } });
+    }
+  }
 
   // ---------- WsQ: bookmarks (saved filter states) ----------
   addingBookmark = false;
@@ -200,6 +310,7 @@ export class TagPaneComponent implements OnDestroy {
     private imageElementService: ImageElementService,
     private translate: TranslateService,
     private host: ElementRef<HTMLElement>,
+    private sourceFolderService: SourceFolderService,
   ) {
     this.rittSub = this.lib.rittImportReceived.subscribe(data => this.rittReceived(data));
   }
@@ -270,6 +381,9 @@ export class TagPaneComponent implements OnDestroy {
     if (this.batchMode()) {
       return this.selectedItems();
     }
+    if (this.lib.selection.length) {
+      return this.lib.selection;
+    }
     const cur = this.currentItem();
     return cur && cur.cleanName !== '*FOLDER*' ? [cur] : [];
   }
@@ -282,18 +396,30 @@ export class TagPaneComponent implements OnDestroy {
     if (this.batchMode()) {
       return 'batch';
     }
-    const cur = this.currentItem();
-    if (!cur || cur.cleanName === '*FOLDER*') {
+    const items = this.targets();
+    if (!items.length) {
       return '';
     }
-    const eff = this.lib.getEffective(cur);
-    if (eff.direct.includes(node.name)) {
+    let direct = 0;
+    let inherited = 0;
+    for (const it of items) {
+      const eff = this.lib.getEffective(it);
+      if (eff.direct.includes(node.name)) {
+        direct++;
+      } else if (eff.all.has(node.name)) {
+        inherited++;
+      }
+    }
+    if (direct === items.length) {
       return 'direct';
     }
-    if (eff.all.has(node.name)) {
+    if (direct > 0) {
+      return 'partial';
+    }
+    if (inherited === items.length) {
       return 'inherited';
     }
-    return 'none';
+    return inherited ? 'partial' : 'none';
   }
 
   circleClick(event: MouseEvent, node: TagNode): void {
@@ -336,10 +462,9 @@ export class TagPaneComponent implements OnDestroy {
   }
 
   rowAuxClick(event: MouseEvent, row: FlatRow): void {
-    if (event.button === 1 && row.node.type !== 'separator') { // middle click = add to active tags
+    if (event.button === 1 && row.node.type !== 'separator') { // WsQ: middle click = open in a new tab (Ctrl+click adds to the filter)
       event.preventDefault();
-      this.lib.activate(row.node.name, 'toggle');
-      this.filterChanged.emit();
+      this.openInNewTab.emit({ tag: row.node.name });
     }
   }
 
@@ -515,7 +640,7 @@ export class TagPaneComponent implements OnDestroy {
     if (node) {
       this.selectedId = node.id;
     }
-    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 70 : 400) : 110);
+    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 70 : 430) : 110);
     this.menu = { ...p, node };
   }
 

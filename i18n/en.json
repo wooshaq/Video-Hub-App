@@ -651,7 +651,12 @@
     "iconTabTravel": "Travel & places",
     "iconTabObjects": "Objects",
     "iconTabSymbols": "Symbols",
-    "iconTabFlags": "Flags"
+    "iconTabFlags": "Flags",
+    "circlePartial": "Some selected files have this tag – click to add it to all",
+    "countInView": "In the current view",
+    "countTotal": "Total",
+    "openInNewTab": "Open in a new tab",
+    "middleClick": "middle click"
   },
   "WSQ": {
     "refreshCover": "Refresh cover",
@@ -701,6 +706,33 @@
     "hubs": "Hubs",
     "favorites": "Favorites",
     "bookmarks": "Bookmarks",
-    "addBookmark": "Save current filter as bookmark"
+    "addBookmark": "Save current filter as bookmark",
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "accent": "Accent colour",
+    "accentCustom": "Custom colour",
+    "accentBlue": "Blue (Ritt)",
+    "accentIndigo": "Indigo",
+    "accentViolet": "Violet",
+    "accentPink": "Pink",
+    "accentRed": "Red",
+    "accentOrange": "Orange",
+    "accentGold": "Gold",
+    "accentGreen": "Green",
+    "accentTeal": "Teal",
+    "accentGray": "Grey",
+    "quickTag": "Quick tag",
+    "files": "files",
+    "quickTagPlaceholder": "Type a tag…",
+    "quickTagHint": "↑↓ pick · Enter adds/removes (stays open) · Ctrl+Enter adds and closes · Tab completes · Esc closes",
+    "qtRemove": "has it (Enter removes)",
+    "qtSome": "some have it",
+    "qtNew": "New tag",
+    "addToAll": "Add to all selected",
+    "folders": "Folders",
+    "folderClear": "Show all folders",
+    "tabAll": "Everything",
+    "newTab": "New tab (copy of the current view)"
   }
 }

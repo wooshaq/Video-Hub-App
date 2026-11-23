@@ -8,8 +8,8 @@
   --tp-dim: #888;
   --tp-line: #cfcfcf;
   --tp-hover: rgba(0, 0, 0, 0.06);
-  --tp-sel: rgba(65, 145, 255, 0.16);
-  --tp-accent: #3b8eea;
+  --tp-sel: rgba(var(--wsq-accent-rgb), 0.16);
+  --tp-accent: var(--wsq-accent);
   --tp-input: rgba(255, 255, 255, 0.7);
   --tp-border: rgba(0, 0, 0, 0.12);
 
@@ -30,8 +30,8 @@
     --tp-dim: #8a8a8a;
     --tp-line: #3a3a3a;
     --tp-hover: rgba(255, 255, 255, 0.06);
-    --tp-sel: rgba(80, 160, 255, 0.18);
-    --tp-accent: #4cb4ff;
+    --tp-sel: rgba(var(--wsq-accent-rgb), 0.18);
+    --tp-accent: var(--wsq-accent);
     --tp-input: #262626;
     --tp-border: #000;
   }
@@ -259,6 +259,11 @@
   &.batch {
     border-style: dashed;
   }
+
+  &.partial {
+    background: radial-gradient(circle, var(--tp-accent) 0 2.5px, transparent 3px);
+    border-color: var(--tp-accent);
+  }
 }
 
 .tp-icon {
@@ -388,8 +393,8 @@
   --tp-fg: #222;
   --tp-dim: #888;
   --tp-hover: rgba(0, 0, 0, 0.07);
-  --tp-sel: rgba(65, 145, 255, 0.18);
-  --tp-accent: #3b8eea;
+  --tp-sel: rgba(var(--wsq-accent-rgb), 0.18);
+  --tp-accent: var(--wsq-accent);
   --tp-input: rgba(255, 255, 255, 0.7);
   --tp-border: rgba(0, 0, 0, 0.12);
 
@@ -411,8 +416,8 @@
     --tp-fg: #e6e6e6;
     --tp-dim: #8a8a8a;
     --tp-hover: rgba(255, 255, 255, 0.08);
-    --tp-sel: rgba(80, 160, 255, 0.25);
-    --tp-accent: #4cb4ff;
+    --tp-sel: rgba(var(--wsq-accent-rgb), 0.25);
+    --tp-accent: var(--wsq-accent);
     --tp-input: rgba(255, 255, 255, 0.06);
     --tp-border: rgba(255, 255, 255, 0.1);
   }
@@ -705,7 +710,8 @@
   cursor: pointer;
   font: inherit;
   font-size: 12.5px;
-  padding: 3px 8px;
+  padding: 3px 7px;
+  white-space: nowrap;
 
   &:hover { background: var(--tp-hover); color: var(--tp-fg); }
   &.on { background: var(--tp-sel); color: var(--tp-fg); }
@@ -942,4 +948,37 @@
   color: var(--tp-dim);
   font-size: 11px;
   padding: 4px 6px;
+}
+
+// WsQ: nothing of this tag in the current view
+.tp-row.empty {
+  .tp-name, .tp-icon, .tp-count {
+    opacity: 0.38;
+  }
+}
+
+// ---------- WsQ: folder tree ----------
+.tp-folder-row {
+  gap: 4px;
+
+  .tp-folder-ic {
+    fill: none;
+    flex: 0 0 auto;
+    height: 14px;
+    stroke: var(--tp-dim);
+    stroke-linejoin: round;
+    stroke-width: 1.2;
+    width: 14px;
+  }
+
+  .tp-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.active {
+    background: var(--tp-sel);
+
+    .tp-folder-ic { stroke: var(--tp-accent); }
+  }
 }
