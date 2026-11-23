@@ -760,6 +760,9 @@
     "stThumbs": "Thumbnails",
     "stServer": "Server (VHA Remote)",
     "stRemoveConfirm": "Remove the folder from the hub?\n\n{{path}}\n\nFiles stay on the disk but leave the hub together with their thumbnails and tags.",
-    "folderView": "Folder view (browse like Explorer)"
+    "folderView": "Folder view (browse like Explorer)",
+    "progMeta": "Reading files",
+    "progThumbs": "Thumbnails",
+    "progLeft": "left"
   }
 }

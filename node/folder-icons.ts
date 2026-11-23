@@ -80,3 +80,43 @@ export function folderIconOf(folder: string): string {
     return '';
   }
 }
+
+/**
+ * WsQ: the icon as a data URL, trimmed to its visible (non-transparent) part, so a custom icon fills
+ * the same box as the drawn folder. Falls back to the plain file path when the image cannot be read.
+ */
+export function folderIconData(folder: string): string {
+  const file = folderIconOf(folder);
+  if (!file) {
+    return '';
+  }
+  try {
+    const { nativeImage } = require('electron');
+    const img = nativeImage.createFromPath(file);
+    if (img.isEmpty()) {
+      return file;
+    }
+    const { width, height } = img.getSize();
+    const bmp: Buffer = img.toBitmap();   // BGRA, 4 bytes per pixel
+    let minX = width, minY = height, maxX = -1, maxY = -1;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (bmp[(y * width + x) * 4 + 3] > 12) {
+          if (x < minX) { minX = x; }
+          if (x > maxX) { maxX = x; }
+          if (y < minY) { minY = y; }
+          if (y > maxY) { maxY = y; }
+        }
+      }
+    }
+    if (maxX < 0) {
+      return file;
+    }
+    const cropped = (minX === 0 && minY === 0 && maxX === width - 1 && maxY === height - 1)
+      ? img
+      : img.crop({ x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 });
+    return cropped.toDataURL();
+  } catch (e) {
+    return file;
+  }
+}

@@ -32,9 +32,9 @@
           <svg class="wf-back" viewBox="0 0 216 170" aria-hidden="true">
             <path d="M2 12a10 10 0 0 1 10-10h62a10 10 0 0 1 7.4 3.3L95 22h109a10 10 0 0 1 10 10v126a10 10 0 0 1-10 10H12a10 10 0 0 1-10-10z" />
           </svg>
-          @if (folderThumbPaths[folderPreviewIndex]) {
+          @if (folderPreviewSrc) {
             <div class="wf-paper">
-              <img [src]="folderThumbPaths[folderPreviewIndex]" alt="" draggable="false">
+              <img [src]="folderPreviewSrc" (error)="folderPreviewFailed()" alt="" draggable="false">
             </div>
           }
           <svg class="wf-front" viewBox="0 0 216 170" aria-hidden="true">

@@ -552,16 +552,30 @@ function hasAllThumbs(
  * @param fullArray          - ImageElement array
  */
 export function extractAnyMissingThumbs(fullArray: ImageElement[]): void {
-  preventSleep();
-  fullArray.forEach((element: ImageElement) => {
-    if (element && element.hash && !(element as any).deleted && element.cleanName !== '*FOLDER*') {
-      thumbQueue.push(element);
+  // WsQ: queue only the files that really miss something, so the progress shows what is left
+  const screenshotOutputFolder: string = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName);
+  const shouldExtractClips: boolean = GLOBALS.screenshotSettings.clipSnippets > 0;
+  const candidates = (fullArray || []).filter((element: ImageElement) =>
+    element && element.hash && !(element as any).deleted && element.cleanName !== '*FOLDER*');
+
+  Promise.all(candidates.map(el =>
+    hasAllThumbs(el.hash, screenshotOutputFolder, shouldExtractClips).then(() => null, () => el)
+  )).then((missing: ImageElement[]) => {
+    const todo = missing.filter(Boolean);
+    console.log('missing thumbnails:', todo.length);
+    if (!todo.length) {
+      return;
+    }
+    preventSleep();
+    if (thumbExtractionStartTime === 0) {
+      thumbExtractionStartTime = performance.now();
+    }
+    todo.forEach(el => thumbQueue.push(el));
+    // the queue may still be paused after a folder scan -- go on if nothing is being imported
+    if (metadataQueue.idle()) {
+      thumbQueue.resume();
     }
   });
-  // WsQ: the queue may still be paused after a folder scan -- go on if nothing is being imported
-  if (metadataQueue.idle()) {
-    thumbQueue.resume();
-  }
 }
 
 /**

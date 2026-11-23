@@ -787,7 +787,19 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }
 
       const percentProgress: number = Math.round(100 * current / total);
-      this.progressString = 'loading - ' + percentProgress + '%';
+      // WsQ: "Miniatury 120 / 11 110 · zostało 10 990 · ~1 h 20 min"
+      const left = Math.max(0, total - current);
+      const what = this.translate.instant(stage === 'importingMeta' ? 'WSQ.progMeta' : 'WSQ.progThumbs');
+      const nf = (n: number) => n.toLocaleString('pl-PL');
+      let eta = '';
+      if (current > 3 && this.timeExtractionRemaining > 0) {
+        const t = this.timeExtractionRemaining;
+        const h = Math.floor(t / 3600);
+        const m = Math.floor((t % 3600) / 60);
+        eta = ' · ~' + (h ? h + ' h ' + m + ' min' : (m ? m + ' min' : t + ' s'));
+      }
+      this.progressString = what + ' ' + nf(current) + ' / ' + nf(total) + ' · '
+        + this.translate.instant('WSQ.progLeft') + ' ' + nf(left) + eta;
       this.extractionPercent = percentProgress;
 
       this.cd.detectChanges(); // seems needed to update the donut

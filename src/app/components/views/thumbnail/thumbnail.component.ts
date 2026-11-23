@@ -118,6 +118,38 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
 
   folderPreviewIndex = 0;
   private folderTimer: any = null;
+  private folderBad = new Set<string>();   // previews that do not exist (yet)
+  private folderRetry: any = null;
+
+  /** candidates for the folder preview: cover art first, then the thumbnail, for each of the 4 files */
+  private get folderCandidates(): string[] {
+    const hashes = (this.video.hash || '').split(':').filter(Boolean).slice(0, 4);
+    const out: string[] = [];
+    hashes.forEach(h => {
+      out.push(this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'covers', h));
+      out.push(this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'thumbnails', h));
+    });
+    return out;
+  }
+
+  get folderPreviewSrc(): string {
+    const ok = this.folderCandidates.filter(c => !this.folderBad.has(c));
+    return ok.length ? ok[this.folderPreviewIndex % ok.length] : '';
+  }
+
+  /** missing file (e.g. thumbnails still being made): try the next one, and look again in a while */
+  folderPreviewFailed(): void {
+    const src = this.folderPreviewSrc;
+    if (src) {
+      this.folderBad.add(src);
+    }
+    if (!this.folderRetry) {
+      this.folderRetry = setTimeout(() => {
+        this.folderRetry = null;
+        this.folderBad.clear();
+      }, 15000);
+    }
+  }
 
   /** the folder's own icon (desktop.ini), when Node found one */
   get folderIcon(): string {
@@ -125,15 +157,18 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     if (!p) {
       return '';
     }
+    if (p.startsWith('data:')) {
+      return p;
+    }
     return 'file:///' + p.replace(/\\/g, '/').split('/').map((seg, i) => (i === 0 && /:$/.test(seg)) ? seg : encodeURIComponent(seg)).join('/');
   }
 
   /** hovering a folder flips through up to four previews */
   folderHover(on: boolean): void {
     clearInterval(this.folderTimer);
-    if (on && this.folderThumbPaths.length > 1) {
+    if (on && this.folderCandidates.length > 1) {
       this.folderTimer = setInterval(() => {
-        this.folderPreviewIndex = (this.folderPreviewIndex + 1) % this.folderThumbPaths.length;
+        this.folderPreviewIndex = this.folderPreviewIndex + 1;
       }, 700);
     } else if (!on) {
       this.folderPreviewIndex = 0;
@@ -226,6 +261,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     clearInterval(this.scrollInterval);
     clearInterval(this.folderTimer);
+    clearTimeout(this.folderRetry);
   }
 
   openDetailsView(leftClick: PointerEvent): void {

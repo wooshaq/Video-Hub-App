@@ -12,7 +12,7 @@ import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
 import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
-import { folderIconOf } from './folder-icons';
+import { folderIconData } from './folder-icons';
 
 /**
  * Set up the listeners
@@ -62,7 +62,7 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
     (jobs || []).forEach(j => {
       let icon = '';
       for (const p of (j.paths || [])) {
-        icon = folderIconOf(p);
+        icon = folderIconData(p);
         if (icon) {
           break;
         }
