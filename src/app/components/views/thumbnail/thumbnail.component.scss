@@ -167,13 +167,7 @@
     width: 100%;
   }
 
-  &.wide .cover-img {
-    object-fit: cover;
-  }
-
-  &.wide .cover-bg {
-    display: none;
-  }
+  // WsQ: the whole cover is always visible (like Ritt); a blurred copy fills any bars
 }
 
 // WsQ: scrub position while hovering

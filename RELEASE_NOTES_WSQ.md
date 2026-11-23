@@ -1,5 +1,9 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.19
+- **Okładka zawsze w całości** (jak w Ritt): nic nie jest przycinane; jeśli proporcje okładki różnią się od kafelka, wolne miejsce wypełnia rozmyta kopia okładki.
+- **Koniec z białym błyskiem przy pasku przewijania:** cały dokument przechodzi w ciemny schemat (natywne paski, tło pod odświeżaniem), tory pasków przewijania są przezroczyste.
+
 ### Nowe w wsq.18
 - **Własne ikony folderów w rozmiarze folderu:** przezroczyste marginesy ikony są obcinane, więc ikona zajmuje tyle miejsca co rysowany folder.
 - **Podgląd w folderze:** najpierw okładka, potem miniatura; gdy pliku jeszcze nie ma (miniatury w trakcie robienia), bierze następny film, a po 15 s próbuje ponownie – zamiast białej kartki z pustym obrazkiem.

@@ -1,4 +1,4 @@
-import type { AfterViewInit, ElementRef, OnInit } from '@angular/core';
+import type { AfterViewChecked, AfterViewInit, ElementRef, OnInit } from '@angular/core';
 import { ChangeDetectorRef, NgZone, signal, viewChild } from '@angular/core';
 import { Component, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -110,7 +110,7 @@ import {
     topAnimation
   ]
 })
-export class HomeComponent implements OnInit, AfterViewInit {
+export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
 
   readonly fuzzySearch = viewChild<ElementRef>('fuzzySearch');
   readonly startsWithSearch = viewChild<ElementRef>('startsWithSearch');
@@ -1089,6 +1089,19 @@ export class HomeComponent implements OnInit, AfterViewInit {
   // =======================================================================================================================================
   // =======================================================================================================================================
   // =======================================================================================================================================
+
+  // WsQ: the whole document follows the theme (native scroll bars, canvas behind repaints) -> no white flashes
+  private lastDarkApplied: boolean | null = null;
+
+  ngAfterViewChecked(): void {
+    const dark = !!(this.settingsButtons && this.settingsButtons['darkMode'] && this.settingsButtons['darkMode'].toggled);
+    if (dark !== this.lastDarkApplied) {
+      this.lastDarkApplied = dark;
+      const root = document.documentElement;
+      root.style.colorScheme = dark ? 'dark' : 'light';
+      root.classList.toggle('wsq-root-dark', dark);
+    }
+  }
 
   ngAfterViewInit() {
     setTimeout(() => {
