@@ -101,6 +101,11 @@
       >
                                                                 {{ 'RIGHTCLICK.openFolder'  | translate }}</li>
       <li (click)="openThumbnailSheet(currentRightClickedItem)">{{ 'RIGHTCLICK.sheetModal'  | translate }}</li>
+      <li (click)="copyTagsFrom(currentRightClickedItem)">       {{ 'WSQ.copyTags' | translate }}</li>
+      <li (click)="pasteTagsNow(currentRightClickedItem)"
+          [ngClass]="{ 'right-click-disabled': !copiedTags.length }">{{ 'WSQ.pasteTags' | translate }}</li>
+      <li (click)="refreshCoverNow()">                          {{ 'WSQ.refreshCover' | translate }}</li>
+      <li (click)="checkAllCoversNow()">                        {{ 'WSQ.checkAllCovers'      | translate }}</li>
     @if (settingsButtons['showDeleteOption'].toggled) {
       <li
         (click)="deleteThisFile(currentRightClickedItem)"
@@ -312,9 +317,11 @@
   <div
     class="window-content"
     [ngStyle]="{
-      transform: appState.menuHidden ? 'translate(0, -32px)' : 'translate(0, 0)',
-      '--tp': tagPaneWidth + 'px'
+      transform: appState.menuHidden ? 'translate(0, -40px)' : 'translate(0, 0)',
+      '--tp': tagPaneWidth + 'px',
+      '--dp': detailsWidth + 'px'
     }"
+    [ngClass]="{ 'wsq-layout': true, 'filters-open': filtersOpen, 'wsq-dark': settingsButtons['darkMode'].toggled }"
   >
 
     <!-- ============================================== -->
@@ -329,13 +336,103 @@
       }"
     >
 
+    @if (showVhaRibbon) {
       <!-- ALL THE BUTTONS IN THE RIBBON -->
-      <app-ribbon
-        (toggleButton)="toggleButton($any($event))"
-        [appState]="appState"
-        [settingsButtonsGroups]="settingsButtonsGroups"
-        [settingsButtons]="settingsButtons"
-       />
+      <div class="wsq-ribbon-row">
+        <button class="wsq-tb-btn" (click)="showVhaRibbon = false" title="{{ 'WSQ.backToToolbar' | translate }}" aria-label="Pasek narzędzi">
+          <svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" /></svg>
+        </button>
+        <app-ribbon
+          (toggleButton)="toggleButton($any($event))"
+          [appState]="appState"
+          [settingsButtonsGroups]="settingsButtonsGroups"
+          [settingsButtons]="settingsButtons"
+         />
+      </div>
+    } @else {
+      <!-- WsQ toolbar (Ritt-style) -->
+      <div class="wsq-toolbar">
+        <button class="wsq-tb-btn" [ngClass]="{ on: settingsButtons['showTagPane'].toggled }" (click)="toggleButton('showTagPane')" title="{{ 'BUTTONS.tagPaneHint' | translate }}" aria-label="Drzewo tagów">
+          <svg viewBox="0 0 16 16"><path d="M2 2h6l6 6-6 6-6-6z" /><circle cx="5.5" cy="5.5" r="1" /></svg>
+        </button>
+        <button class="wsq-tb-btn" [ngClass]="{ on: settingsButtons['showFolders'].toggled }" (click)="toggleButton('showFolders')" title="{{ 'BUTTONS.showFoldersHint' | translate }}" aria-label="Foldery">
+          <svg viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg>
+        </button>
+
+        <button class="wsq-tb-btn" (click)="rescanAllFolders()" title="{{ 'WSQ.rescan' | translate }}" aria-label="Odśwież">
+          <svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" /></svg>
+        </button>
+
+        <label class="wsq-search">
+          <input
+            #wsqSearchInput
+            type="text"
+            [(ngModel)]="wsqSearch"
+            (keyup.escape)="wsqSearch = ''"
+            placeholder="{{ 'WSQ.searchPlaceholder' | translate }}"
+          >
+          @if (wsqSearch) {
+            <button class="wsq-clear" (click)="wsqSearch = ''" aria-label="Wyczyść">✕</button>
+          } @else {
+            <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
+          }
+        </label>
+
+        <button class="wsq-tb-text" [ngClass]="{ on: filtersOpen || activeFilterCount() }" (click)="filtersOpen = !filtersOpen">
+          <svg viewBox="0 0 16 16"><path d="M2 3h12l-4.5 5.5V13l-3-1.5v-3z" /></svg>
+          {{ 'WSQ.filters' | translate }}
+          @if (activeFilterCount()) { <span class="wsq-badge">{{ activeFilterCount() }}</span> }
+        </button>
+
+        <label class="wsq-sort">
+          <svg viewBox="0 0 16 16"><path d="M5 2v12M2.5 11 5 14l2.5-3M11 14V2M8.5 5 11 2l2.5 3" /></svg>
+          <select [ngModel]="sortType" (ngModelChange)="selectFilterOrder($event)" aria-label="Sortowanie">
+            <option value="default">{{ 'SIDEBAR.sortDefault' | translate }}</option>
+            <option value="alphabetAsc">▲ {{ 'SIDEBAR.sortAlphabetical' | translate }}</option>
+            <option value="alphabetDesc">▼ {{ 'SIDEBAR.sortAlphabetical' | translate }}</option>
+            <option value="modifiedDesc">▼ {{ 'SIDEBAR.sortModified' | translate }}</option>
+            <option value="modifiedAsc">▲ {{ 'SIDEBAR.sortModified' | translate }}</option>
+            <option value="createdDesc">▼ {{ 'SIDEBAR.sortCreated' | translate }}</option>
+            <option value="createdAsc">▲ {{ 'SIDEBAR.sortCreated' | translate }}</option>
+            <option value="timeDesc">▼ {{ 'SIDEBAR.sortTime' | translate }}</option>
+            <option value="timeAsc">▲ {{ 'SIDEBAR.sortTime' | translate }}</option>
+            <option value="sizeDesc">▼ {{ 'SIDEBAR.sortSize' | translate }}</option>
+            <option value="sizeAsc">▲ {{ 'SIDEBAR.sortSize' | translate }}</option>
+            <option value="starDesc">▼ {{ 'SIDEBAR.sortStar' | translate }}</option>
+            <option value="timesPlayedDesc">▼ {{ 'SIDEBAR.sortTimesPlayed' | translate }}</option>
+            <option value="lastPlayedDesc">▼ {{ 'SIDEBAR.sortLastPlayed' | translate }}</option>
+            <option value="yearDesc">▼ {{ 'SIDEBAR.sortYear' | translate }}</option>
+            <option value="yearAsc">▲ {{ 'SIDEBAR.sortYear' | translate }}</option>
+            <option value="tagsDesc">▼ {{ 'SIDEBAR.sortTags' | translate }}</option>
+            <option value="random">{{ 'SIDEBAR.sortRandom' | translate }}</option>
+          </select>
+        </label>
+
+        <span class="wsq-sep"></span>
+
+        <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showThumbnails' }" (click)="toggleButton('showThumbnails')" title="{{ 'BUTTONS.showThumbnailsHint' | translate }}" aria-label="Miniatury">
+          <svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1" /><rect x="9" y="2" width="5" height="5" rx="1" /><rect x="2" y="9" width="5" height="5" rx="1" /><rect x="9" y="9" width="5" height="5" rx="1" /></svg>
+        </button>
+        <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showDetails' }" (click)="toggleButton('showDetails')" title="{{ 'BUTTONS.showDetailsHint' | translate }}" aria-label="Szczegóły">
+          <svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="4.5" height="3" rx=".8" /><rect x="2" y="9.5" width="4.5" height="3" rx=".8" /><path d="M8.5 3.5h5.5M8.5 10.5h5.5" /></svg>
+        </button>
+        <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showFiles' }" (click)="toggleButton('showFiles')" title="{{ 'BUTTONS.showFilesHint' | translate }}" aria-label="Lista">
+          <svg viewBox="0 0 16 16"><path d="M5 4h9M5 8h9M5 12h9M2 4h.01M2 8h.01M2 12h.01" /></svg>
+        </button>
+        <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showClips' }" (click)="toggleButton('showClips')" title="{{ 'BUTTONS.showClipsHint' | translate }}" aria-label="Klipy">
+          <svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="M7 6v4l3-2z" /></svg>
+        </button>
+
+        <span class="wsq-sep"></span>
+
+        <button class="wsq-tb-btn" [ngClass]="{ on: detailsOpen }" (click)="toggleDetailsPanel()" title="{{ 'WSQ.detailsPanel' | translate }}" aria-label="Panel szczegółów">
+          <svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5" /><path d="M10 2.5v11" /></svg>
+        </button>
+        <button class="wsq-tb-btn" (click)="showVhaRibbon = true" title="{{ 'WSQ.vhaButtons' | translate }}" aria-label="Przyciski VHA">
+          <svg viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.2" /><circle cx="8" cy="8" r="1.2" /><circle cx="12.5" cy="8" r="1.2" /></svg>
+        </button>
+      </div>
+    }
 
       <!-- GEAR BUTTON -->
       <div
@@ -431,6 +528,18 @@
       #searchRef
     >
 
+      <div class="wsq-filters-head">
+        <span>{{ 'WSQ.filters' | translate }}</span>
+        <button class="wsq-tb-btn" (click)="filtersOpen = false" aria-label="Zamknij">
+          <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
+      </div>
+      <div class="wsq-filter-toggles">
+        @for (k of wsqFilterKeys; track k.key) {
+          <button class="wsq-chip" [ngClass]="{ on: settingsButtons[k.key].toggled }" (click)="toggleButton($any(k.key))">{{ k.label | translate }}</button>
+        }
+      </div>
+
       <div class="filtering-total">
 
       @if (!allFinishedScanning() || importStage === 'importingMeta') {
@@ -459,6 +568,7 @@
 
       </div>
 
+    @if (showVhaRibbon) {
       <!-- Regular search boxes / filters -->
       <app-search-boxes
         (checkTagTypeahead)="checkTagTypeahead($event)"
@@ -595,6 +705,8 @@
           </span>
         </div>
       </div>
+    }
+
     }
 
       <!-- durationFilter -->
@@ -816,6 +928,7 @@
         }"
       [darkMode]="settingsButtons['darkMode'].toggled"
       (changed)="onTagFilterChanged()"
+      (heightChange)="tagBarHeightPx = $event"
     />
   }
 
@@ -826,6 +939,7 @@
     <virtual-scroller
       #scroll
       id="scrollDiv"
+      (wheel)="galleryWheel($event)"
       class="gallery-container"
 
       [ngStyle]="{
@@ -902,6 +1016,8 @@
                 | fileSearchPipe : filters[9].array : filters[9].bool : false : 'notes'  : false
 
                 | tagLibraryFilterPipe : tagLib.filterVersion
+
+                | wsqSearchPipe : wsqSearch : tagLib.filterVersion
 
                 | magicSearchPipe : magicSearchString
 
@@ -1211,6 +1327,114 @@
       } @else {
         {{ 'SETTINGS.noResultsFound' | translate }}
       }
+    </div>
+  }
+
+  <!-- ===========  WsQ: details panel (right)  =========== -->
+  @if (detailsOpen) {
+    <div
+      class="wsq-details"
+      [ngClass]="{ dark: settingsButtons['darkMode'].toggled }"
+      [ngStyle]="{
+          'height': 'calc(100vh - ' + (
+                        appState.menuHidden | sidebarHeightPipe
+                          : settingsButtons['hideTop'].toggled
+                          : (
+                                 settingsButtons['showDetailsTray'].toggled
+                              || settingsButtons['showFreq'].toggled
+                              || settingsButtons['showRecentlyPlayed'].toggled
+                              || settingsButtons['showRelatedVideosTray'].toggled
+                              || settingsButtons['showTagTray'].toggled
+                            )
+                      ) + 'px)'
+        }"
+    >
+      <div class="wsq-details-scroll" (wheel)="detailsWheel($event)">
+        <div class="wsq-details-inner" [ngStyle]="{ zoom: detailsZoom }">
+        @if (currentClickedItem) {
+          <app-thumbnail
+            (rightClick)="rightMouseClicked($event.mouseEvent, $event.item)"
+            (videoClick)="openVideo(currentClickedItem, $event.thumbIndex)"
+            (sheetClick)="this.openThumbnailSheet(currentClickedItem)"
+
+            [elHeight]="detailsThumbHeight"
+            [elWidth]="detailsThumbWidth"
+            [folderPath]="appState.selectedOutputFolder"
+            [hubName]="appState.hubName"
+            [imgHeight]="detailsThumbHeight"
+
+            [video]="currentClickedItem"
+
+            [connected]="sourceFolderService.sourceFolderConnected[currentClickedItem.inputSource]"
+
+            [darkMode]="settingsButtons['darkMode'].toggled"
+            [compactView]="true"
+            [hoverScrub]="true"
+            [largerFont]="settingsButtons['fontSizeLarger'].toggled"
+            [returnToFirstScreenshot]="true"
+            [showMeta]="false"
+           />
+
+          <app-meta-item
+            class="wsq-meta"
+
+            (filterTag)="handleTagWordClicked($event.tag.name, $event.event)"
+
+            [video]="currentClickedItem"
+
+            [settingsButtons]="settingsButtons"
+
+            [imgHeight]="0"
+            [maxWidth]="detailsThumbWidth"
+            [star]="currentClickedItem.stars"
+
+            [darkMode]="settingsButtons['darkMode'].toggled"
+            [largerFont]="settingsButtons['fontSizeLarger'].toggled"
+            [showAutoFileTags]="false"
+            [showAutoFolderTags]="false"
+            [showManualTags]="true"
+            [showMeta]="true"
+            [showVideoNotes]="true"
+            [renameResponse]="renameFileResponseBehaviorSubject"
+           />
+
+          <div class="wsq-tag-tools">
+            <button class="wsq-icon-btn" (click)="copyTagsFrom(currentClickedItem)" title="{{ 'WSQ.copyTags' | translate }}" aria-label="Kopiuj tagi">
+              <svg viewBox="0 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5" /><path d="M3 10.5V3.5A1 1 0 0 1 4 2.5h7" /></svg>
+            </button>
+            <button class="wsq-icon-btn" [disabled]="!copiedTags.length" (click)="pasteTagsNow()" title="{{ 'WSQ.pasteTags' | translate }}{{ copiedTags.length ? ': ' + copiedTags.join(', ') : '' }}" aria-label="Wklej tagi">
+              <svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="11" rx="1.5" /><path d="M6 3V2h4v1M5.5 7.5h5M5.5 10h3.5" /></svg>
+              @if (copiedTags.length) { <span class="wsq-icon-count">{{ copiedTags.length }}</span> }
+            </button>
+          </div>
+
+          @if (currentClickedItem.screens > 1) {
+            <div class="wsq-frames-title">{{ 'WSQ.frames' | translate }}</div>
+            <div class="wsq-frames">
+              @for (f of framesOf(currentClickedItem); track f.index) {
+                <button
+                  class="wsq-frame"
+                  [ngStyle]="{
+                    'background-image': 'url(' + filmstripPathOf(currentClickedItem) + ')',
+                    'background-size': (currentClickedItem.screens * 100) + '% 100%',
+                    'background-position': f.pos + '% 0'
+                  }"
+                  (click)="openVideo(currentClickedItem, f.index)"
+                  [title]="f.time"
+                ></button>
+              }
+            </div>
+          }
+
+          <div class="wsq-path" [title]="filePathService.getPathFromImageElement(currentClickedItem)">
+            {{ filePathService.getPathFromImageElement(currentClickedItem) }}
+          </div>
+        } @else {
+          <div class="wsq-details-empty">{{ 'WSQ.pickFile' | translate }}</div>
+        }
+        </div>
+      </div>
+      <div class="wsq-details-foot">{{ 'WSQ.panel' | translate }} {{ (detailsZoom * 100) | number : '1.0-0' }}% · Ctrl + {{ 'WSQ.wheel' | translate }}</div>
     </div>
   }
 

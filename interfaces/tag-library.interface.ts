@@ -12,6 +12,9 @@ export interface TagNode {
   encapsulate?: boolean;        // activating the tag also shows items tagged with its children
   hidden?: boolean;             // hidden from the tag pane (unless "show hidden" is on)
   hotkey?: string;              // '1' ... '9', '0'
+  inherit?: number;             // folder inheritance depth: undefined = all levels, 0 = none, n = n levels
+  color?: string;               // hex color of the tag
+  notes?: string;               // free-form notes
   collapsed?: boolean;
   children?: TagNode[];
 }

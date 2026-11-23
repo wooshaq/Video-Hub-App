@@ -9,7 +9,7 @@
   overflow: hidden;
   padding: 5px 5px 5px 28px;
   position: absolute;
-  top: 32px;
+  top: 40px;
   transition-duration: 300ms;
   transition-property: left, width;
   width: calc(100vw - #{variables.$sidebar-width} - var(--tp, 0px));
@@ -40,7 +40,7 @@
 
 .breadcrumbs-full-width {
   left: var(--tp, 0px);
-  width: calc(100vw - var(--tp, 0px));
+  width: calc(100vw - var(--tp, 0px) - var(--dp, 0px));
 }
 
 .breadcrumb-folder-word {

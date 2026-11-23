@@ -144,6 +144,21 @@
       src="{{ hover ? fullFilePath : firstFilePath }}"
     >
 
+  @if (coverSrc && !inside) {
+    <div class="cover-layer" [ngClass]="{ wide: coverWide }">
+      <img class="cover-bg" [src]="coverSrc" alt="">
+      <img class="cover-img" [src]="coverSrc" (load)="onCoverLoad($event)" alt="">
+    </div>
+  }
+
+  @if (inside && hoverScrub() && video.screens > 1) {
+    <div class="scrub-ticks">
+      @for (t of scrubTicks; track t) {
+        <div class="tick" [ngClass]="{ on: t === scrubIndex }"></div>
+      }
+    </div>
+  }
+
   @if (video.selected) {
     <app-icon class="selected" [icon]="'icon-show-more-info'" />
   }

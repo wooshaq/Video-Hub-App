@@ -54,6 +54,8 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   folderThumbPaths: string[] = [];
   fullFilePath = '';
   hover = false;
+  inside = false;      // WsQ: mouse over the thumbnail (cover art is hidden while scrubbing)
+  coverWide = true;    // WsQ: landscape cover fills the tile, portrait one is centered on a blurred copy
   indexToShow = 1;
   percentOffset = 0;
   scrollInterval: any = null;
@@ -86,7 +88,34 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     return 100 * video.defaultScreen / video.screens;
   }
 
+  /** WsQ: path to the cover art (if the file has one) */
+  get coverSrc(): string {
+    const v = this.video;
+    if (!v || !v.cover || v.cover <= 0 || v.cleanName === '*FOLDER*') {
+      return '';
+    }
+    return this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'covers', v.hash) + '?v=' + v.cover;
+  }
+
+  get scrubTicks(): number[] {
+    const n = Math.min(Math.max(this.video?.screens || 0, 1), 30);
+    return Array.from({ length: n }, (_, i) => i);
+  }
+
+  get scrubIndex(): number {
+    const n = Math.min(Math.max(this.video?.screens || 0, 1), 30);
+    return Math.max(0, Math.min(n - 1, Math.floor(this.percentOffset / 100 * n)));
+  }
+
+  onCoverLoad(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.naturalHeight) {
+      this.coverWide = img.naturalWidth / img.naturalHeight >= 1.3;
+    }
+  }
+
   mouseEntered() {
+    this.inside = true;
     this.containerWidth = this.filmstripHolder().nativeElement.getBoundingClientRect().width;
 
     if (this.thumbAutoAdvance()) {
@@ -103,6 +132,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   }
 
   mouseLeft() {
+    this.inside = false;
     if (this.thumbAutoAdvance()) {
       clearInterval(this.scrollInterval);
     }

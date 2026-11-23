@@ -14,6 +14,7 @@ import { GLOBALS } from './main-globals';
 import type { ImageElement, ImageElementPlus } from '../interfaces/final-object.interface';
 import { acceptableFiles } from './main-filenames';
 import { extractAll } from './main-extract';
+import { extractCover } from './main-covers';
 import { sendCurrentProgress, insertTemporaryFieldsSingle, extractMetadataAsync, cleanUpFileName } from './main-support';
 
 export interface TempMetadataQueueObject {
@@ -47,7 +48,26 @@ let numberOfThumbsDeleted = 0;
 
 // Create maps where the value = 1 always.
 // It is faster to check if key exists than searching through an array.
-let alreadyInAngular: Map<string, 1> = new Map(); // full paths to videos we have metadata for in Angular
+// full paths to videos we have metadata for in Angular (+ what we need to notice a changed file)
+interface KnownFile {
+  size: number;
+  mtime: number;
+  hash: string;
+  duration: number;
+  width: number;
+  height: number;
+}
+let alreadyInAngular: Map<string, KnownFile> = new Map();
+
+function knownOf(el: ImageElement): KnownFile {
+  return { size: el.fileSize, mtime: el.mtime, hash: el.hash, duration: el.duration, width: el.width, height: el.height };
+}
+
+// cover queue (WsQ) -- cover art from file metadata
+let coverQueue;          // QueueObject - accepts `{ fullPath, hash }`
+
+// changed files queue (WsQ) -- files already in the hub whose size / modification time changed
+let changedQueue;        // QueueObject - accepts `{ fullPath, inputSource, partialPath, fileName }`
 
 // These two are together:
 const watcherMap:       Map<number, FSWatcher> = new Map();
@@ -83,6 +103,15 @@ export function resetAllQueues(): void {
   if (deleteThumbQueue && typeof deleteThumbQueue.kill === 'function') {
     deleteThumbQueue.kill();
   }
+  if (coverQueue && typeof coverQueue.kill === 'function') {
+    coverQueue.kill();
+  }
+  if (changedQueue && typeof changedQueue.kill === 'function') {
+    changedQueue.kill();
+  }
+
+  coverQueue = async.queue(coverQueueRunner, 1);
+  changedQueue = async.queue(changedQueueRunner, 1);
 
   // Meta queue ========================================================================================================
   metaDone = 0;
@@ -161,7 +190,9 @@ function thumbQueueRunner(element: ImageElement, done): void {
  */
 function sendNewVideoMetadata(imageElement: ImageElementPlus): void {
 
-  alreadyInAngular.set(imageElement.fullPath, 1);
+  alreadyInAngular.set(imageElement.fullPath, knownOf(imageElement));
+
+  coverQueue.push({ fullPath: imageElement.fullPath, hash: imageElement.hash });
 
   delete imageElement.fullPath; // downgrade to `ImageElement` from `ImageElementPlus`
 
@@ -253,11 +284,12 @@ function superFastSystemScan(inputDir: string, inputSource: number): void {
       }
       allFoundFilesMap.get(inputSource).set(fullPath, 1);
 
+      const partial: string = path.relative(inputDir, parsed.dir).replace(/\\/g, '/');
+
       if (alreadyInAngular.has(fullPath)) {
+        changedQueue.push({ fullPath, inputSource, partialPath: '/' + partial, fileName: parsed.base });
         return;
       }
-
-      const partial: string = path.relative(inputDir, parsed.dir).replace(/\\/g, '/');
 
       const newItem: TempMetadataQueueObject = {
         fullPath: fullPath,
@@ -273,6 +305,11 @@ function superFastSystemScan(inputDir: string, inputSource: number): void {
     GLOBALS.angularApp.sender.send('all-files-found-in-dir', inputSource, allFoundFilesMap.get(inputSource));
 
     metadataQueue.resume();
+
+    // WsQ: nothing new to import -> the metadata `drain` never fires, so resume the thumbnails here
+    if (metadataQueue.idle()) {
+      thumbQueue.resume();
+    }
 
   });
 
@@ -340,6 +377,7 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
       allFoundFilesMap.get(inputSource).set(fullPath, 1);
 
       if (alreadyInAngular.has(fullPath)) {
+        changedQueue.push({ fullPath, inputSource, partialPath, fileName });
         return;
       }
 
@@ -351,6 +389,15 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
       };
 
       metadataQueue.push(newItem);
+    })
+    .on('change', (filePath: string) => {
+      const subPath = ('/' + filePath.replace(/\\/g, '/')).replace('//', '/');
+      const partialPath = subPath.substring(0, subPath.lastIndexOf('/'));
+      const fileName = subPath.substring(subPath.lastIndexOf('/') + 1);
+      const fullPath = path.join(inputDir, partialPath, fileName);
+      if (alreadyInAngular.has(fullPath)) {
+        changedQueue.push({ fullPath, inputSource, partialPath, fileName });
+      }
     })
     .on('unlink', (partialFilePath: string) => {    // note: this happens even when file is renamed!
       console.log(' !!! FILE DELETED, updating Angular:', partialFilePath);
@@ -403,7 +450,7 @@ export function resetWatchers(finalArray: ImageElement[]): void {
       element.fileName
     );
 
-    alreadyInAngular.set(fullPath, 1);
+    alreadyInAngular.set(fullPath, knownOf(element));
   });
 }
 
@@ -563,4 +610,72 @@ function allowSleep(): void {
 
 function logPerformance(message: string, initial: number): void {
   console.log(message + Math.round((performance.now() - initial) / 100) / 10 + ' seconds.');
+}
+
+
+// =====================================================================================================================
+// WsQ: covers from metadata + changed files
+// =====================================================================================================================
+
+function coversFolder(): string {
+  return path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'covers');
+}
+
+function coverQueueRunner(job: { fullPath: string, hash: string }, done): void {
+  extractCover(job.fullPath, job.hash, coversFolder())
+    .then((has: boolean) => {
+      try {
+        GLOBALS.angularApp.sender.send('cover-result', job.hash, has ? Date.now() : 0);
+      } catch { }
+      done();
+    })
+    .catch(() => done());
+}
+
+/**
+ * Angular asks to (re)check covers of these files (first run of a hub, "refresh cover", "check all")
+ */
+export function checkCovers(jobs: { fullPath: string, hash: string }[]): void {
+  jobs.forEach(j => coverQueue.push(j));
+}
+
+/**
+ * A file we already know: if its size or modification time changed, re-read the metadata.
+ * Same duration and resolution = same video (e.g. only a cover was added) -> keep the old hash and screenshots,
+ * otherwise use the new hash and extract new screenshots.
+ */
+function changedQueueRunner(job: { fullPath: string, inputSource: number, partialPath: string, fileName: string }, done): void {
+  const known = alreadyInAngular.get(job.fullPath);
+  if (!known) {
+    done();
+    return;
+  }
+  fs.stat(job.fullPath, (err, st) => {
+    if (err || (st.size === known.size && Math.round(st.mtimeMs) === known.mtime)) {
+      done();
+      return;
+    }
+    extractMetadataAsync(job.fullPath, GLOBALS.screenshotSettings)
+      .then((el: ImageElementPlus) => {
+        const sameVideo = el.duration === known.duration && el.width === known.width && el.height === known.height;
+        if (sameVideo) {
+          el.hash = known.hash;
+        }
+        el.cleanName = cleanUpFileName(job.fileName);
+        el.fileName = job.fileName;
+        el.inputSource = job.inputSource;
+        el.partialPath = job.partialPath;
+        alreadyInAngular.set(job.fullPath, knownOf(el));
+
+        const forAngular = insertTemporaryFieldsSingle(Object.assign({}, el));
+        delete (forAngular as any).fullPath;
+        GLOBALS.angularApp.sender.send('video-file-changed', forAngular, known.hash);
+
+        if (!sameVideo) {
+          thumbQueue.push(el);
+        }
+        coverQueue.push({ fullPath: job.fullPath, hash: el.hash });
+        done();
+      }, () => done());
+  });
 }

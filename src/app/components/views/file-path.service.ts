@@ -6,7 +6,7 @@ import { SourceFolderService } from '../statistics/source-folder.service';
 
 import type { ImageElement } from '../../../../interfaces/final-object.interface';
 
-type FolderType = 'thumbnails' | 'filmstrips' | 'clips';
+type FolderType = 'thumbnails' | 'filmstrips' | 'clips' | 'covers';
 
 @Injectable()
 export class FilePathService {

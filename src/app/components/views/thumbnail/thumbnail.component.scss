@@ -88,3 +88,61 @@
     max-width: calc(100% - 66px);
   }
 }
+
+// WsQ: cover art from metadata
+.cover-layer {
+  background: #111;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+
+  .cover-bg {
+    filter: blur(14px) brightness(0.55);
+    height: 100%;
+    inset: 0;
+    object-fit: cover;
+    position: absolute;
+    transform: scale(1.15);
+    width: 100%;
+  }
+
+  .cover-img {
+    height: 100%;
+    inset: 0;
+    object-fit: contain;
+    position: absolute;
+    width: 100%;
+  }
+
+  &.wide .cover-img {
+    object-fit: cover;
+  }
+
+  &.wide .cover-bg {
+    display: none;
+  }
+}
+
+// WsQ: scrub position while hovering
+.scrub-ticks {
+  bottom: 6px;
+  display: flex;
+  gap: 3px;
+  left: 8px;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  z-index: 2;
+
+  .tick {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 2px;
+    flex: 1;
+    height: 3px;
+
+    &.on {
+      background: #4cb4ff;
+    }
+  }
+}

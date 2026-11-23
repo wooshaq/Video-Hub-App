@@ -7,6 +7,7 @@ import { ManualTagsService } from '../tags-manual/manual-tags.service';
 import type { ImageElement } from '../../../../interfaces/final-object.interface';
 import type { TagBadgeMode, TagLibrary, TagNode } from '../../../../interfaces/tag-library.interface';
 import { NewTagLibrary } from '../../../../interfaces/tag-library.interface';
+import type { RittImportData, RittTag } from '../../../../interfaces/ritt.interface';
 
 export interface EffectiveTags {
   direct: string[];       // tags stored on the file itself
@@ -123,6 +124,17 @@ export class TagLibraryService {
       });
     });
     (window as any).myElectron.sendToMain('load-tag-library');
+
+    (window as any).myElectron.receiveFromMain('ritt-import-data', (data: RittImportData) => {
+      this.zone.run(() => this.rittImportReceived.next(data));
+    });
+  }
+
+  /** emits the parsed Ritt database after the user picked a file */
+  rittImportReceived = new Subject<RittImportData>();
+
+  pickRittFile(): void {
+    (window as any).myElectron.sendToMain('ritt-import-pick');
   }
 
   private scheduleSave(): void {
@@ -288,6 +300,7 @@ export class TagLibraryService {
       const matches = (n: TagNode): boolean => n.type !== 'separator' && (
            n.name.toLowerCase().includes(ft)
         || (n.aliases || []).some(a => a.toLowerCase().includes(ft))
+        || (n.notes || '').toLowerCase().includes(ft)
       );
       const walk = (nodes: TagNode[], depth: number, parent: TagNode | null): boolean => {
         let any = false;
@@ -348,7 +361,7 @@ export class TagLibraryService {
   getEffective(item: ImageElement): EffectiveTags {
     const sig = (item.tags || []).join('\u0001') + '\u0002' + item.partialPath;
     const cached = this.effCache.get(item);
-    if (cached && cached.v === this.dataVersion && cached.sig === sig) {
+    if (cached && cached.v === this.dataVersion * 100000 + this.libVersion && cached.sig === sig) {
       return cached.eff;
     }
     const direct = (item.tags || []).slice();
@@ -358,20 +371,38 @@ export class TagLibraryService {
       // folder pseudo-item: its own tags are "direct", parents' are inherited
       const own = this.folderTags[item.partialPath] || [];
       own.forEach(t => { if (!all.has(t)) { all.add(t); direct.push(t); } });
-      this.folderAncestors(item.partialPath).slice(0, -1).forEach(f => {
+      const anc = this.folderAncestors(item.partialPath).slice(0, -1);
+      anc.forEach((f, idx) => {
+        const level = anc.length - idx;   // subfolder of a tagged folder: level 1
         (this.folderTags[f] || []).forEach(t => {
-          if (!all.has(t)) { all.add(t); inherited.push(t); }
+          const depth = this.byName.get(t)?.inherit;
+          if (all.has(t) || (depth !== undefined && level > depth)) {
+            return;
+          }
+          all.add(t);
+          inherited.push(t);
         });
       });
     } else {
-      this.folderAncestors(item.partialPath).forEach(f => {
+      // a file directly inside a tagged folder is level 1, one folder deeper level 2, ...
+      const anc = this.folderAncestors(item.partialPath);
+      anc.forEach((f, idx) => {
+        const level = anc.length - idx;
         (this.folderTags[f] || []).forEach(t => {
-          if (!all.has(t)) { all.add(t); inherited.push(t); }
+          if (all.has(t)) {
+            return;
+          }
+          const depth = this.byName.get(t)?.inherit;
+          if (depth !== undefined && level > depth) {
+            return;
+          }
+          all.add(t);
+          inherited.push(t);
         });
       });
     }
     const eff: EffectiveTags = { direct, inherited, all };
-    this.effCache.set(item, { v: this.dataVersion, sig, eff });
+    this.effCache.set(item, { v: this.dataVersion * 100000 + this.libVersion, sig, eff });
     return eff;
   }
 
@@ -549,6 +580,18 @@ export class TagLibraryService {
     this.filterVersion++;
   }
 
+  /** ZAWIERA <-> UNIKA */
+  toggleMode(name: string): void {
+    if (this.active.includes(name)) {
+      this.active = this.active.filter(t => t !== name);
+      this.excluded = [...this.excluded, name];
+    } else if (this.excluded.includes(name)) {
+      this.excluded = this.excluded.filter(t => t !== name);
+      this.active = [...this.active, name];
+    }
+    this.filterVersion++;
+  }
+
   deactivate(name: string): void {
     this.active = this.active.filter(t => t !== name);
     this.excluded = this.excluded.filter(t => t !== name);
@@ -637,6 +680,64 @@ export class TagLibraryService {
       if (!this.folderTags[partialPath].length) {
         delete this.folderTags[partialPath];
       }
+      this.imageElementService.finalArrayNeedsSaving = true;
+      this.touchData();
+    }
+  }
+
+  // ---------- folder renamed / moved outside VHA: tagged folders follow their files ----------
+
+  private pathMoves: { from: string, to: string }[] = [];
+  private pathMoveTimer: any;
+
+  /** called when a re-appearing file (same hash) moved from one folder to another */
+  notePathMove(from: string, to: string): void {
+    if (from === to) {
+      return;
+    }
+    this.pathMoves.push({ from, to });
+    clearTimeout(this.pathMoveTimer);
+    this.pathMoveTimer = setTimeout(() => this.applyPathMoves(), 1500);
+  }
+
+  private applyPathMoves(): void {
+    const moves = this.pathMoves;
+    this.pathMoves = [];
+    if (!moves.length) {
+      return;
+    }
+    const live = this.imageElementService.imageElements.filter(e => !e.deleted && e.cleanName !== '*FOLDER*');
+    let changed = false;
+    Object.keys(this.folderTags).forEach(folder => {
+      const stillUsed = live.some(e => e.partialPath === folder || e.partialPath.startsWith(folder + '/'));
+      if (stillUsed) {
+        return;
+      }
+      const votes = new Map<string, number>();
+      moves.forEach(m => {
+        if (m.from !== folder && !m.from.startsWith(folder + '/')) {
+          return;
+        }
+        const rest = m.from.slice(folder.length);           // '' or '/sub/folders'
+        if (!m.to.endsWith(rest)) {
+          return;
+        }
+        const target = m.to.slice(0, m.to.length - rest.length);
+        if (target) {
+          votes.set(target, (votes.get(target) || 0) + 1);
+        }
+      });
+      if (!votes.size) {
+        return;
+      }
+      const target = Array.from(votes.entries()).sort((a, b) => b[1] - a[1])[0][0];
+      const merged = this.folderTags[target] || [];
+      this.folderTags[folder].forEach(t => { if (!merged.includes(t)) { merged.push(t); } });
+      this.folderTags[target] = merged;
+      delete this.folderTags[folder];
+      changed = true;
+    });
+    if (changed) {
       this.imageElementService.finalArrayNeedsSaving = true;
       this.touchData();
     }
@@ -819,6 +920,50 @@ export class TagLibraryService {
     this.touchLib();
   }
 
+  colorOf(name: string): string {
+    return this.byName.get(name)?.color || '';
+  }
+
+  setColor(node: TagNode, color: string | null): void {
+    if (color) {
+      node.color = color;
+    } else {
+      delete node.color;
+    }
+    // the original VHA tag chips use the per-hub color map
+    this.manualTagsService.setTagColor(node.name, color || null);
+    this.imageElementService.finalArrayNeedsSaving = true;
+    this.touchLib();
+  }
+
+  /** alphabetical (natural) order of the children; deep = all descendants */
+  sortChildren(node: TagNode, deep: boolean): void {
+    const cmp = (a: TagNode, b: TagNode) => {
+      if (a.type === 'separator' || b.type === 'separator') {
+        return 0;
+      }
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    };
+    const sortList = (list: TagNode[]) => {
+      // keep separators as section breaks: sort each run between separators
+      let start = 0;
+      for (let i = 0; i <= list.length; i++) {
+        if (i === list.length || list[i].type === 'separator') {
+          const run = list.slice(start, i).sort(cmp);
+          list.splice(start, run.length, ...run);
+          start = i + 1;
+        }
+      }
+      if (deep) {
+        list.forEach(n => { if (n.children) { sortList(n.children); } });
+      }
+    };
+    if (node.children) {
+      sortList(node.children);
+    }
+    this.touchLib();
+  }
+
   setAliases(node: TagNode, text: string): void {
     const aliases = (text || '').split(',').map(a => a.trim()).filter(a => a);
     if (aliases.length) {
@@ -859,85 +1004,212 @@ export class TagLibraryService {
     this.manualTagsService.populateManualTagsService(this.imageElementService.imageElements);
   }
 
+
   // ===========================================================================================
-  // Auto-tagging -- tag names and aliases found in the file name
+  // Import from Ritt
   // ===========================================================================================
 
-  private termRegexCache = new Map<string, RegExp>();
-
-  private termRegex(term: string): RegExp {
-    if (this.termRegexCache.has(term)) {
-      return this.termRegexCache.get(term);
-    }
-    const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // whole-word match when the term starts / ends with a letter or digit
-    const pre = /^[\p{L}\p{N}]/u.test(term) ? '(?<![\\p{L}\\p{N}])' : '';
-    const post = /[\p{L}\p{N}]$/u.test(term) ? '(?![\\p{L}\\p{N}])' : '';
-    const re = new RegExp(pre + esc + post, 'iu');
-    this.termRegexCache.set(term, re);
-    return re;
+  /** quick numbers for the confirmation dialog */
+  rittStats(data: RittImportData): { tags: number, files: number, folders: number } {
+    let tags = 0;
+    const walk = (list: RittTag[]) => list.forEach(t => { if (!t.separator) { tags++; } walk(t.children); });
+    walk(data.tags);
+    return {
+      tags,
+      files: data.links.filter(l => l.kind === 'file').length,
+      folders: data.links.filter(l => l.kind === 'folder').length,
+    };
   }
 
-  /** tags suggested for a file (not already applied directly or inherited) */
-  suggestFor(item: ImageElement): string[] {
-    if (!item || item.cleanName === '*FOLDER*') {
-      return [];
-    }
-    const eff = this.getEffective(item);
-    const fileName = item.fileName || '';
-    const out: string[] = [];
-    this.byName.forEach((node, name) => {
-      if (node.hidden || eff.all.has(name)) {
+  /**
+   * Import the Ritt tag tree and its assignments.
+   * Tags with the same name as an existing library tag replace it (its children move under the imported tag).
+   * Files are matched by file name + as many parent folders as possible; folders by their path suffix.
+   */
+  importRitt(data: RittImportData): string[] {
+    const report: string[] = [];
+    const idToName = new Map<number, string>();
+    const claimed = new Set<string>();   // names created in this import
+    const created = new Set<TagNode>();
+
+    const detachExisting = (name: string): TagNode[] => {
+      const old = this.byName.get(name);
+      if (!old) {
+        return [];
+      }
+      const sib = this.siblingsOf(old);
+      sib.splice(sib.indexOf(old), 1);
+      this.byName.delete(name);
+      return old.children || [];
+    };
+
+    const convert = (t: RittTag, parentName: string): TagNode => {
+      if (t.separator) {
+        return this.newSeparator();
+      }
+      let name = (t.name || '').trim() || 'tag';
+      if (claimed.has(name)) {
+        name = parentName ? name + ' (' + parentName + ')' : name;
+        let i = 2;
+        const base = name;
+        while (claimed.has(name)) {
+          name = base + ' ' + i++;
+        }
+      }
+      claimed.add(name);
+      idToName.set(t.id, name);
+      const orphans = detachExisting(name);
+      const node: TagNode = { id: this.uuid(), type: 'tag', name };
+      created.add(node);
+      if (t.icon) { node.icon = t.icon; }
+      if (t.hidden) { node.hidden = true; }
+      if (t.encapsulate) { node.encapsulate = true; }
+      if (t.badge) { node.badge = t.icon ? 'icon' : 'name'; }
+      if (t.hotkey) { node.hotkey = t.hotkey; }
+      const children = t.children.map(c => convert(c, name));
+      const keep = orphans.filter(o => o.type === 'separator' || !claimed.has(o.name));
+      if (children.length || keep.length) {
+        node.children = [...children, ...keep];
+        node.collapsed = true;
+      }
+      return node;
+    };
+
+    const imported = data.tags.map(t => convert(t, ''));
+    // hot keys: one tag per key (imported tags win)
+    const importedKeys = new Set<string>();
+    const walkKeys = (nodes: TagNode[]) => nodes.forEach(n => { if (n.hotkey) { importedKeys.add(n.hotkey); } if (n.children) { walkKeys(n.children); } });
+    walkKeys(imported);
+    const clearKeys = (nodes: TagNode[]) => nodes.forEach(n => { if (n.hotkey && importedKeys.has(n.hotkey)) { delete n.hotkey; } if (n.children) { clearKeys(n.children); } });
+    clearKeys(this.lib.roots);
+
+    this.lib.roots = [...imported, ...this.lib.roots];
+    // old tags with a name the import now uses: drop them, their children move up
+    const dedupe = (nodes: TagNode[]): TagNode[] => {
+      const out: TagNode[] = [];
+      nodes.forEach(n => {
+        if (n.children) {
+          n.children = dedupe(n.children);
+        }
+        if (n.type !== 'separator' && claimed.has(n.name) && !created.has(n)) {
+          out.push(...(n.children || []));
+        } else {
+          out.push(n);
+        }
+      });
+      return out;
+    };
+    this.lib.roots = dedupe(this.lib.roots);
+    this.reindex();
+    report.push('Tagi: ' + claimed.size);
+
+    // ---------- files ----------
+    const norm = (x: string) => (x || '').toLowerCase();
+    const items = this.imageElementService.imageElements.filter(i => !i.deleted && i.cleanName !== '*FOLDER*');
+    const byFile = new Map<string, ImageElement[]>();
+    const folderSet = new Set<string>();
+    items.forEach(i => {
+      const k = norm(i.fileName);
+      if (!byFile.has(k)) { byFile.set(k, []); }
+      byFile.get(k).push(i);
+      this.folderAncestors(i.partialPath).forEach(f => folderSet.add(f));
+    });
+    const segsOf = (partialPath: string) => (partialPath || '').split('/').filter(x => x !== '').map(norm);
+    const suffixMatch = (a: string[], b: string[]) => {
+      let n = 0;
+      while (n < a.length && n < b.length && a[a.length - 1 - n] === b[b.length - 1 - n]) { n++; }
+      return n;
+    };
+
+    const toAdd = new Map<ImageElement, Set<string>>();
+    let filesMatched = 0;
+    let filesMissing = 0;
+    const missing: string[] = [];
+    let foldersMatched = 0;
+    let foldersMissing = 0;
+
+    data.links.forEach(link => {
+      const names = link.tags.map(id => idToName.get(id)).filter(n => !!n);
+      if (!names.length) {
         return;
       }
-      const terms = [name, ...(node.aliases || [])].filter(t => t && t.length >= 2);
-      if (terms.some(t => this.termRegex(t).test(fileName))) {
-        out.push(name);
-      }
-    });
-    const order = this.orderedNames();
-    out.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    return out;
-  }
-
-  /** returns [files changed, tags added] */
-  autoTag(items: ImageElement[], onlyTag?: string): [number, number] {
-    let files = 0;
-    let tags = 0;
-    items.forEach(item => {
-      let s = this.suggestFor(item);
-      if (onlyTag) {
-        s = s.filter(t => t === onlyTag);
-      }
-      if (s.length) {
-        files++;
-        s.forEach(t => {
-          if (!item.tags || !item.tags.includes(t)) {
-            this.manualTagsService.addTag(t);
-            this.imageElementService.HandleEmission({ type: 'add', index: item.index, tag: t });
-            tags++;
+      const rittSegs = link.path.map(norm);
+      if (link.kind === 'file') {
+        const cands = byFile.get(rittSegs[rittSegs.length - 1]) || [];
+        if (!cands.length) {
+          filesMissing++;
+          if (missing.length < 15) { missing.push(link.path.join('/')); }
+          return;
+        }
+        let best = -1;
+        let chosen: ImageElement[] = [];
+        cands.forEach(c => {
+          const m = suffixMatch([...segsOf(c.partialPath), norm(c.fileName)], rittSegs);
+          if (m > best) { best = m; chosen = [c]; } else if (m === best) { chosen.push(c); }
+        });
+        filesMatched++;
+        chosen.forEach(c => {
+          if (!toAdd.has(c)) { toAdd.set(c, new Set<string>()); }
+          names.forEach(n => toAdd.get(c).add(n));
+        });
+      } else {
+        if (!rittSegs.length) {
+          foldersMissing++;
+          return;
+        }
+        let best = 0;
+        let chosen: string[] = [];
+        folderSet.forEach(f => {
+          const fs = segsOf(f);
+          if (fs[fs.length - 1] !== rittSegs[rittSegs.length - 1]) {
+            return;
           }
+          const m = suffixMatch(fs, rittSegs);
+          if (m > best) { best = m; chosen = [f]; } else if (m === best) { chosen.push(f); }
+        });
+        if (!chosen.length) {
+          foldersMissing++;
+          if (missing.length < 15) { missing.push(link.path.join('/') + '/'); }
+          return;
+        }
+        foldersMatched++;
+        chosen.forEach(f => {
+          const arr = this.folderTags[f] || [];
+          names.forEach(n => { if (!arr.includes(n)) { arr.push(n); } });
+          this.folderTags[f] = arr;
         });
       }
     });
-    this.touchData();
-    return [files, tags];
-  }
 
-  previewAutoTag(items: ImageElement[], onlyTag?: string): [number, number] {
-    let files = 0;
-    let tags = 0;
-    items.forEach(item => {
-      let s = this.suggestFor(item);
-      if (onlyTag) {
-        s = s.filter(t => t === onlyTag);
-      }
-      if (s.length) {
-        files++;
-        tags += s.length;
-      }
+    let added = 0;
+    toAdd.forEach((names, item) => {
+      item.tags = item.tags || [];
+      names.forEach(n => {
+        if (!item.tags.includes(n)) {
+          item.tags.push(n);
+          added++;
+        }
+      });
     });
-    return [files, tags];
+    this.rebuildManualTagCounts();
+    this.imageElementService.finalArrayNeedsSaving = true;
+
+    report.push('Pliki dopasowane: ' + filesMatched + (filesMissing ? ' (nie znaleziono: ' + filesMissing + ')' : '') + ', dodane przypisania: ' + added);
+    report.push('Foldery dopasowane: ' + foldersMatched + (foldersMissing ? ' (nie znaleziono: ' + foldersMissing + ')' : ''));
+    if (missing.length) {
+      report.push('');
+      report.push('Nieznalezione (pierwsze ' + missing.length + '):');
+      missing.forEach(m => report.push('  ' + m));
+    }
+    if (data.unknownAttributes && data.unknownAttributes.length) {
+      report.push('');
+      report.push('Nieznane atrybuty Ritt (pominięte): ' + data.unknownAttributes.join(', '));
+    }
+
+    this.touchLib();
+    this.touchData();
+    this.saveNow();
+    return report;
   }
 
 }

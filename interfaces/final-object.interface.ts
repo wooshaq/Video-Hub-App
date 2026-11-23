@@ -49,6 +49,7 @@ export interface ImageElement {
   // ========================================================================
   // OPTIONAL
   // ------------------------------------------------------------------------
+  cover?: number;                // WsQ: cover art from metadata -- undefined = not checked, 0 = none, > 0 = time it was extracted
   defaultScreen?: number;        // index of default screenshot to show
   notes?: string;                // any free-form notes a user may want to add to any video
   playlist?: number;             // timestamp of when user clicked `add to playlist`

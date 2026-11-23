@@ -13,8 +13,9 @@
       <svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" /></svg>
     </button>
 
-    <button class="tp-btn" (click)="runAutoTag()" title="{{ 'TAGLIB.autoTagHint' | translate }}">
-      <svg viewBox="0 0 16 16"><path d="M9 1 3 9h4l-1 6 6-8H8z" /></svg>
+
+    <button class="tp-btn" (click)="importRitt()" title="{{ 'TAGLIB.rittImport' | translate }}">
+      <svg viewBox="0 0 16 16"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 11v2.5h11V11" /></svg>
     </button>
 
     <span class="tp-spacer"></span>
@@ -112,7 +113,7 @@
         (auxclick)="rowAuxClick($event, row)"
         (dblclick)="startRename(row.node)"
         (contextmenu)="openMenu($event, row.node)"
-        [title]="row.node.aliases ? ('@ ' + row.node.aliases.join(', ')) : ''"
+        [title]="rowTitle(row.node)"
       >
         @for (d of depthArray(row.depth); track d) { <span class="tp-guide"></span> }
 
@@ -148,7 +149,7 @@
             [title]="editError"
           >
         } @else {
-          <span class="tp-name">{{ row.node.name }}</span>
+          <span class="tp-name" [ngStyle]="{ color: row.node.color || null }">{{ row.node.name }}</span>
           <span class="tp-count">({{ lib.getCount(row.node.name) | number }})</span>
         }
 
@@ -164,6 +165,9 @@
           }
           @if (row.node.hotkey) {
             <span class="attr attr-key">{{ row.node.hotkey }}</span>
+          }
+          @if (row.node.notes) {
+            <svg class="attr" viewBox="0 0 16 16"><path d="M3 2.5h10v7l-3.5 4H3zM9.5 13.5v-4h3.5" /></svg>
           }
           @if (row.node.hidden) {
             <svg class="attr" viewBox="0 0 16 16"><path d="M2 2l12 12M1 8s2.5-5 7-5c1.4 0 2.6.5 3.6 1.1M15 8s-2.5 5-7 5c-1.4 0-2.6-.5-3.6-1.1" /></svg>
@@ -203,6 +207,8 @@
 
     <div class="mi" (click)="addTag(null, 'after')">{{ 'TAGLIB.addTag' | translate }}</div>
     <div class="mi" (click)="addSeparator(null)">{{ 'TAGLIB.addSeparator' | translate }}</div>
+    <div class="mi-sep"></div>
+    <div class="mi" (click)="importRitt()">{{ 'TAGLIB.rittImport' | translate }}…</div>
 
   } @else if (menu.node.type === 'separator') {
 
@@ -211,49 +217,100 @@
 
   } @else {
 
-    <div class="mi-title">{{ menu.node.icon }} {{ menu.node.name }}</div>
-
-    <div class="mi" (click)="addTag(menu.node, 'after')">{{ 'TAGLIB.addTagBelow' | translate }}</div>
-    <div class="mi" (click)="addTag(menu.node, 'child')">{{ 'TAGLIB.addChild' | translate }}</div>
-    <div class="mi" (click)="addSeparator(menu.node)">{{ 'TAGLIB.addSeparator' | translate }}</div>
+    <div class="mi" (click)="startRename(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v10H2zM5 6h3M6.5 6v4.5M10 6v5" /></svg>{{ 'TAGLIB.rename' | translate }} <span class="kbd">F2</span></div>
+    <div class="mi" (click)="duplicate(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 5h8v8H5zM3 11V3h8" /></svg>{{ 'TAGLIB.duplicate' | translate }}</div>
+    <div class="mi" (click)="deleteNode(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>{{ 'TAGLIB.remove' | translate }} <span class="kbd">Delete</span></div>
     <div class="mi-sep"></div>
-    <div class="mi" (click)="startRename(menu.node)">{{ 'TAGLIB.rename' | translate }} <span class="kbd">F2</span></div>
-    <div class="mi" (click)="openIconEditor($event, menu.node)">{{ 'TAGLIB.icon' | translate }}…</div>
-    <div class="mi" (click)="openAliasEditor($event, menu.node)">{{ 'TAGLIB.aliases' | translate }}…</div>
-    <div class="mi" (click)="duplicate(menu.node)">{{ 'TAGLIB.duplicate' | translate }}</div>
+    <div class="mi" (click)="openIconEditor($event, menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h4v4h-4z" /></svg>{{ 'TAGLIB.icon' | translate }}</div>
+    <div class="mi" (click)="openColorEditor($event, menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2a6 6 0 1 0 0 12c1 0 1.2-.8.8-1.5-.5-.9 0-1.8 1-1.8H12a2.5 2.5 0 0 0 2-2.7C14 4.7 11.3 2 8 2zM5 7.5h.01M7 5h.01M10 5.2h.01" /></svg>{{ 'TAGLIB.color' | translate }}
+      @if (menu.node.color) { <span class="mi-swatch" [ngStyle]="{ background: menu.node.color }"></span> }
+    </div>
+    <div class="mi" (click)="openAliasEditor($event, menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM10.5 8v1.2a1.8 1.8 0 0 0 3.5.5A6 6 0 1 0 11 13.2" /></svg>{{ 'TAGLIB.aliases' | translate }}</div>
+    <div class="mi" (click)="openNotesEditor($event, menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h10v7l-3.5 4H3zM9.5 13.5v-4h3.5" /></svg>{{ 'TAGLIB.notes' | translate }}</div>
+
+    <div class="mi has-sub"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" /></svg>{{ 'TAGLIB.attributes' | translate }}
+      <span class="kbd">›</span>
+      <div class="submenu">
+        <div class="mi has-sub"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 2.5 3.5v4c0 3.5 2.4 5.8 5.5 7 3.1-1.2 5.5-3.5 5.5-7v-4z" /></svg>{{ 'TAGLIB.badge' | translate }}<span class="kbd">›</span>
+          <div class="submenu">
+            <div class="mi" (click)="setBadge(menu.node, null)"><span class="tick">{{ !menu.node.badge ? '✓' : '' }}</span>{{ 'TAGLIB.badgeNone' | translate }}</div>
+            <div class="mi" (click)="setBadge(menu.node, 'icon')"><span class="tick">{{ menu.node.badge === 'icon' ? '✓' : '' }}</span>{{ 'TAGLIB.badgeIcon' | translate }}</div>
+            <div class="mi" (click)="setBadge(menu.node, 'name')"><span class="tick">{{ menu.node.badge === 'name' ? '✓' : '' }}</span>{{ 'TAGLIB.badgeName' | translate }}</div>
+            <div class="mi" (click)="setBadge(menu.node, 'both')"><span class="tick">{{ menu.node.badge === 'both' ? '✓' : '' }}</span>{{ 'TAGLIB.badgeBoth' | translate }}</div>
+          </div>
+        </div>
+        <div class="mi" (click)="toggleEncapsulate(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3h5a2.5 2.5 0 0 1 0 5h-5a2.5 2.5 0 0 1 0-5zM5.5 8h5a2.5 2.5 0 0 1 0 5h-5a2.5 2.5 0 0 1 0-5z" /></svg>{{ 'TAGLIB.encapsulate' | translate }}<span class="kbd">{{ menu.node.encapsulate ? '✓' : '' }}</span></div>
+        <div class="mi" (click)="toggleHidden(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M1.5 8S4 3.5 8 3.5c1.3 0 2.4.4 3.3 1M14.5 8S12 12.5 8 12.5c-1.3 0-2.4-.4-3.3-1" /></svg>{{ 'TAGLIB.hidden' | translate }}<span class="kbd">{{ menu.node.hidden ? '✓' : '' }}</span></div>
+        <div class="mi has-sub"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1 3 9h4l-1 6 6-8H8z" /></svg>{{ 'TAGLIB.hotkey' | translate }}<span class="kbd">{{ menu.node.hotkey || '' }} ›</span>
+          <div class="submenu">
+            <div class="mi" (click)="setHotkey(menu.node, null)"><span class="tick">{{ !menu.node.hotkey ? '✓' : '' }}</span>{{ 'TAGLIB.none' | translate }}</div>
+            @for (k of hotkeys; track k) {
+              <div class="mi" (click)="setHotkey(menu.node, k)"><span class="tick">{{ menu.node.hotkey === k ? '✓' : '' }}</span>{{ k }}</div>
+            }
+          </div>
+        </div>
+        <div class="mi has-sub"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2h4v3H6zM1.5 11h4v3h-4zM10.5 11h4v3h-4zM8 5v3M3.5 11V8h9v3" /></svg>{{ 'TAGLIB.inherit' | translate }}<span class="kbd">{{ inheritLabel(menu.node) }} ›</span>
+          <div class="submenu">
+            @for (o of inheritOptions; track o.label) {
+              <div class="mi" (click)="setInherit(menu.node, o.value)"><span class="tick">{{ menu.node.inherit === o.value ? '✓' : '' }}</span>{{ o.label | translate }}</div>
+            }
+          </div>
+        </div>
+        <div class="mi-sep"></div>
+        <div class="mi" (click)="openHelp($event)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 6a2 2 0 1 1 2.8 1.8c-.5.2-.8.7-.8 1.2v.5M8 12h.01" /></svg>{{ 'TAGLIB.whatIsThis' | translate }}</div>
+      </div>
+    </div>
+
     <div class="mi-sep"></div>
-
-    <div class="mi-label">{{ 'TAGLIB.badge' | translate }}</div>
-    <div class="mi-row">
-      <span class="chip" [ngClass]="{ on: !menu.node.badge }"           (click)="setBadge(menu.node, null)">{{ 'TAGLIB.badgeNone' | translate }}</span>
-      <span class="chip" [ngClass]="{ on: menu.node.badge === 'icon' }" (click)="setBadge(menu.node, 'icon')">{{ 'TAGLIB.badgeIcon' | translate }}</span>
-      <span class="chip" [ngClass]="{ on: menu.node.badge === 'name' }" (click)="setBadge(menu.node, 'name')">{{ 'TAGLIB.badgeName' | translate }}</span>
-      <span class="chip" [ngClass]="{ on: menu.node.badge === 'both' }" (click)="setBadge(menu.node, 'both')">{{ 'TAGLIB.badgeBoth' | translate }}</span>
-    </div>
-
-    <div class="mi check" (click)="toggleEncapsulate(menu.node)">
-      <span class="box" [ngClass]="{ on: menu.node.encapsulate }"></span>{{ 'TAGLIB.encapsulate' | translate }}
-    </div>
-    <div class="mi check" (click)="toggleHidden(menu.node)">
-      <span class="box" [ngClass]="{ on: menu.node.hidden }"></span>{{ 'TAGLIB.hidden' | translate }}
-    </div>
-
-    <div class="mi-label">{{ 'TAGLIB.hotkey' | translate }}</div>
-    <div class="mi-row">
-      @for (k of hotkeys; track k) {
-        <span class="chip key" [ngClass]="{ on: menu.node.hotkey === k }" (click)="setHotkey(menu.node, k)">{{ k }}</span>
-      }
-    </div>
-
+    <div class="mi" (click)="addTag(menu.node, 'after')"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>{{ 'TAGLIB.addTag' | translate }} <span class="kbd">Ctrl+N</span></div>
+    <div class="mi" (click)="addTag(menu.node, 'child')"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 2.5h11v11h-11zM8 5v6M5 8h6" /></svg>{{ 'TAGLIB.addChild' | translate }} <span class="kbd">Ctrl+M</span></div>
+    <div class="mi" (click)="addSeparator(menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3h8v3H4zM4 10h8v3H4zM1.5 8h13" /></svg>{{ 'TAGLIB.addSeparator' | translate }}</div>
     <div class="mi-sep"></div>
-    <div class="mi" (click)="runAutoTag(menu.node.name)">{{ 'TAGLIB.autoTagThis' | translate }}</div>
-    <div class="mi" (click)="openFolderList($event, menu.node)">
-      {{ 'TAGLIB.taggedFolders' | translate }} ({{ lib.foldersWithTag(menu.node.name).length }})
-    </div>
+    <div class="mi" (click)="sortChildren(menu.node, false)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 2v12M2.5 11 5 14l2.5-3M11 14V2M8.5 5 11 2l2.5 3" /></svg>{{ 'TAGLIB.sortChildren' | translate }}</div>
+    <div class="mi" (click)="sortChildren(menu.node, true)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 2v12M2.5 11 5 14l2.5-3M11 14V2M8.5 5 11 2l2.5 3" /></svg>{{ 'TAGLIB.sortDescendants' | translate }}</div>
     <div class="mi-sep"></div>
-    <div class="mi danger" (click)="deleteNode(menu.node)">{{ 'TAGLIB.remove' | translate }} <span class="kbd">Del</span></div>
+    <div class="mi" (click)="openFolderList($event, menu.node)"><svg class="mi-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg>{{ 'TAGLIB.taggedFolders' | translate }} <span class="kbd">{{ lib.foldersWithTag(menu.node.name).length }}</span></div>
 
   }
+  </div>
+}
+
+<!-- ============ color editor ============ -->
+@if (colorEditor) {
+  <div class="tp-popup tp-color-editor" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: colorEditor.x + 'px', top: colorEditor.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.color' | translate }}: {{ colorEditor.node.name }}</div>
+    <div class="ce-grid">
+      @for (c of colors; track c) {
+        <button class="ce-cell" [ngStyle]="{ background: c }" [ngClass]="{ on: colorEditor.node.color === c }" (click)="pickColor(c)" [attr.aria-label]="c"></button>
+      }
+    </div>
+    <div class="ie-row">
+      <input type="color" class="ce-custom" [value]="colorEditor.node.color || '#4cb4ff'" (change)="pickColor($any($event.target).value)" aria-label="Własny kolor">
+      <button (click)="pickColor(null)">{{ 'TAGLIB.noColor' | translate }}</button>
+    </div>
+  </div>
+}
+
+<!-- ============ notes editor ============ -->
+@if (notesEditor) {
+  <div class="tp-popup tp-alias-editor" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: notesEditor.x + 'px', top: notesEditor.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.notes' | translate }}: {{ notesEditor.node.name }}</div>
+    <textarea class="notes-input" rows="6" [(ngModel)]="notesEditor.text" (keydown.control.enter)="saveNotes()"></textarea>
+    <div class="ie-row right">
+      <button (click)="saveNotes()">OK</button>
+    </div>
+  </div>
+}
+
+<!-- ============ help ============ -->
+@if (helpPopup) {
+  <div class="tp-popup tp-help" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: helpPopup.x + 'px', top: helpPopup.y + 'px' }">
+    <div class="mi-title">{{ 'TAGLIB.attributes' | translate }}</div>
+    <div class="help-row"><b>{{ 'TAGLIB.badge' | translate }}</b> — {{ 'TAGLIB.helpBadge' | translate }}</div>
+    <div class="help-row"><b>{{ 'TAGLIB.encapsulate' | translate }}</b> — {{ 'TAGLIB.helpEncapsulate' | translate }}</div>
+    <div class="help-row"><b>{{ 'TAGLIB.hidden' | translate }}</b> — {{ 'TAGLIB.helpHidden' | translate }}</div>
+    <div class="help-row"><b>{{ 'TAGLIB.hotkey' | translate }}</b> — {{ 'TAGLIB.helpHotkey' | translate }}</div>
+    <div class="help-row"><b>{{ 'TAGLIB.inherit' | translate }}</b> — {{ 'TAGLIB.helpInherit' | translate }}</div>
   </div>
 }
 

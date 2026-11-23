@@ -179,7 +179,7 @@
 .gallery-container-full-width {
   left: var(--tp, 0px);
   transition: 300ms;
-  width: calc(100vw - var(--tp, 0px));
+  width: calc(100vw - var(--tp, 0px) - var(--dp, 0px));
 }
 
 // ===== Ritt-style tag tree & active tags bar =====
@@ -189,7 +189,11 @@
   position: absolute;
   top: variables.$settings-height;
   width: 250px;
-  z-index: 5;
+  z-index: 40;
+}
+
+.wsq-layout .sidebar app-sort-order {
+  display: none;
 }
 
 .tag-filter-bar-container {
@@ -203,7 +207,7 @@
 
 .tag-filter-bar-full-width {
   left: var(--tp, 0px);
-  width: calc(100vw - var(--tp, 0px));
+  width: calc(100vw - var(--tp, 0px) - var(--dp, 0px));
 }
 
 .tag-filter-bar-below-breadcrumbs {
@@ -360,4 +364,377 @@
     left: 30px;
     width: calc(100% - 45px);
   }
+}
+
+
+// =====================================================================================
+// WsQ layout (Ritt-style)
+// =====================================================================================
+
+.wsq-toolbar,
+.wsq-ribbon-row {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  height: 100%;
+}
+
+.wsq-ribbon-row app-ribbon {
+  flex: 1;
+  min-width: 0;
+}
+
+.all-settings {
+  .wsq-tb-btn {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: #444;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 30px;
+    justify-content: center;
+    padding: 0;
+    width: 30px;
+
+    &:hover { background: rgba(127, 127, 127, 0.18); }
+
+    &.on {
+      background: rgba(76, 180, 255, 0.2);
+      color: #1d7fd0;
+    }
+  }
+
+  .wsq-tb-text {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid #c4c4c4;
+    border-radius: 6px;
+    color: #333;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 12px;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+
+    &.on { border-color: #4cb4ff; }
+  }
+
+  svg {
+    fill: none;
+    height: 15px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.4;
+    width: 15px;
+  }
+
+  .wsq-badge {
+    background: #4cb4ff;
+    border-radius: 8px;
+    color: #0d2233;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    padding: 0 4px;
+    text-align: center;
+  }
+
+  .wsq-search {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #c4c4c4;
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: #666;
+    display: flex;
+    flex: 1 1 360px;
+    gap: 6px;
+    height: 30px;
+    margin: 0 6px;
+    min-width: 160px;
+    padding: 0 8px 0 10px;
+
+    &:focus-within { border-color: #4cb4ff; }
+
+    input {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      flex: 1;
+      font: inherit;
+      font-size: 13px;
+      min-width: 0;
+      outline: none;
+    }
+  }
+
+  .wsq-clear {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font-size: 11px;
+  }
+
+  .wsq-sort {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid #c4c4c4;
+    border-radius: 6px;
+    color: #333;
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    height: 30px;
+    padding: 0 4px 0 8px;
+
+    select {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      font-size: 12px;
+      max-width: 170px;
+      outline: none;
+    }
+
+    option { color: #222; }
+  }
+
+  .wsq-sep {
+    background: #bbb;
+    flex: 0 0 auto;
+    height: 20px;
+    margin: 0 4px;
+    width: 1px;
+  }
+}
+
+.all-settings-dark-mode {
+  .wsq-tb-btn { color: #d8d8d8; }
+  .wsq-tb-btn.on { background: rgba(76, 180, 255, 0.22); color: #4cb4ff; }
+  .wsq-tb-text, .wsq-sort, .wsq-search {
+    background: #232323;
+    border-color: #383838;
+    color: #e0e0e0;
+  }
+  .wsq-sort option { background: #232323; color: #e0e0e0; }
+  .wsq-sep { background: #444; }
+}
+
+// ----- filters popover (the old sidebar) -----
+
+.wsq-layout {
+  .sidebar {
+    border: 1px solid variables.$gray-30;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    display: none;
+    height: auto !important;
+    left: calc(var(--tp, 0px) + 12px);
+    max-height: calc(100vh - 80px);
+    max-width: 320px !important;
+    overflow-y: auto;
+    padding: 8px 10px 16px 12px;
+    top: calc(#{variables.$settings-height} + 4px);
+    transform: none;
+    visibility: visible;
+    width: 320px;
+    z-index: 450;
+  }
+
+  &.filters-open .sidebar {
+    display: block;
+  }
+
+  &.wsq-dark .sidebar {
+    border-color: #333;
+  }
+}
+
+.wsq-filters-head {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  font-weight: 600;
+  justify-content: space-between;
+  margin-bottom: 6px;
+
+  .wsq-tb-btn {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    height: 26px;
+    justify-content: center;
+    width: 26px;
+
+    svg {
+      fill: none;
+      height: 13px;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-width: 1.5;
+      width: 13px;
+    }
+  }
+}
+
+.wsq-filter-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.wsq-chip {
+  background: transparent;
+  border: 1px solid #b5b5b5;
+  border-radius: 12px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 9px;
+
+  &.on {
+    background: rgba(76, 180, 255, 0.2);
+    border-color: #4cb4ff;
+  }
+}
+
+.wsq-dark .wsq-chip {
+  border-color: #444;
+  color: #ddd;
+}
+
+// ----- details panel (right) -----
+
+.wsq-details {
+  background: #f1f1f1;
+  border-left: 1px solid #cfcfcf;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  right: 0;
+  top: variables.$settings-height;
+  width: var(--dp, 360px);
+  z-index: 5;
+
+  &.dark {
+    background: #1d1d1d;
+    border-left-color: #000;
+    color: #ddd;
+  }
+}
+
+.wsq-details-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  @include variables.scrollBar;
+}
+
+.wsq-details-inner {
+  padding: 14px 16px 30px;
+}
+
+.wsq-meta {
+  display: block;
+  margin-top: 8px;
+}
+
+.wsq-frames-title {
+  font-size: 11px;
+  margin: 14px 0 6px;
+  opacity: 0.6;
+}
+
+.wsq-frames {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wsq-frame {
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  background-repeat: no-repeat;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover { outline: 2px solid #4cb4ff; }
+}
+
+.wsq-path {
+  font-size: 11px;
+  margin-top: 14px;
+  opacity: 0.6;
+  overflow-wrap: anywhere;
+}
+
+.wsq-details-empty {
+  font-size: 12px;
+  opacity: 0.6;
+  padding: 40px 10px;
+  text-align: center;
+}
+
+.wsq-details-foot {
+  border-top: 1px solid rgba(127, 127, 127, 0.25);
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.7;
+  padding: 6px 14px;
+}
+
+.wsq-tag-tools {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.wsq-icon-btn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 4px;
+  height: 28px;
+  justify-content: center;
+  min-width: 30px;
+  padding: 0 6px;
+
+  &:hover:not([disabled]) { border-color: #4cb4ff; }
+  &[disabled] { cursor: default; opacity: 0.4; }
+
+  svg {
+    fill: none;
+    height: 15px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.3;
+    width: 15px;
+  }
+}
+
+.wsq-icon-count {
+  font-size: 10px;
 }

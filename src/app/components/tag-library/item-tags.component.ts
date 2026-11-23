@@ -29,27 +29,6 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
       </div>
     }
 
-    <div class="auto">
-      <div class="auto-head" (click)="open = !open">
-        <span>{{ 'TAGLIB.autoTagging' | translate }}</span>
-        @let sug = open ? lib.suggestFor(v) : [];
-        <svg viewBox="0 0 16 16" [ngClass]="{ flip: open }"><path d="M4 6l4 4 4-4" /></svg>
-      </div>
-      @if (open) {
-        <div class="row">
-          @for (t of sug; track t) {
-            <span class="chip sug" (click)="add(t)" title="{{ 'TAGLIB.clickToAdd' | translate }}">
-              @if (lib.iconOf(t)) { <span class="ic">{{ lib.iconOf(t) }}</span> }{{ t }} <span class="plus">+</span>
-            </span>
-          } @empty {
-            <span class="none">{{ 'TAGLIB.noSuggestions' | translate }}</span>
-          }
-          @if (sug.length > 1) {
-            <span class="chip all" (click)="addAll(sug)">{{ 'TAGLIB.addAll' | translate }}</span>
-          }
-        </div>
-      }
-    </div>
 
   </div>
 }
@@ -84,20 +63,8 @@ export class ItemTagsComponent {
   readonly darkMode = input<boolean>(false);
 
   readonly filter = output<{ name: string, event: MouseEvent }>();
-  readonly tagsAdded = output<void>();
-
-  open = false;
 
   constructor(public lib: TagLibraryService) { }
 
-  add(t: string): void {
-    this.lib.addTagTo([this.video()], t);
-    this.tagsAdded.emit();
-  }
-
-  addAll(tags: string[]): void {
-    tags.forEach(t => this.lib.addTagTo([this.video()], t));
-    this.tagsAdded.emit();
-  }
 
 }

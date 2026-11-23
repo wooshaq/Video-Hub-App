@@ -1,9 +1,9 @@
-import { Component, ElementRef, HostListener, input, output, viewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, input, output, viewChild } from '@angular/core';
+import type { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { HOTKEYS, TagLibraryService } from './tag-library.service';
 import { ImageElementService } from '../../services/image-element.service';
-import { PipeSideEffectService } from '../../pipes/pipe-side-effect.service';
 
 import type { FlatRow } from './tag-library.service';
 import type { ImageElement } from '../../../../interfaces/final-object.interface';
@@ -30,7 +30,7 @@ const PRESET_ICONS: string[] = [
   templateUrl: './tag-pane.component.html',
   styleUrls: ['./tag-pane.component.scss'],
 })
-export class TagPaneComponent {
+export class TagPaneComponent implements OnDestroy {
 
   readonly darkMode = input<boolean>(false);
   readonly batchMode = input<boolean>(false);
@@ -55,6 +55,23 @@ export class TagPaneComponent {
   iconEditor: { x: number, y: number, node: TagNode, text: string } | null = null;
   aliasEditor: { x: number, y: number, node: TagNode, text: string } | null = null;
   folderList: { x: number, y: number, node: TagNode } | null = null;
+  colorEditor: { x: number, y: number, node: TagNode } | null = null;
+  notesEditor: { x: number, y: number, node: TagNode, text: string } | null = null;
+  helpPopup: { x: number, y: number } | null = null;
+
+  colors: string[] = [
+    '#e5534b', '#f0883e', '#d4a72c', '#57ab5a', '#39c5cf', '#4cb4ff', '#6c8cff', '#a371f7', '#db61a2', '#c69026',
+    '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#bbbbbb', '#ffffff',
+  ];
+
+  inheritOptions: { label: string, value: number | undefined }[] = [
+    { label: 'TAGLIB.inheritNone', value: 0 },
+    { label: 'TAGLIB.inherit1', value: 1 },
+    { label: 'TAGLIB.inherit2', value: 2 },
+    { label: 'TAGLIB.inherit3', value: 3 },
+    { label: 'TAGLIB.inherit5', value: 5 },
+    { label: 'TAGLIB.inheritAll', value: undefined },
+  ];
 
   hotkeys = HOTKEYS;
   presetIcons = PRESET_ICONS;
@@ -64,10 +81,45 @@ export class TagPaneComponent {
   constructor(
     public lib: TagLibraryService,
     private imageElementService: ImageElementService,
-    private pipeSideEffectService: PipeSideEffectService,
     private translate: TranslateService,
     private host: ElementRef<HTMLElement>,
-  ) { }
+  ) {
+    this.rittSub = this.lib.rittImportReceived.subscribe(data => this.rittReceived(data));
+  }
+
+  private rittSub: Subscription;
+
+  ngOnDestroy(): void {
+    this.rittSub?.unsubscribe();
+  }
+
+  // =========================================================================================
+  // Import from Ritt
+  // =========================================================================================
+
+  importRitt(): void {
+    this.closePopups();
+    this.lib.pickRittFile();
+  }
+
+  private rittReceived(data: any): void {
+    if (data.error) {
+      window.alert(this.t('rittError') + '\n\n' + data.error);
+      return;
+    }
+    const st = this.lib.rittStats(data);
+    if (!st.tags) {
+      window.alert(this.t('rittEmpty'));
+      return;
+    }
+    if (!window.confirm(this.t('rittConfirm', st))) {
+      return;
+    }
+    const report = this.lib.importRitt(data);
+    this.filterChanged.emit();
+    this.tagsAssigned.emit();
+    window.alert(this.t('rittDone') + '\n\n' + report.join('\n'));
+  }
 
   t(key: string, params?: any): string {
     return this.translate.instant('TAGLIB.' + key, params);
@@ -331,7 +383,7 @@ export class TagPaneComponent {
     if (node) {
       this.selectedId = node.id;
     }
-    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 120 : 560) : 120);
+    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 90 : 560) : 130);
     this.menu = { ...p, node };
   }
 
@@ -369,37 +421,89 @@ export class TagPaneComponent {
     this.folderList = { ...p, node };
   }
 
+  inheritLabel(node: TagNode): string {
+    if (node.inherit === undefined) {
+      return '∞';
+    }
+    return node.inherit === 0 ? '–' : String(node.inherit);
+  }
+
+  setInherit(node: TagNode, value: number | undefined): void {
+    if (value === undefined) {
+      delete node.inherit;
+    } else {
+      node.inherit = value;
+    }
+    this.lib.touchLib();
+    this.lib.touchData();
+    this.closePopups();
+    this.tagsAssigned.emit();
+  }
+
+  openColorEditor(event: MouseEvent, node: TagNode): void {
+    const p = this.popupPos(event, 260, 150);
+    this.closePopups();
+    this.colorEditor = { ...p, node };
+  }
+
+  pickColor(color: string | null): void {
+    if (this.colorEditor) {
+      this.lib.setColor(this.colorEditor.node, color);
+      this.colorEditor = null;
+      this.tagsAssigned.emit();
+    }
+  }
+
+  openNotesEditor(event: MouseEvent, node: TagNode): void {
+    const p = this.popupPos(event, 320, 220);
+    this.closePopups();
+    this.notesEditor = { ...p, node, text: node.notes || '' };
+    setTimeout(() => (this.host.nativeElement.querySelector('.notes-input') as HTMLTextAreaElement)?.focus());
+  }
+
+  saveNotes(): void {
+    if (this.notesEditor) {
+      const text = (this.notesEditor.text || '').trim();
+      if (text) {
+        this.notesEditor.node.notes = text;
+      } else {
+        delete this.notesEditor.node.notes;
+      }
+      this.lib.touchLib();
+      this.notesEditor = null;
+    }
+  }
+
+  openHelp(event: MouseEvent): void {
+    const p = this.popupPos(event, 360, 260);
+    this.closePopups();
+    this.helpPopup = p;
+  }
+
+  sortChildren(node: TagNode, deep: boolean): void {
+    this.closePopups();
+    this.lib.sortChildren(node, deep);
+  }
+
+  rowTitle(node: TagNode): string {
+    const parts: string[] = [];
+    if (node.aliases && node.aliases.length) {
+      parts.push('@ ' + node.aliases.join(', '));
+    }
+    if (node.notes) {
+      parts.push(node.notes);
+    }
+    return parts.join('\n');
+  }
+
   closePopups(): void {
+    this.colorEditor = null;
+    this.notesEditor = null;
+    this.helpPopup = null;
     this.menu = null;
     this.iconEditor = null;
     this.aliasEditor = null;
     this.folderList = null;
-  }
-
-  // =========================================================================================
-  // Auto-tagging
-  // =========================================================================================
-
-  autoTagItems(): ImageElement[] {
-    if (this.batchMode() && this.selectedItems().length) {
-      return this.selectedItems();
-    }
-    const showing = (this.pipeSideEffectService.galleryShowing || []) as ImageElement[];
-    return showing.filter(i => i && i.cleanName !== '*FOLDER*');
-  }
-
-  runAutoTag(onlyTag?: string): void {
-    this.closePopups();
-    const items = this.autoTagItems();
-    const [files, tags] = this.lib.previewAutoTag(items, onlyTag);
-    if (!tags) {
-      window.alert(this.t('autoTagNothing', { n: items.length }));
-      return;
-    }
-    if (window.confirm(this.t('autoTagConfirm', { tags, files, n: items.length }))) {
-      this.lib.autoTag(items, onlyTag);
-      this.tagsAssigned.emit();
-    }
   }
 
   // =========================================================================================
@@ -478,6 +582,18 @@ export class TagPaneComponent {
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
       return;
     }
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && (key === 'n' || key === 'm')) {
+      event.preventDefault();
+      event.stopPropagation();   // Ctrl+N is "new hub" elsewhere in VHA
+      const sel = this.findSelected();
+      if (key === 'n') {
+        this.addTag(sel, sel ? 'after' : 'after');
+      } else if (sel && sel.type !== 'separator') {
+        this.addTag(sel, 'child');
+      }
+      return;
+    }
     const node = this.findSelected();
     if (!node) {
       return;
@@ -502,7 +618,7 @@ export class TagPaneComponent {
     if (t && t.closest && t.closest('.tp-popup')) {
       return;
     }
-    if (this.menu || this.iconEditor || this.aliasEditor || this.folderList) {
+    if (this.menu || this.iconEditor || this.aliasEditor || this.folderList || this.colorEditor || this.notesEditor || this.helpPopup) {
       this.closePopups();
     }
   }

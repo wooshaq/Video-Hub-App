@@ -10,7 +10,8 @@ import { ImageElement, FinalObject, InputSources } from '../interfaces/final-obj
 import { SettingsObject } from '../interfaces/settings-object.interface';
 import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
-import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub } from './main-extract-async';
+import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers } from './main-extract-async';
+import { readRittDatabase } from './ritt-import';
 
 /**
  * Set up the listeners
@@ -43,6 +44,36 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
       }
       event.sender.send('tag-library-loaded', parsed);
     });
+  });
+
+  /**
+   * WsQ: (re)check cover art of these files -- [{ fullPath, hash }]
+   */
+  ipc.on('check-covers', (event, jobs: { fullPath: string, hash: string }[]) => {
+    checkCovers(jobs || []);
+  });
+
+  /**
+   * Import tags from a Ritt database (*.ritt)
+   */
+  ipc.on('ritt-import-pick', (event) => {
+    if (process.env.VHA_WSQ_RITT_TEST) {   // automated tests only: skip the file dialog
+      event.sender.send('ritt-import-data', readRittDatabase(process.env.VHA_WSQ_RITT_TEST));
+      return;
+    }
+    dialog.showOpenDialog(win, {
+      title: 'Ritt',
+      filters: [
+        { name: 'Ritt', extensions: ['ritt'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+      properties: ['openFile']
+    }).then(result => {
+      const filePath: string = result.filePaths && result.filePaths[0];
+      if (filePath) {
+        event.sender.send('ritt-import-data', readRittDatabase(filePath));
+      }
+    }).catch(err => {});
   });
 
   ipc.on('save-tag-library', (event, library) => {

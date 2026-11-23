@@ -353,6 +353,21 @@ export class HomeComponent implements OnInit, AfterViewInit {
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
 
+    // WsQ: copy / paste all tags
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && !this.isTypingIn(event.target as HTMLElement)) {
+      const k = event.key.toLowerCase();
+      if (k === 'c') {
+        event.preventDefault();
+        this.copyTagsFrom(this.currentClickedItem);
+        return;
+      }
+      if (k === 'v') {
+        event.preventDefault();
+        this.pasteTagsNow();
+        return;
+      }
+    }
+
     // Ritt-style tag hot keys: 1 ... 0 toggle a tag on the current video (or the selected ones in batch mode)
     if (   !event.ctrlKey && !event.metaKey && !event.altKey
         && /^[0-9]$/.test(event.key)
@@ -394,6 +409,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     } else if (event.key === 'Escape' && this.wizard.showWizard === true && this.canCloseWizard === true) {
       this.wizard.showWizard = false;
+    } else if (event.key === 'Escape' && this.filtersOpen) {
+      this.filtersOpen = false;
     } else if (event.key === 'Escape' && this.settingsModalOpen) {
       this.settingsModalOpen = false;
     } else if (event.key === 'Escape' && (this.rightClickShowing || this.renamingNow || this.sheetOverlayShowing)) {
@@ -780,6 +797,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
       this.manualTagsService.populateManualTagsService(finalObject.images);
       this.manualTagsService.loadTagColors(finalObject.tagColors);
       this.tagLib.onHubLoaded(finalObject.folderTags);
+      this.applyWsqLayoutDefaults();
+
+      // WsQ: files never checked for cover art (hubs made before this version) -- check them once, in the background
+      // and rescan the folders that are not watched, so renamed / changed / new files are noticed on every hub open
+      setTimeout(() => this.rescanAllFolders(false), 2000);
+      setTimeout(() => {
+        this.checkCoversOf(this.imageElementService.imageElements.filter(e => e.cover === undefined));
+      }, 3000);
 
       this.setTags(finalObject.addTags, finalObject.removeTags); // auto-tags
 
@@ -828,6 +853,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     ) => {
       this.vhaFileHistory = (settingsObject.vhaFileHistory || []);
       this.restoreSettingsFromBefore(settingsObject);
+      this.applyWsqLayoutDefaults();
       this.setOrRestoreLanguage(settingsObject.appState.language, locale);
       if (this.appState.currentZoomLevel !== 1) {
         this.setAppZoomLevel(this.appState.currentZoomLevel);
@@ -906,6 +932,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         .forEach((deletedElement: ImageElement) => {
           if (deletedElement.hash === element.hash) {
             this.copyMetaProperties(element, deletedElement);
+            this.tagLib.notePathMove(deletedElement.partialPath, element.partialPath);
           }
         });
 
@@ -917,7 +944,86 @@ export class HomeComponent implements OnInit, AfterViewInit {
       }
     });
 
+    // WsQ: cover art from file metadata
+    (window as any).myElectron.receiveFromMain('cover-result', (hash: string, stamp: number) => {
+      this.zone.run(() => {
+        let touched = false;
+        this.imageElementService.imageElements.forEach((el: ImageElement) => {
+          if (el.hash === hash && el.cover !== stamp) {
+            el.cover = stamp;
+            touched = true;
+          }
+        });
+        if (touched) {
+          this.imageElementService.finalArrayNeedsSaving = true;
+          this.coverVersion++;
+        }
+      });
+    });
+
+    // WsQ: a file already in the hub changed on disk (size / modification time)
+    (window as any).myElectron.receiveFromMain('video-file-changed', (fresh: ImageElement, oldHash: string) => {
+      this.zone.run(() => {
+        const el = this.imageElementService.imageElements.find((e: ImageElement) =>
+             e.inputSource === fresh.inputSource
+          && e.partialPath === fresh.partialPath
+          && e.fileName === fresh.fileName
+          && !e.deleted);
+        if (!el) {
+          return;
+        }
+        [
+          'birthtime', 'bitrate', 'duration', 'durationDisplay', 'fileSize', 'fileSizeDisplay', 'fps',
+          'hash', 'height', 'mtime', 'resBucket', 'resolution', 'screens', 'width',
+        ].forEach(k => { (el as any)[k] = (fresh as any)[k]; });
+        if (fresh.hash !== oldHash) {
+          el.defaultScreen = undefined;
+        }
+        this.imageElementService.finalArrayNeedsSaving = true;
+        this.coverVersion++;
+      });
+    });
+
     this.justStarted();
+  }
+
+  coverVersion = 0;
+
+  /** ask the main process to (re)check the cover art of these files */
+  checkCoversOf(items: ImageElement[]): void {
+    const jobs = items
+      .filter(el => el && !el.deleted && el.cleanName !== '*FOLDER*' && this.sourceFolderService.sourceFolderConnected[el.inputSource])
+      .map(el => ({ fullPath: this.filePathService.getPathFromImageElement(el), hash: el.hash }));
+    if (jobs.length) {
+      (window as any).myElectron.sendToMain('check-covers', jobs);
+    }
+  }
+
+  /** rescan every connected source folder that is not watched (watched ones update by themselves) */
+  rescanAllFolders(showMessage = true): void {
+    const folders = this.sourceFolderService.selectedSourceFolder || {};
+    Object.keys(folders).forEach((key: string) => {
+      const f = folders[key];
+      if (f && !f.watch && this.sourceFolderService.sourceFolderConnected[key]) {
+        (window as any).myElectron.sendToMain('start-watching-folder', key, f.path, false);
+      }
+    });
+    if (showMessage) {
+      this.modalService.openSnackbar(this.translate.instant('WSQ.rescanning'), 1500);
+    }
+  }
+
+  refreshCoverNow(): void {
+    const items = this.batchTaggingMode
+      ? this.imageElementService.imageElements.filter(e => e.selected)
+      : [this.currentRightClickedItem];
+    this.checkCoversOf(items);
+    this.modalService.openSnackbar(this.translate.instant('WSQ.coverRefreshing'), 1500);
+  }
+
+  checkAllCoversNow(): void {
+    this.checkCoversOf(this.imageElementService.imageElements);
+    this.modalService.openSnackbar(this.translate.instant('WSQ.coverCheckingAll'), 2500);
   }
 
   // =======================================================================================================================================
@@ -958,6 +1064,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     destination.tags        = origin.tags;
     destination.timesPlayed = origin.timesPlayed;
     destination.year        = origin.year;
+    destination.cover       = origin.cover;       // WsQ: same hash = same cover file
   }
 
   /**
@@ -2702,8 +2809,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   /** height of the active-tags bar above the gallery */
+  tagBarHeightPx = 0;
+
   get tagBarHeight(): number {
-    return (this.tagLib.active.length || this.tagLib.excluded.length) ? 40 : 0;
+    return (this.tagLib.active.length || this.tagLib.excluded.length) ? (this.tagBarHeightPx || 43) : 0;
   }
 
   get tagPaneWidth(): number {
@@ -2720,6 +2829,158 @@ export class HomeComponent implements OnInit, AfterViewInit {
   onTagsAssigned(): void {
     this.ifShowDetailsViewRefreshTags();
     this.cd.detectChanges();
+  }
+
+
+  // =============================================================================================
+  // WsQ layout (Ritt-style): toolbar, filters popover, details panel
+  // =============================================================================================
+
+  showVhaRibbon = false;
+  wsqSearch = '';
+  filtersOpen = false;
+  detailsOpen = this.readLocal('wsq.detailsOpen', 'true') === 'true';
+  detailsZoom = parseFloat(this.readLocal('wsq.detailsZoom', '1')) || 1;
+
+  wsqFilterKeys: { key: string, label: string }[] = [
+    { key: 'durationFilter', label: 'WSQ.fDuration' },
+    { key: 'sizeFilter', label: 'WSQ.fSize' },
+    { key: 'resolutionFilter', label: 'WSQ.fResolution' },
+    { key: 'starFilter', label: 'WSQ.fStars' },
+    { key: 'yearFilter', label: 'WSQ.fYear' },
+    { key: 'timesPlayedFilter', label: 'WSQ.fTimesPlayed' },
+    { key: 'showOnlyFavorites', label: 'WSQ.fFavorites' },
+    { key: 'hideOffline', label: 'WSQ.fOffline' },
+    { key: 'duplicateLength', label: 'WSQ.fDupLength' },
+    { key: 'duplicateSize', label: 'WSQ.fDupSize' },
+    { key: 'duplicateHash', label: 'WSQ.fDupHash' },
+  ];
+
+  private readLocal(key: string, fallback: string): string {
+    try {
+      const v = localStorage.getItem(key);
+      return v === null ? fallback : v;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeLocal(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch { }
+  }
+
+  /** the old filter column is now a popover; single click selects (details panel), double click plays */
+  applyWsqLayoutDefaults(): void {
+    this.settingsButtons['hideSidebar'].toggled = true;
+    this.settingsButtons['doubleClickMode'].toggled = true;
+    this.settingsButtons['sortOrder'].toggled = true;
+    setTimeout(() => this.computePreviewWidth(), 50);
+  }
+
+  get detailsWidth(): number {
+    return this.detailsOpen ? 360 : 0;
+  }
+
+  /** content is laid out at panel width / zoom, so it always fits the panel */
+  get detailsThumbWidth(): number {
+    return Math.floor(360 / (this.detailsZoom || 1)) - 32 - 8;
+  }
+
+  get detailsThumbHeight(): number {
+    return Math.round(this.detailsThumbWidth * 9 / 16);
+  }
+
+  activeFilterCount(): number {
+    return this.wsqFilterKeys.filter(k => this.settingsButtons[k.key] && this.settingsButtons[k.key].toggled).length;
+  }
+
+  toggleDetailsPanel(): void {
+    this.detailsOpen = !this.detailsOpen;
+    this.writeLocal('wsq.detailsOpen', String(this.detailsOpen));
+    setTimeout(() => {
+      this.computePreviewWidth();
+      this.virtualScroller()?.refresh();
+    }, 50);
+  }
+
+  /** Ctrl + wheel over the gallery: thumbnail size */
+  galleryWheel(event: WheelEvent): void {
+    if (!event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    if (event.deltaY < 0) {
+      this.increaseSize();
+    } else if (event.deltaY > 0) {
+      this.decreaseSize();
+    }
+  }
+
+  /** Ctrl + wheel over the details panel: zoom of the panel only */
+  detailsWheel(event: WheelEvent): void {
+    if (!event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.deltaY < 0 ? 0.1 : -0.1;
+    this.detailsZoom = Math.max(0.7, Math.min(1.8, Math.round((this.detailsZoom + step) * 10) / 10));
+    this.writeLocal('wsq.detailsZoom', String(this.detailsZoom));
+  }
+
+  // ---------- copy / paste all tags (as in Ritt) ----------
+
+  copiedTags: string[] = [];
+
+  copyTagsFrom(item: ImageElement): void {
+    if (!item) {
+      return;
+    }
+    this.copiedTags = (item.tags || []).slice();
+    this.modalService.openSnackbar(this.translate.instant('WSQ.tagsCopied', { n: this.copiedTags.length }), 1500);
+  }
+
+  /** paste onto the selected videos in batch mode, else onto `target` / the current video */
+  pasteTagsNow(target?: ImageElement): void {
+    if (!this.copiedTags.length) {
+      return;
+    }
+    const items = this.batchTaggingMode
+      ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
+      : [target || this.currentClickedItem].filter(e => !!e);
+    let added = 0;
+    this.copiedTags.forEach(t => { added += this.tagLib.addTagTo(items, t); });
+    this.ifShowDetailsViewRefreshTags();
+    this.modalService.openSnackbar(this.translate.instant('WSQ.tagsPasted', { n: added, files: items.length }), 1500);
+  }
+
+  filmstripPathOf(item: ImageElement): string {
+    return this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'filmstrips', item.hash);
+  }
+
+  private framesCache: { key: string, frames: { index: number, pos: number, time: string }[] } = { key: '', frames: [] };
+
+  framesOf(item: ImageElement): { index: number, pos: number, time: string }[] {
+    const key = item.hash + ':' + item.screens + ':' + item.duration;
+    if (this.framesCache.key !== key) {
+      const n = item.screens;
+      const frames = [];
+      for (let i = 0; i < n; i++) {
+        const t = Math.round(item.duration / (n + 1) * (i + 1));
+        const h = Math.floor(t / 3600);
+        const m = Math.floor((t % 3600) / 60);
+        const sec = t % 60;
+        frames.push({
+          index: i,
+          pos: n > 1 ? i / (n - 1) * 100 : 0,
+          time: (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(sec).padStart(2, '0'),
+        });
+      }
+      this.framesCache = { key, frames };
+    }
+    return this.framesCache.frames;
   }
 
 }
