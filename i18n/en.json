@@ -742,6 +742,23 @@
     "setTitleSize": "File name font size",
     "setTitleLines": "File name lines",
     "setGap": "Gap between thumbnails",
-    "settingsHint": "Changes apply right away and are remembered. Accent colour and theme are under the palette button in the toolbar."
+    "settingsHint": "Changes apply right away and are remembered. Accent colour and theme are under the palette button in the toolbar.",
+    "stFiles": "files",
+    "stFolders": "folders",
+    "stTotalTime": "total time",
+    "stTotalSize": "total size",
+    "stSources": "Video folders",
+    "stWatching": "watched – changes are added automatically",
+    "stNotWatching": "not watched – new files after “Rescan”",
+    "stConnect": "Locate folder",
+    "stWatch": "Watch",
+    "stRemoveFolder": "Remove folder from the hub",
+    "stAddFolder": "Add a folder or disk",
+    "stDeleted": "Deleted {{n}} thumbnails",
+    "stSourcesHint": "A hub can have any number of folders, also on different disks. Removing a folder from the hub does not delete files from the disk.",
+    "stStats": "Statistics",
+    "stThumbs": "Thumbnails",
+    "stServer": "Server (VHA Remote)",
+    "stRemoveConfirm": "Remove the folder from the hub?\n\n{{path}}\n\nFiles stay on the disk but leave the hub together with their thumbnails and tags."
   }
 }

@@ -6,6 +6,7 @@ import type { Observable, Subscription } from 'rxjs';
 
 import { ImageElementService } from './../../services/image-element.service';
 import { SourceFolderService } from './source-folder.service';
+import { TranslateService } from '@ngx-translate/core';
 
 import type { AppStateInterface } from '../../common/app-state';
 import type { ImageElement, ScreenshotSettings, InputSources } from '../../../../interfaces/final-object.interface';
@@ -81,7 +82,8 @@ export class StatisticsComponent implements OnInit, OnDestroy {
   constructor(
     public cd: ChangeDetectorRef,
     public sourceFolderService: SourceFolderService,
-    public imageElementService: ImageElementService
+    public imageElementService: ImageElementService,
+    private translate: TranslateService,
   ) { }
 
   ngOnInit() {
@@ -283,6 +285,14 @@ export class StatisticsComponent implements OnInit, OnDestroy {
    * Delete an item source
    * @param itemSourceKey
    */
+  /** WsQ: removing a folder drops its files (and their tags) from the hub -- ask first */
+  confirmDelete(itemSourceKey: number, path: string): void {
+    if (window.confirm(this.translate.instant('WSQ.stRemoveConfirm', { path }))) {
+      this.deleteInputSource(itemSourceKey);
+      this.cd.detectChanges();
+    }
+  }
+
   deleteInputSource(itemSourceKey: number) {
     console.log(itemSourceKey);
     const inputFolders = this.inputFolders();

@@ -742,6 +742,23 @@
     "setTitleSize": "Wielkość czcionki nazwy pliku",
     "setTitleLines": "Liczba linijek nazwy",
     "setGap": "Odstęp między miniaturami",
-    "settingsHint": "Zmiany są widoczne od razu i zapamiętywane. Kolor akcentu i motyw są pod przyciskiem z paletą w pasku narzędzi."
+    "settingsHint": "Zmiany są widoczne od razu i zapamiętywane. Kolor akcentu i motyw są pod przyciskiem z paletą w pasku narzędzi.",
+    "stFiles": "plików",
+    "stFolders": "folderów",
+    "stTotalTime": "łączny czas",
+    "stTotalSize": "łączny rozmiar",
+    "stSources": "Foldery z filmami",
+    "stWatching": "obserwowany – zmiany dodają się same",
+    "stNotWatching": "nieobserwowany – nowe pliki po „Skanuj ponownie”",
+    "stConnect": "Wskaż folder",
+    "stWatch": "Obserwuj",
+    "stRemoveFolder": "Usuń folder z huba",
+    "stAddFolder": "Dodaj folder lub dysk",
+    "stDeleted": "Usunięto {{n}} miniatur",
+    "stSourcesHint": "Hub może mieć dowolnie wiele folderów, także z różnych dysków. Usunięcie folderu z huba nie kasuje plików z dysku.",
+    "stStats": "Statystyki",
+    "stThumbs": "Miniatury",
+    "stServer": "Serwer (VHA Remote)",
+    "stRemoveConfirm": "Usunąć folder z huba?\n\n{{path}}\n\nPliki na dysku zostaną, ale znikną z huba razem z miniaturami i tagami."
   }
 }

@@ -1,333 +1,204 @@
-<div class="statistics">
+<!-- WsQ: "Ten HUB" page rebuilt as cards (same actions as the original VHA statistics page) -->
+<div class="st">
 
-  <span class="stats-heading title hub-name">
-    <img class="icon-image" src="./assets/logo.png">
-    {{ hubName() }}
-  </span>
-  <span class="stats-heading folder" [innerHtml]="pathToVhaFile() | folderArrowsPipe"></span>
+  <!-- ===== hub ===== -->
+  <div class="st-card st-hub">
+    <img class="st-logo" src="./assets/logo.png" alt="">
+    <div class="st-hub-text">
+      <div class="st-hub-name">{{ hubName() }}</div>
+      <div class="st-mono st-dim" [title]="pathToVhaFile()">{{ pathToVhaFile() }}</div>
+    </div>
+  </div>
 
-  <span class="stats-heading title sources">{{ 'STATISTICS.videoFolder' | translate }}</span>
+  <!-- ===== quick numbers ===== -->
+  <div class="st-tiles">
+    <div class="st-tile">
+      <div class="st-num">{{ totalFiles | number : '.0' }}</div>
+      <div class="st-lbl">{{ 'WSQ.stFiles' | translate }}</div>
+    </div>
+    <div class="st-tile">
+      <div class="st-num">{{ numFolders() | number : '.0' }}</div>
+      <div class="st-lbl">{{ 'WSQ.stFolders' | translate }}</div>
+    </div>
+    <div class="st-tile">
+      <div class="st-num">{{ totalLength | lengthPipe : 'folder' }}</div>
+      <div class="st-lbl">{{ 'WSQ.stTotalTime' | translate }}</div>
+    </div>
+    <div class="st-tile">
+      <div class="st-num">{{ totalSize | fileSizePipe : true }}</div>
+      <div class="st-lbl">{{ 'WSQ.stTotalSize' | translate }}</div>
+    </div>
+  </div>
 
-  <div class="input-sources">
+  <!-- ===== source folders ===== -->
+  <div class="st-sec">{{ 'WSQ.stSources' | translate }}</div>
 
+  <div class="st-list">
   @for (item of inputFolders() | keyvalue | alphabetizeSourceFolders : 'value.path'; track trackByFn(i, item); let i = $index) {
+    <div class="st-row">
+      <svg class="st-ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg>
 
-    <div class="input-sources-row">
-      <span
-        class="stats-heading folder input-folder"
-        [innerHtml]="item.value.path | folderArrowsPipe"
-      ></span>
+      <div class="st-row-main">
+        <div class="st-mono st-path" [title]="item.value.path">{{ item.value.path }}</div>
+        <div class="st-sub">
+          @if (!sourceFolderService.sourceFolderConnected[item.key]) {
+            <span class="st-warn">● {{ 'STATISTICS.notConnected' | translate }}</span>
+          } @else if (item.value.watch) {
+            <span class="st-ok">● {{ 'WSQ.stWatching' | translate }}</span>
+          } @else {
+            <span class="st-dim">● {{ 'WSQ.stNotWatching' | translate }}</span>
+          }
+        </div>
+      </div>
 
-    @if ((objectKeys(inputFolders()).length > 1) && removeFoldersMode) {
-      <span
-        class="delete-input-folder"
-        (click)="deleteInputSource(item.key)"
-        @breadcrumbWordAppear
-      >
-        {{ 'STATISTICS.removeFolder' | translate }}
-      </span>
-    }
+      <div class="st-actions">
+        @if (!sourceFolderService.sourceFolderConnected[item.key]) {
+          <button class="st-btn" (click)="reconnectThisFolder(item.key)" title="{{ 'STATISTICS.clickToConnect' | translate }}">
+            {{ 'WSQ.stConnect' | translate }}
+          </button>
+        } @else if (!item.value.watch) {
+          <button
+            class="st-btn"
+            (click)="($event.button === 0) && rescanFolder(item.key)"
+            (mouseup)="($event.button === 0) && animateThis($event)"
+            title="{{ 'STATISTICS.clickToRescan' | translate }}"
+          >
+            {{ 'STATISTICS.rescanFolder' | translate }}
+          </button>
+        }
 
-    @if (!removeFoldersMode && !item.value.watch && sourceFolderService.sourceFolderConnected[item.key]) {
-      <span
-        class="rescan-input-folder"
-        (click)="($event.button === 0) && rescanFolder(item.key)"
-        (mouseup)="($event.button === 0) && animateThis($event)"
-        title="{{ 'STATISTICS.clickToRescan' | translate }}"
-        @breadcrumbWordAppear
-      >
-        {{ 'STATISTICS.rescanFolder' | translate }}
-      </span>
-    }
+        <label class="st-switch" title="{{ 'STATISTICS.watchFolderHelpText' | translate }}">
+          <input
+            type="checkbox"
+            [(ngModel)]="item.value.watch"
+            (change)="folderWatchStatusChange(item.key, item.value.watch)"
+          >
+          <span class="st-knob"></span>
+          <span class="st-switch-lbl">{{ 'WSQ.stWatch' | translate }}</span>
+        </label>
 
-    @if (!sourceFolderService.sourceFolderConnected[item.key] && !removeFoldersMode) {
-      <span
-        class="input-not-connected"
-        (click)="reconnectThisFolder(item.key)"
-        title="{{ 'STATISTICS.clickToConnect' | translate }}"
-        @breadcrumbWordAppear
-      >
-        {{ 'STATISTICS.notConnected' | translate }}
-      </span>
-    }
+        @if (objectKeys(inputFolders()).length > 1) {
+          <button
+            class="st-icon-btn danger"
+            (click)="confirmDelete(item.key, item.value.path)"
+            title="{{ 'WSQ.stRemoveFolder' | translate }}"
+            aria-label="Usuń folder z huba"
+          >
+            <svg viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9" /></svg>
+          </button>
+        }
+      </div>
+    </div>
+  }
+  </div>
 
-    @if (i === 0 && !removeFoldersMode) {
-      <span
-        class="watch-folder-note"
-        title="{{ 'STATISTICS.watchFolderHelpText' | translate }}"
-        @metaAppear
-      >
-        {{ 'STATISTICS.watchFolder' | translate }}
-      </span>
-    }
-
-    @if (!removeFoldersMode) {
-      <label
-        class="switch"
-        @metaAppear
-      >
-        <input
-          type="checkbox"
-          [(ngModel)]="item.value.watch"
-          (change)="folderWatchStatusChange(item.key, item.value.watch)"
-        >
-        <span
-          title="{{
-                    item.value.watch
-                    ? ('STATISTICS.currentlyWatching' | translate)
-                    : ('STATISTICS.currentlyNotWatching' | translate)
-                  }}"
-          class="slider round"
-        ></span>
-      </label>
-    }
-
-    </div> <!-- end of input-sources-row -->
-
-  } <!-- end of the @for -->
-
-  </div> <!-- end of input-sources -->
-
-  <span class="edit-mode-container">
-
-    <button
-      class="wizard-button start-import"
-      (click)="addAnotherFolder()"
-      [ngClass]="{ 'button-hidden': !removeFoldersMode }"
-    >
-      {{ 'STATISTICS.addFolderToHub' | translate }}
+  <div class="st-btn-row">
+    <button class="st-btn primary" (click)="addAnotherFolder()">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" /></svg>
+      {{ 'WSQ.stAddFolder' | translate }}
     </button>
-
-    <button
-      (click)="removeFoldersMode = !removeFoldersMode"
-      class="wizard-button "
-      [ngClass]="{ 'edit-mode-active': removeFoldersMode }"
-    >
-      {{ 'STATISTICS.editFolders' | translate }}
-    </button>
-
-    <button
-      class="wizard-button"
-      (click)="addMissingThumbnails()"
-      (mouseup)="animateThis($event)"
-      [ngClass]="{ 'button-hidden': !removeFoldersMode }"
-    >
+    <button class="st-btn" (click)="addMissingThumbnails()" (mouseup)="animateThis($event)">
       {{ 'STATISTICS.addMissingThumbnails' | translate }}
     </button>
-
     <button
-      class="wizard-button"
+      class="st-btn"
       (click)="cleanScreenshotFolder()"
       (mouseup)="animateThis($event)"
       title="{{ 'STATISTICS.cleanScreenshotsHint' | translate }}"
-      [ngClass]="{ 'button-hidden': !removeFoldersMode }"
     >
       {{ 'STATISTICS.cleanScreenshots' | translate }}
-
+    </button>
     @if (showNumberDeleted) {
-      <div class="number-of-thumbs-deleted" @metaAppear>
-        Deleted {{ numberOfScreensDeleted | number }} thumbnails
-      </div>
+      <span class="st-dim" @metaAppear>{{ 'WSQ.stDeleted' | translate : { n: (numberOfScreensDeleted | number) } }}</span>
     }
+  </div>
+  <div class="st-hint">{{ 'WSQ.stSourcesHint' | translate }}</div>
 
-    </button>
+  <!-- ===== statistics ===== -->
+  <div class="st-sec">{{ 'WSQ.stStats' | translate }}</div>
 
-  </span>
-
-  <!-- SERVER STUFF -->
-
-  <span class="stats-heading title sources server-title">{{ 'STATISTICS.server' | translate }}</span>
-
-  <span class="edit-mode-container server-section">
-
-    <button
-      class="wizard-button start-import"
-      (click)="startServer()"
-      [ngClass]="{ 'edit-mode-active': serverRunning }"
-    >
-      @if (serverRunning) {
-        {{ 'STATISTICS.serverStop' | translate }}
-      } @else {
-        {{ 'STATISTICS.serverStart' | translate }}
-      }
-    </button>
-
-  @if (!serverRunning) {
-    <span [ngClass]="{ 'disabled': serverRunning }">
-      {{ 'STATISTICS.serverOnPort' | translate }}
-    </span>
-  }
-  @if (!serverRunning) {
-    <input
-      #portSelectInput
-      (change)="validatePort(portSelectInput.value)"
-      type="number"
-      [(ngModel)]="selectedPort"
-      min="1"
-      max="65535"
-      class="port-select"
-    >
-  }
-
-  @if (serverRunning) {
-    <span>
-      {{ 'STATISTICS.serverRunning' | translate }}
-    </span>
-  }
-  @if (serverRunning) {
-    <span class="more-info">
-      i
-    </span>
-  }
-
-    <div class="manual-tag-tray-label-info" style="line-height: 24px">
-      {{ 'STATISTICS.serverMoreInfo' | translate }}
+  <div class="st-grid">
+    <div class="st-card">
+      <div class="st-card-title">{{ 'STATISTICS.videoLengths' | translate }}</div>
+      <div class="st-kv"><span>{{ 'STATISTICS.shortest' | translate }}</span><b>{{ shortest | lengthPipe : 'folder' }}</b></div>
+      <div class="st-kv"><span>{{ 'STATISTICS.longest' | translate }}</span><b>{{ longest | lengthPipe : 'folder' }}</b></div>
+      <div class="st-kv"><span>{{ 'STATISTICS.average' | translate }}</span><b>{{ avgLength | lengthPipe : 'folder' }}</b></div>
     </div>
 
-  @if (serverRunning) {
-    <div class="server-location">
-      <div class="ip-text-container">
-        <span class="ip-address">
-          <span class="gray">http://</span>{{ serverInfo.wifi }}:{{ serverInfo.port }}
-        </span>
-        <br>
-        <span class="or">{{ 'STATISTICS.serverOr' | translate }}</span>
-        <span class="ip-address">
-          <span class="gray">http://</span>{{ serverInfo.host.toLowerCase() }}:{{ serverInfo.port }}
-        </span>
-      </div>
-
-      <qr-code
-        class="qrcode"
-        value="{{ 'http://' + serverInfo.wifi + ':' + serverInfo.port }}"
-        size="120"
-        margin="1"
-        errorCorrectionLevel="M" />
+    <div class="st-card">
+      <div class="st-card-title">{{ 'STATISTICS.fileSizes' | translate }}</div>
+      <div class="st-kv"><span>{{ 'STATISTICS.smallest' | translate }}</span><b>{{ smallest | fileSizePipe : true }}</b></div>
+      <div class="st-kv"><span>{{ 'STATISTICS.largest' | translate }}</span><b>{{ largest | fileSizePipe : true }}</b></div>
+      <div class="st-kv"><span>{{ 'STATISTICS.average' | translate }}</span><b>{{ avgSize | fileSizePipe : true }}</b></div>
     </div>
-  }
 
-  </span>
-
-
-  <!-- STATISTICS FOR THE HUB  -->
-
-  <div class="table-container">
-
-    <table class="stats-table">
-      <tr>
-        <td colSpan=2 class="span-both">{{ 'STATISTICS.general' | translate }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.numOfFolders' | translate }}</td>
-        <td class="rightCol">{{ numFolders() | number:'.0' }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.numOfFiles' | translate }}</td>
-        <td class="rightCol">{{ totalFiles | number:'.0' }}</td>
-      </tr>
-
-      <tr>
-        <td colSpan=2 class="span-both" style="padding-top: 68px;">
-          {{ 'STATISTICS.settings' | translate }}
-        </td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.screenHeight' | translate }}</td>
-        <td class="rightCol">{{ screenshotSettings.height }}px</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.numOfThumbs' | translate }}</td>
-        <td class="rightCol">
-          {{ screenshotSettings.fixed ? ''                                  : ('STATISTICS.oneEvery' | translate) }}
+    <div class="st-card">
+      <div class="st-card-title">{{ 'WSQ.stThumbs' | translate }}</div>
+      <div class="st-kv"><span>{{ 'STATISTICS.screenHeight' | translate }}</span><b>{{ screenshotSettings.height }} px</b></div>
+      <div class="st-kv">
+        <span>{{ 'STATISTICS.numOfThumbs' | translate }}</span>
+        <b>
+          {{ screenshotSettings.fixed ? '' : ('STATISTICS.oneEvery' | translate) }}
           {{ screenshotSettings.n }}
-          {{ screenshotSettings.fixed ? ('STATISTICS.perVideo' | translate) : ('STATISTICS.minutes'  | translate) }}
-        </td>
-      </tr>
-
-    @if (screenshotSettings.clipSnippets > 0) {
-      <tr>
-        <td>{{ 'STATISTICS.clipHeight' | translate }}</td>
-        <td class="rightCol">
-          {{ screenshotSettings.clipHeight }}px
-        </td>
-      </tr>
-    }
-
-      <tr>
-        <td>{{ 'STATISTICS.numOfClips' | translate }}</td>
-        <td class="rightCol">
+          {{ screenshotSettings.fixed ? ('STATISTICS.perVideo' | translate) : ('STATISTICS.minutes' | translate) }}
+        </b>
+      </div>
+      <div class="st-kv">
+        <span>{{ 'STATISTICS.numOfClips' | translate }}</span>
+        <b>
           {{ screenshotSettings.clipSnippets > 0
             ? screenshotSettings.clipSnippets + ' ' + ('STATISTICS.perVideo' | translate)
             : ('STATISTICS.doNotExtract' | translate) }}
-        </td>
-      </tr>
+        </b>
+      </div>
+      @if (screenshotSettings.clipSnippets > 0) {
+        <div class="st-kv"><span>{{ 'STATISTICS.clipHeight' | translate }}</span><b>{{ screenshotSettings.clipHeight }} px</b></div>
+        <div class="st-kv"><span>{{ 'STATISTICS.snippetLength' | translate }}</span><b>{{ screenshotSettings.clipSnippetLength }} {{ 'STATISTICS.seconds' | translate }}</b></div>
+      }
+    </div>
+  </div>
 
-    @if (screenshotSettings.clipSnippets > 0) {
-      <tr>
-        <td>{{ 'STATISTICS.snippetLength' | translate }}</td>
-        <td class="rightCol">
-          {{ screenshotSettings.clipSnippetLength }}
-          {{ 'STATISTICS.seconds' | translate }}
-        </td>
-      </tr>
+  <!-- ===== server (VHA Remote) ===== -->
+  <div class="st-sec">{{ 'WSQ.stServer' | translate }}</div>
+
+  <div class="st-card st-server">
+    <div class="st-server-row">
+      <button class="st-btn" [ngClass]="{ primary: !serverRunning, danger: serverRunning }" (click)="startServer()">
+        {{ (serverRunning ? 'STATISTICS.serverStop' : 'STATISTICS.serverStart') | translate }}
+      </button>
+      @if (!serverRunning) {
+        <span class="st-dim">{{ 'STATISTICS.serverOnPort' | translate }}</span>
+        <input
+          #portSelectInput
+          (change)="validatePort(portSelectInput.value)"
+          type="number"
+          [(ngModel)]="selectedPort"
+          min="1"
+          max="65535"
+          class="st-port"
+          aria-label="Port"
+        >
+      } @else {
+        <span class="st-ok">● {{ 'STATISTICS.serverRunning' | translate }}</span>
+      }
+    </div>
+    <div class="st-hint">{{ 'STATISTICS.serverMoreInfo' | translate }}</div>
+
+    @if (serverRunning) {
+      <div class="st-server-info">
+        <div>
+          <div class="st-mono"><span class="st-dim">http://</span>{{ serverInfo.wifi }}:{{ serverInfo.port }}</div>
+          <div class="st-dim">{{ 'STATISTICS.serverOr' | translate }}</div>
+          <div class="st-mono"><span class="st-dim">http://</span>{{ serverInfo.host.toLowerCase() }}:{{ serverInfo.port }}</div>
+        </div>
+        <qr-code
+          class="qrcode"
+          value="{{ 'http://' + serverInfo.wifi + ':' + serverInfo.port }}"
+          size="120"
+          margin="1"
+          errorCorrectionLevel="M" />
+      </div>
     }
-
-    </table>
-
-    <table class="stats-table">
-      <tr>
-        <td colSpan=2 class="span-both">{{ 'STATISTICS.videoLengths' | translate }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.shortest' | translate }}</td>
-        <td class="rightCol">{{ shortest | lengthPipe : 'folder' }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.longest'  | translate }}</td>
-        <td class="rightCol">{{ longest | lengthPipe : 'folder' }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.total'    | translate }}</td>
-        <td class="rightCol">{{ totalLength | lengthPipe : 'folder' }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.average'  | translate }}</td>
-        <td class="rightCol">{{ avgLength | lengthPipe : 'folder' }}</td>
-      </tr>
-
-      <tr>
-        <td colSpan=2 class="span-both">{{ 'STATISTICS.fileSizes' | translate }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.smallest' | translate }}</td>
-        <td class="rightCol">{{ smallest | fileSizePipe : true }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.largest' | translate }}</td>
-        <td class="rightCol">{{ largest | fileSizePipe : true }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.total'   | translate }}</td>
-        <td class="rightCol">{{ totalSize | fileSizePipe : true }}</td>
-      </tr>
-
-      <tr>
-        <td>{{ 'STATISTICS.average' | translate }}</td>
-        <td class="rightCol">{{ avgSize | fileSizePipe : true }}</td>
-      </tr>
-    </table>
-
   </div>
 
 </div>

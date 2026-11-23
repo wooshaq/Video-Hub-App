@@ -1689,7 +1689,7 @@
 }
 
 .wsq-dlg ::ng-deep {
-  app-statistics, app-settings, app-shortcuts {
+  app-settings, app-shortcuts {
     :is(h1, h2, h3, h4, h5, p, span, div, td, th, label) {
       color: var(--d-fg);
     }

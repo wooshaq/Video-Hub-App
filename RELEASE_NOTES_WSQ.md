@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.13
+- **Strona „Ten HUB” od nowa:** karta huba, kafelki (pliki, foldery, łączny czas i rozmiar), lista folderów z filmami jako wiersze ze stanem (obserwowany / nieobserwowany / niepołączony), „Skanuj ponownie”, przełącznik Obserwuj i kosz (z potwierdzeniem) bez trybu „Edytuj foldery”; przycisk **Dodaj folder lub dysk**; statystyki w trzech kartach; serwer VHA Remote w osobnej karcie.
+
 ### Nowe w wsq.12
 - **Nowe okno ustawień:** wyśrodkowane, półprzezroczyste, z menu sekcji po lewej (Wygląd, Główne, Wyświetlanie, Wyszukiwanie, Ten HUB, Skróty) i nagłówkiem sekcji. Opcje VHA są w kartach w jednym stylu, przyciski i pola w kolorach motywu, przełączniki podświetlone kolorem akcentu. Otwiera się na ostatnio używanej sekcji; klik obok okna albo Esc zamyka.
 
