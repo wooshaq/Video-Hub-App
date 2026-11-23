@@ -338,36 +338,81 @@
   </div>
 }
 
-<!-- ============ icon editor ============ -->
+<!-- ============ icon editor (Ritt-style picker) ============ -->
 @if (iconEditor) {
-  <div class="tp-popup tp-icon-editor" [ngClass]="{ dark: darkMode() }" [ngStyle]="{ left: iconEditor.x + 'px', top: iconEditor.y + 'px' }">
-    <div class="mi-title">{{ 'TAGLIB.icon' | translate }}: {{ iconEditor.node.name }}</div>
-    <div class="ie-row">
-      <input
-        class="icon-input"
-        [(ngModel)]="iconEditor.text"
-        (keydown.enter)="pickIcon(iconEditor.text)"
-        placeholder="{{ 'TAGLIB.iconPlaceholder' | translate }}"
-      >
-      <button (click)="pickIcon(iconEditor.text)">OK</button>
-      <button (click)="pickIcon('')">{{ 'TAGLIB.noIcon' | translate }}</button>
+  <div
+    class="tp-popup tp-icon-editor"
+    [ngClass]="{ dark: darkMode() }"
+    [ngStyle]="{ left: iconEditor.x + 'px', top: iconEditor.y + 'px' }"
+  >
+    <div class="ie-head">
+      <span class="ie-cur-label">{{ 'TAGLIB.currentIcon' | translate }}</span>
+      <span class="ie-cur" [ngClass]="{ txt: isTextIcon(iconEditor.node.icon) }">{{ iconEditor.node.icon || '—' }}</span>
+      <span class="tp-spacer"></span>
+      <button class="ie-trash" (click)="pickIcon('')" title="{{ 'TAGLIB.noIcon' | translate }}" aria-label="Usuń ikonę">
+        <svg viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9M6.8 7v4.5M9.2 7v4.5" /></svg>
+      </button>
     </div>
-    <div class="ie-hint">{{ 'TAGLIB.iconHint' | translate }}</div>
 
-    @if (lib.lib.recentIcons.length) {
-      <div class="mi-label">{{ 'TAGLIB.recentIcons' | translate }}</div>
-      <div class="ie-grid">
-        @for (ic of lib.lib.recentIcons; track ic) {
-          <span class="ie-cell" (click)="pickIcon(ic)">{{ ic }}</span>
-        }
-      </div>
-    }
-
-    <div class="mi-label">{{ 'TAGLIB.icons' | translate }}</div>
-    <div class="ie-grid">
-      @for (ic of presetIcons; track ic) {
-        <span class="ie-cell" (click)="pickIcon(ic)">{{ ic }}</span>
+    <div class="ie-tabs" role="tablist">
+      @for (t of iconTabs; track t.id) {
+        <button
+          class="ie-tab"
+          role="tab"
+          [ngClass]="{ on: iconTab === t.id && !iconSearch }"
+          (click)="iconTab = t.id; iconSearch = ''"
+          [title]="t.label | translate"
+        >{{ t.icon }}</button>
       }
+    </div>
+
+    <input
+      class="ie-search"
+      type="text"
+      [(ngModel)]="iconSearch"
+      placeholder="{{ 'TAGLIB.searchIcons' | translate }}"
+    >
+
+    <div class="ie-label">
+      @if (iconSearch) {
+        {{ 'TAGLIB.searchResults' | translate }}
+      } @else if (iconTab < 0) {
+        {{ 'TAGLIB.recentIconsHint' | translate }}
+      } @else {
+        {{ iconTabs[iconTab + 1].label | translate }}
+      }
+    </div>
+
+    <div class="ie-grid">
+      @for (ic of iconCells(); track $index) {
+        <button
+          class="ie-cell"
+          [ngClass]="{ txt: isTextIcon(ic.e), cur: ic.e === iconEditor.node.icon }"
+          (click)="pickIcon(ic.e)"
+          (auxclick)="onIconAux($event, ic.e)"
+          (mousedown)="$event.button === 1 && $event.preventDefault()"
+          [title]="ic.n"
+        >{{ ic.e }}</button>
+      }
+      @if (!iconCells().length) {
+        <span class="ie-empty">{{ (emojiLoaded ? 'TAGLIB.noIconsFound' : 'TAGLIB.loading') | translate }}</span>
+      }
+    </div>
+
+    <div class="ie-foot">
+      <div class="ie-label">{{ 'TAGLIB.customIcon' | translate }}</div>
+      <div class="ie-row">
+        <input
+          class="icon-input"
+          [(ngModel)]="iconEditor.text"
+          (keydown.enter)="pickIcon(iconEditor.text)"
+          placeholder="{{ 'TAGLIB.iconPlaceholder' | translate }}"
+          maxlength="12"
+        >
+        <button class="ie-ok" (click)="pickIcon(iconEditor.text)" aria-label="OK">
+          <svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5" /></svg>
+        </button>
+      </div>
     </div>
   </div>
 }

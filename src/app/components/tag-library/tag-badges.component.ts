@@ -41,7 +41,7 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
 }
 .badges.dark .b { background: rgba(38,38,38,.92); color: #ddd; }
 .b-icon { padding: 0 3px; }
-.ic { font-family: 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 12px; line-height: 1; }
+.ic { font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 12px; line-height: 1; }
 .nm { white-space: nowrap; }
   `]
 })

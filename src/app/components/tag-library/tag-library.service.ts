@@ -913,10 +913,15 @@ export class TagLibraryService {
     icon = (icon || '').trim();
     if (icon) {
       node.icon = icon;
-      this.lib.recentIcons = [icon, ...this.lib.recentIcons.filter(i => i !== icon)].slice(0, 40);
+      this.lib.recentIcons = [icon, ...this.lib.recentIcons.filter(i => i !== icon)].slice(0, 60);
     } else {
       delete node.icon;
     }
+    this.touchLib();
+  }
+
+  removeRecentIcon(icon: string): void {
+    this.lib.recentIcons = this.lib.recentIcons.filter(i => i !== icon);
     this.touchLib();
   }
 

@@ -48,7 +48,7 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
 .chip.inh:hover { opacity: 1; }
 .chip.sug { border-style: dashed; }
 .chip.all { border-color: var(--accent); color: var(--accent); }
-.ic { font-family: 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 13px; }
+.ic { font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 13px; }
 .plus { color: var(--accent); font-weight: bold; }
 .none { color: var(--dim); font-size: 11px; }
 .auto { border: 1px solid var(--border); border-radius: 6px; margin-top: 6px; padding: 4px 8px; }

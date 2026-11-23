@@ -129,7 +129,7 @@ button { font: inherit; }
   white-space: nowrap;
 }
 .chip:hover { border-color: var(--accent); }
-.ic { font-family: 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 14px; }
+.ic { font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 14px; }
 .cnt { color: var(--dim); font-size: 10px; }
 
 .chip.related { color: var(--dim); }

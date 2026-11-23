@@ -1,5 +1,12 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.5
+- **Menu prawego przycisku** (tagi i filmy) jest bardziej zwarte i półprzezroczyste z rozmyciem tła, jak w Windows 11 / Ritt.
+- **Wybór ikony jak w Ritt:** bieżąca ikona z koszem, kategorie (Ostatnie, Buźki, Ludzie, Zwierzęta, Jedzenie, Aktywności, Podróże, Przedmioty, Symbole, Flagi), wyszukiwarka po polsku i angielsku (np. „flaga”, „japonia”, „cherry”). Środkowy przycisk myszy usuwa ikonę z ostatnich. Na dole pole **Niestandardowa ikona**: emoji albo tekst, np. `06` jako wiek.
+- Ikony tekstowe wyświetlają się zwykłą czcionką (wcześniej cyfry wyglądały jak „0 6”).
+- Menu otwiera się dokładnie przy kursorze i nie wchodzi pod pasek stanu.
+- Nazwy emoji pochodzą z emojibase-data (MIT, licencja w `assets/emoji`).
+
 ### Nowe w wsq.4
 - **Kształt kafelków dopasowuje się do zawartości widoku:** gdy większość plików na ekranie ma okładki, kafelki przyjmują proporcje okładek (mediana, np. JAV 800×538), więc okładki nie są przycinane. Bez okładek zostaje 16:9. Klatki przy przewijaniu wypełniają kafelek i są wyśrodkowane.
 - **Nazwa w lewym dolnym rogu** (kod typu PPPE-029, a gdy go nie ma – nazwa pliku), tej samej wielkości co czas po prawej; oba znaczniki mają półprzezroczyste tło.

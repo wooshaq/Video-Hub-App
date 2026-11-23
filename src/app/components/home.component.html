@@ -85,6 +85,7 @@
         left: rightClickPosition.x + 'px'
       }"
     class="right-click-menu"
+    [ngClass]="{ dark: settingsButtons['darkMode'].toggled }"
     @rightClickAnimation
   >
     <ul @rightClickContentAnimation>

@@ -13,16 +13,23 @@ type DropZone = 'before' | 'after' | 'child';
 
 const DRAG_TYPE = 'application/x-vha-tag-node';
 
-// Common icons offered in the icon picker (Windows: Win + . opens the full emoji picker)
-const PRESET_ICONS: string[] = [
-  '🏷️', '⭐', '❤️', '🔥', '✅', '✔️', '❌', '💥', '🗑️', '📁', '📂', '🎬', '🎞️', '📼', '📺', '🎥',
-  '🔞', '🔒', '🔓', '🛡️', '⚠️', '💤', '🕒', '📅', '🆕', '💯', '🎯', '🌍', '🌏', '🌎', '🗾', '🏯',
-  '🍑', '🍒', '🍈', '🍉', '🍊', '🍋', '🍓', '🥥', '🥝', '🍎', '🍐', '🍇', '🌸', '🌹', '💋', '👄',
-  '👩', '👱‍♀️', '👩‍🦰', '👩‍🦱', '👩‍🦳', '👧', '👵', '👨', '👴', '🧔', '👙', '👗', '👘', '👠', '🎀', '💎',
-  '🇯🇵', '🇺🇸', '🇬🇧', '🇵🇱', '🇩🇪', '🇫🇷', '🇨🇿', '🇷🇺', '🇺🇦', '🇰🇷', '🇨🇳', '🇪🇸', '🇮🇹', '🇭🇺', '🇨🇦', '🇦🇺',
-  '🇧🇪', '🇳🇱', '🇱🇻', '🇲🇹', '🇲🇽', '🇵🇷', '🇧🇷', '🇸🇪', '🇳🇴', '🇫🇮', '🇩🇰', '🇦🇹', '🇨🇭', '🇹🇭', '🇵🇭', '🇻🇳',
-  '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫', '⚪', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛',
+/** WsQ: emoji picker data (assets/emoji/emoji-pl.json, built from emojibase-data, MIT): [group, emoji, Polish name, search words] */
+type EmojiRow = [number, string, string, string];
+
+const ICON_TABS: { id: number, icon: string, label: string }[] = [
+  { id: -1, icon: '🕒', label: 'TAGLIB.iconTabRecent' },
+  { id: 0, icon: '😳', label: 'TAGLIB.iconTabSmileys' },
+  { id: 1, icon: '👶', label: 'TAGLIB.iconTabPeople' },
+  { id: 2, icon: '🐻', label: 'TAGLIB.iconTabAnimals' },
+  { id: 3, icon: '🍔', label: 'TAGLIB.iconTabFood' },
+  { id: 4, icon: '⛸️', label: 'TAGLIB.iconTabActivities' },
+  { id: 5, icon: '✈️', label: 'TAGLIB.iconTabTravel' },
+  { id: 6, icon: '📦', label: 'TAGLIB.iconTabObjects' },
+  { id: 7, icon: '💕', label: 'TAGLIB.iconTabSymbols' },
+  { id: 8, icon: '🚩', label: 'TAGLIB.iconTabFlags' },
 ];
+
+let EMOJI_ROWS: EmojiRow[] | null = null;
 
 @Component({
   standalone: false,
@@ -115,7 +122,76 @@ export class TagPaneComponent implements OnDestroy {
   ];
 
   hotkeys = HOTKEYS;
-  presetIcons = PRESET_ICONS;
+  // ---------- WsQ: icon picker ----------
+  iconTabs = ICON_TABS;
+  iconTab = -1;
+  iconSearch = '';
+  emojiLoaded = !!EMOJI_ROWS;
+  private cellsKey = '';
+  private cellsCache: { e: string, n: string }[] = [];
+
+  private loadEmoji(): void {
+    if (EMOJI_ROWS) {
+      this.emojiLoaded = true;
+      return;
+    }
+    fetch('assets/emoji/emoji-pl.json')
+      .then(r => r.json())
+      .then((rows: EmojiRow[]) => {
+        EMOJI_ROWS = rows;
+        this.emojiLoaded = true;
+        this.cellsKey = '';
+      })
+      .catch(() => { this.emojiLoaded = true; });
+  }
+
+  /** text icons (e.g. "06" for an age) are shown in the normal font */
+  isTextIcon(icon: string | undefined): boolean {
+    return !!icon && /^[\x20-\x7E\u00A0-\u024F]+$/.test(icon);
+  }
+
+  iconCells(): { e: string, n: string }[] {
+    const q = this.iconSearch.trim().toLowerCase();
+    const key = (q ? 'q:' + q : 't:' + this.iconTab) + '|' + (EMOJI_ROWS ? 1 : 0) + '|' + this.lib.lib.recentIcons.join('\u0001');
+    if (key === this.cellsKey) {
+      return this.cellsCache;
+    }
+    this.cellsKey = key;
+    const rows = EMOJI_ROWS || [];
+    const name = (e: string) => (rows.find(r => r[1] === e) || [0, e, ''])[2] as string;
+
+    if (q) {
+      const words = q.split(/\s+/);
+      const out: { e: string, n: string }[] = [];
+      this.lib.lib.recentIcons.forEach(e => {
+        if (e.toLowerCase().includes(q)) {
+          out.push({ e, n: name(e) });
+        }
+      });
+      for (const r of rows) {
+        if (words.every(w => r[3].includes(w)) && !out.some(o => o.e === r[1])) {
+          out.push({ e: r[1], n: r[2] });
+          if (out.length >= 400) {
+            break;
+          }
+        }
+      }
+      this.cellsCache = out;
+    } else if (this.iconTab < 0) {
+      this.cellsCache = this.lib.lib.recentIcons.map(e => ({ e, n: name(e) }));
+    } else {
+      this.cellsCache = rows.filter(r => r[0] === this.iconTab).map(r => ({ e: r[1], n: r[2] }));
+    }
+    return this.cellsCache;
+  }
+
+  /** middle click on a recent icon removes it from the list */
+  onIconAux(event: MouseEvent, icon: string): void {
+    if (event.button === 1) {
+      event.preventDefault();
+      this.lib.removeRecentIcon(icon);
+    }
+  }
 
   private rowsCache: { key: string, rows: FlatRow[] } = { key: '', rows: [] };
 
@@ -411,10 +487,25 @@ export class TagPaneComponent implements OnDestroy {
     if (x + w > window.innerWidth - 8) {
       x = window.innerWidth - w - 8;
     }
-    if (y + h > window.innerHeight - 8) {
-      y = Math.max(8, window.innerHeight - h - 8);
+    if (y + h > window.innerHeight - 34) {   // WsQ: keep above the status bar
+      y = Math.max(8, window.innerHeight - h - 34);
     }
-    return { x, y };
+    const o = this.fixedOrigin();
+    return { x: x - o.x, y: y - o.y };
+  }
+
+  /** position:fixed inside a transformed ancestor (window-content) is relative to that ancestor */
+  private fixedOrigin(): { x: number, y: number } {
+    let el = (this.host.nativeElement as HTMLElement).parentElement;
+    while (el && el !== document.body) {
+      const t = getComputedStyle(el).transform;
+      if (t && t !== 'none') {
+        const r = el.getBoundingClientRect();
+        return { x: r.left, y: r.top };
+      }
+      el = el.parentElement;
+    }
+    return { x: 0, y: 0 };
   }
 
   openMenu(event: MouseEvent, node: TagNode | null): void {
@@ -424,15 +515,28 @@ export class TagPaneComponent implements OnDestroy {
     if (node) {
       this.selectedId = node.id;
     }
-    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 90 : 560) : 130);
+    const p = this.popupPos(event, 250, node ? (node.type === 'separator' ? 70 : 400) : 110);
     this.menu = { ...p, node };
   }
 
   openIconEditor(event: MouseEvent, node: TagNode): void {
-    const p = this.popupPos(event, 300, 360);
+    const p = this.popupPos(event, 380, 540);
     this.closePopups();
     this.iconEditor = { ...p, node, text: node.icon || '' };
-    setTimeout(() => (this.host.nativeElement.querySelector('.icon-input') as HTMLInputElement)?.focus());
+    this.iconSearch = '';
+    this.iconTab = this.lib.lib.recentIcons.length ? -1 : 0;
+    this.cellsKey = '';
+    this.loadEmoji();
+    setTimeout(() => {
+      const el = this.host.nativeElement.querySelector('.tp-icon-editor') as HTMLElement;
+      if (el && this.iconEditor) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom > window.innerHeight - 34) {
+          this.iconEditor.y = Math.max(8, window.innerHeight - r.height - 34) - this.fixedOrigin().y;
+        }
+      }
+      (this.host.nativeElement.querySelector('.ie-search') as HTMLInputElement)?.focus();
+    });
   }
 
   pickIcon(icon: string): void {
