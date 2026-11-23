@@ -3,28 +3,19 @@
 // WsQ title bar (Ritt-style)
 
 .wsq-title {
-  --tb-bg: #ececec;
   --tb-fg: #222;
-  --tb-dim: #777;
-  --tb-border: #d4d4d4;
 
-  align-items: center;
-  background: var(--tb-bg);
-  border-bottom: 1px solid var(--tb-border);
-  box-sizing: border-box;
-  color: var(--tb-fg);
+  -webkit-app-region: no-drag;
+  align-items: stretch;
   display: flex;
-  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
-  height: 32px;
-  position: relative;
-  width: 100%;
+  height: 48px;
+  position: absolute;
+  right: 0;
+  top: 0;
   z-index: 9999;
 
   &.dark {
-    --tb-bg: #161616;
     --tb-fg: #e3e3e3;
-    --tb-dim: #8f8f8f;
-    --tb-border: #262626;
   }
 }
 
@@ -108,7 +99,7 @@
   cursor: pointer;
   display: inline-flex;
   flex: 0 0 auto;
-  height: 32px;
+  height: 48px;
   justify-content: center;
   padding: 0;
   width: 46px;

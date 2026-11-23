@@ -1195,3 +1195,107 @@
     padding: 8px 2px 0;
   }
 }
+
+// ----- WsQ: title bar merged into the toolbar -----
+.all-settings {
+  -webkit-app-region: drag;
+  padding-right: 146px !important;   // room for ─ ▢ ✕
+
+  button,
+  input,
+  select,
+  label,
+  app-ribbon,
+  .wsq-search,
+  .wsq-size,
+  .wsq-tabitem,
+  .wsq-theme-pop,
+  .wsq-clickaway {
+    -webkit-app-region: no-drag;
+  }
+}
+
+.wsq-logo {
+  align-items: center;
+  background: #c62f2f;
+  border-radius: 4px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 18px;
+  justify-content: center;
+  margin: 0 6px 0 7px;
+  width: 18px;
+
+  svg {
+    fill: #fff;
+    height: 10px;
+    width: 10px;
+  }
+}
+
+.wsq-tabs {
+  align-items: center;
+  display: flex;
+  flex: 0 1 auto;
+  gap: 2px;
+  margin-left: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wsq-tabitem {
+  align-items: center;
+  border-radius: 6px;
+  color: #777;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 1 170px;
+  font-size: 12px;
+  gap: 4px;
+  height: 28px;
+  min-width: 96px;
+  padding: 0 3px 0 9px;
+
+  .lbl {
+    flex: 1;
+    font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .x {
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    font-size: 9px;
+    height: 18px;
+    opacity: 0;
+    padding: 0;
+    width: 18px;
+
+    &:hover { background: rgba(127, 127, 127, 0.25); }
+  }
+
+  &:hover {
+    background: rgba(127, 127, 127, 0.12);
+
+    .x { opacity: 1; }
+  }
+
+  &.on {
+    background: rgba(var(--wsq-accent-rgb), 0.16);
+    box-shadow: inset 0 -2px 0 var(--wsq-accent);
+    color: #222;
+
+    .x { opacity: 0.8; }
+  }
+}
+
+.wsq-dark .wsq-tabitem {
+  color: #8f8f8f;
+
+  &.on { color: #e3e3e3; }
+}

@@ -1,44 +1,8 @@
+<!-- WsQ: the title bar is merged with the toolbar; only the window buttons live here -->
 <div
   class="title-bar wsq-title"
   [ngClass]="{ dark: settingsButtons().darkMode.toggled, mac: macVersion() }"
 >
-  <div class="draggable">
-    <span class="t-logo" aria-hidden="true">
-      <svg viewBox="0 0 10 10"><path d="M2.5 1.5v7l6-3.5z" /></svg>
-    </span>
-    <span class="t-app">Video Hub App 3 WsQ</span>
-    <span class="t-hub">
-      {{ demo() ? 'demo · ' : '' }}{{ appState().hubName ? appState().hubName + '.vha2' : '' }}{{ importStage() !== 'done' ? ' · ' + progressString() : '' }}
-    </span>
-    @if (lib.tabs.length > 1) {
-      <span class="t-tabs">
-        @for (tab of lib.tabs; track $index; let i = $index) {
-          <span
-            class="t-tabitem"
-            [ngClass]="{ on: i === lib.tabIndex }"
-            (click)="lib.switchTab(i)"
-            (auxclick)="$event.button === 1 && lib.closeTab(i)"
-            (mousedown)="$event.button === 1 && $event.preventDefault()"
-            [title]="lib.tabLabel(i) || ('WSQ.tabAll' | translate)"
-          >
-            <span class="lbl ic">{{ lib.tabLabel(i) || ('WSQ.tabAll' | translate) }}</span>
-            <button class="x" (click)="$event.stopPropagation(); lib.closeTab(i)" aria-label="Zamknij kartę">✕</button>
-          </span>
-        }
-        <button class="t-newtab" (click)="lib.newTab()" title="{{ 'WSQ.newTab' | translate }}" aria-label="Nowa karta">+</button>
-      </span>
-    } @else {
-      <span class="t-center">
-        @for (t of lib.active; track t) {
-          <span class="t-tag">@if (lib.iconOf(t)) { <span class="ic">{{ lib.iconOf(t) }}</span> }{{ t }}</span>
-        }
-        @for (t of lib.excluded; track t) {
-          <span class="t-tag exc">@if (lib.iconOf(t)) { <span class="ic">{{ lib.iconOf(t) }}</span> }{{ t }}</span>
-        }
-      </span>
-      <button class="t-newtab solo" (click)="lib.newTab()" title="{{ 'WSQ.newTab' | translate }}" aria-label="Nowa karta">+</button>
-    }
-  </div>
   <button class="windows-button minimizeButton" (click)="initiateMinimize.emit()" aria-label="Minimalizuj">
     <svg viewBox="0 0 12 12"><path d="M2 6h8" /></svg>
   </button>

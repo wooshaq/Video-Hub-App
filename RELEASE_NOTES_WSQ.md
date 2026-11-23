@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.9
+- **Pasek tytułu połączony z paskiem narzędzi** – o 32 px więcej miejsca. Okno przeciąga się za puste miejsca paska, ─ ▢ ✕ są po prawej, logo po lewej (nazwa huba w podpowiedzi), karty i „+” (nowa karta) są obok przycisku Wszystko, postęp importu w pasku stanu.
+
 ### Nowe w wsq.8
 - Import z Ritt przenosi też **aliasy**, **kolor** (pierwszy z pary kolorów Ritt) i **Dziedzicz** (głębokość, atrybut 6245). Notatki są czytane, jeśli Ritt zapisuje je jako właściwość z „Note/Notes/Description” w nazwie (jeszcze niepotwierdzone).
 

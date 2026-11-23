@@ -353,10 +353,32 @@
     } @else {
       <!-- WsQ toolbar (Ritt-style) -->
       <div class="wsq-toolbar">
+        <span class="wsq-logo" [title]="'Video Hub App 3 WsQ' + (appState.hubName ? ' — ' + appState.hubName + '.vha2' : '')" aria-hidden="true">
+          <svg viewBox="0 0 10 10"><path d="M2.5 1.5v7l6-3.5z" /></svg>
+        </span>
         <button class="wsq-tb-btn" [disabled]="!canGoBack()" (click)="historyBack()" title="{{ 'WSQ.back' | translate }}" aria-label="Wstecz"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" /></svg></button>
         <button class="wsq-tb-btn" [disabled]="!canGoForward()" (click)="historyForward()" title="{{ 'WSQ.forward' | translate }}" aria-label="Dalej"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" /></svg></button>
         <button class="wsq-tb-btn" (click)="rescanAllFolders()" title="{{ 'WSQ.rescan' | translate }}" aria-label="Odśwież"><svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" /></svg></button>
         <button class="wsq-tb-btn" (click)="goHome()" title="{{ 'WSQ.home' | translate }}" aria-label="Wszystkie pliki"><svg viewBox="0 0 16 16"><path d="M2.5 7.5 8 3l5.5 4.5V13h-11z" /></svg></button>
+
+        @if (tagLib.tabs.length > 1) {
+          <span class="wsq-tabs">
+            @for (tab of tagLib.tabs; track $index; let i = $index) {
+              <span
+                class="wsq-tabitem"
+                [ngClass]="{ on: i === tagLib.tabIndex }"
+                (click)="tagLib.switchTab(i)"
+                (auxclick)="$event.button === 1 && tagLib.closeTab(i)"
+                (mousedown)="$event.button === 1 && $event.preventDefault()"
+                [title]="tagLib.tabLabel(i) || ('WSQ.tabAll' | translate)"
+              >
+                <span class="lbl">{{ tagLib.tabLabel(i) || ('WSQ.tabAll' | translate) }}</span>
+                <button class="x" (click)="$event.stopPropagation(); tagLib.closeTab(i)" aria-label="Zamknij kartę">✕</button>
+              </span>
+            }
+          </span>
+        }
+        <button class="wsq-tb-btn wsq-newtab" (click)="tagLib.newTab()" title="{{ 'WSQ.newTab' | translate }}" aria-label="Nowa karta"><svg viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9" /></svg></button>
 
         <label class="wsq-search">
           <input
@@ -1548,7 +1570,7 @@
       @if (tagPaneWidth) { {{ tagLib.orderedNames().length | number }} {{ 'WSQ.tagsCount' | translate }} }
     </span>
     <span class="st-mid">
-      <span>{{ numberOfVideosFound | number }} {{ 'WSQ.items' | translate }} · {{ 'WSQ.selected' | translate }} {{ selectedCount() }}</span>
+      <span>{{ numberOfVideosFound | number }} {{ 'WSQ.items' | translate }} · {{ 'WSQ.selected' | translate }} {{ selectedCount() }}@if (importStage !== 'done') { · {{ progressString }} }</span>
       <span>{{ 'WSQ.thumbs' | translate }} {{ galleryZoomPercent() }}% · Ctrl + {{ 'WSQ.wheel' | translate }}</span>
     </span>
     <span class="st-right" [ngStyle]="{ width: detailsWidth + 'px' }">

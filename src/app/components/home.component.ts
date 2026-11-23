@@ -3152,7 +3152,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   /** title bar + toolbar + status bar (px) -- used by the tag pane / details panel heights */
   get wsqChromeHeight(): number {
-    return (this.appState.menuHidden ? -48 : 0) + (this.settingsButtons['hideTop'].toggled ? 106 : 151);
+    return (this.appState.menuHidden ? -48 : 0) + (this.settingsButtons['hideTop'].toggled ? 74 : 119);
   }
 
   private history: ViewTabState[] = [{ active: [], excluded: [], search: '', folder: null }];
