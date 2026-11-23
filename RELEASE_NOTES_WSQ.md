@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.16
+- Foldery w widoku folderów mają proporcje jak w Ritt (216 × 170, nie rozciągają się na szerokość kafelka); podgląd zajmuje górną część folderu, przednia klapka zaczyna się w połowie. Własna ikona z desktop.ini jest w tym samym prostokącie. Pod folderem są odznaki tagów folderu.
+
 ### Nowe w wsq.15
 - Usunięty suwak „Rozmiar” z paska narzędzi – rozmiar miniatur zmienia Ctrl + kółko myszy nad galerią.
 

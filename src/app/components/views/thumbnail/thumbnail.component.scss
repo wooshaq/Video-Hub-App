@@ -232,10 +232,18 @@
   overflow: visible;
 }
 
+// Ritt proportions: folder 216 x 170, standing in the middle of the tile, full tile height
 .wf {
-  inset: 4% 9% 2%;
+  aspect-ratio: 216 / 170;
+  height: 100%;
+  left: 50%;
+  max-width: 100%;
   position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
 
+.wf {
   svg {
     height: 100%;
     left: 0;
@@ -244,10 +252,10 @@
     width: 100%;
   }
 
-  .wf-back path { fill: #e8a91c; }
+  .wf-back path { fill: #f0b323; }
 
   .wf-front {
-    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.18));
+    filter: drop-shadow(0 -1px 2px rgba(0, 0, 0, 0.2));
   }
 }
 
@@ -255,12 +263,12 @@
   background: #fff;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  height: 52%;
-  left: 5%;
+  height: 62%;
+  left: 4%;
   overflow: hidden;
   position: absolute;
-  top: 15%;
-  width: 90%;
+  top: 17%;
+  width: 92%;
 
   img {
     height: 100%;
@@ -270,12 +278,9 @@
 }
 
 .wf-custom {
-  height: 96%;
-  left: 2%;
+  height: 100%;
   object-fit: contain;
-  position: absolute;
-  top: 2%;
-  width: 96%;
+  width: 100%;
 }
 
 .wf-count {
@@ -283,7 +288,7 @@
   backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.42);
   border-radius: 4px;
-  bottom: 8%;
+  bottom: 7px;
   color: rgba(255, 255, 255, 0.92);
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 10.5px;
@@ -291,7 +296,7 @@
   padding: 0 5px;
   pointer-events: none;
   position: absolute;
-  right: 12%;
+  right: 8px;
 }
 
 .wsq-folder-name {
@@ -300,7 +305,7 @@
   display: -webkit-box !important;
   font-size: var(--wsq-title-size, 12px) !important;
   line-height: 1.35 !important;
-  margin-top: 31px;
+  margin-top: 0;
   overflow: hidden;
   text-align: center;
   white-space: normal !important;
@@ -314,6 +319,8 @@
 .video-box.wsq-folder-box:hover .wf,
 .video-box.wsq-folder-box:hover .wf-custom {
   filter: brightness(1.06);
-  transform: translateY(-2px);
-  transition: transform 120ms;
+}
+
+.wf-badges {
+  text-align: left;
 }

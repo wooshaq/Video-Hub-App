@@ -25,33 +25,35 @@
       [ngStyle]="{ height: imgHeight() + 'px' }"
     >
       @let icon = folderIcon;
-      @if (icon) {
-        <img class="wf-custom" [src]="icon" alt="" draggable="false">
-      } @else {
-        <div class="wf">
-          <svg class="wf-back" viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M4 14a8 8 0 0 1 8-8h50a8 8 0 0 1 5.7 2.4L80 20h108a8 8 0 0 1 8 8v110a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z" />
+      <div class="wf">
+        @if (icon) {
+          <img class="wf-custom" [src]="icon" alt="" draggable="false">
+        } @else {
+          <svg class="wf-back" viewBox="0 0 216 170" aria-hidden="true">
+            <path d="M2 12a10 10 0 0 1 10-10h62a10 10 0 0 1 7.4 3.3L95 22h109a10 10 0 0 1 10 10v126a10 10 0 0 1-10 10H12a10 10 0 0 1-10-10z" />
           </svg>
           @if (folderThumbPaths[folderPreviewIndex]) {
             <div class="wf-paper">
               <img [src]="folderThumbPaths[folderPreviewIndex]" alt="" draggable="false">
             </div>
           }
-          <svg class="wf-front" viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
+          <svg class="wf-front" viewBox="0 0 216 170" aria-hidden="true">
             <defs>
               <linearGradient id="wfg" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0" stop-color="#ffe08a" />
                 <stop offset="1" stop-color="#f7c843" />
               </linearGradient>
             </defs>
-            <path d="M4 66a8 8 0 0 1 8-8h176a8 8 0 0 1 8 8v72a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z" fill="url(#wfg)" />
+            <path d="M2 100a10 10 0 0 1 10-10h192a10 10 0 0 1 10 10v58a10 10 0 0 1-10 10H12a10 10 0 0 1-10-10z" fill="url(#wfg)" />
           </svg>
-        </div>
-      }
-      @if (showMeta()) {
-        <span class="wf-count">{{ video.fileSizeDisplay }}</span>
-      }
+        }
+        @if (showMeta()) {
+          <span class="wf-count">{{ video.fileSizeDisplay }}</span>
+        }
+      </div>
     </div>
+
+    <app-tag-badges class="tag-badges-row wf-badges" [video]="video" [darkMode]="darkMode()" />
 
   } @else {  <!-- ========================= UP FOLDER TEMPLATE ===================================== -->
 
