@@ -3109,9 +3109,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
     if (!this.copiedTags.length) {
       return;
     }
-    const items = this.batchTaggingMode
-      ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
-      : [target || this.currentClickedItem].filter(e => !!e);
+    // WsQ: paste onto the whole selection (right-click on a file outside the selection = only that file)
+    const sel = this.wsqTargets();
+    const items = (!target || sel.includes(target)) ? sel : [target];
     let added = 0;
     this.copiedTags.forEach(t => { added += this.tagLib.addTagTo(items, t); });
     this.ifShowDetailsViewRefreshTags();

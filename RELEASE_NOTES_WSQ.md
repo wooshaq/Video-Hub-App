@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.7
+- Wklejanie tagów (ikona, prawy przycisk, Ctrl+Shift+V) trafia do wszystkich zaznaczonych plików. Prawy przycisk na pliku spoza zaznaczenia wkleja tylko do niego.
+
 ### Nowe w wsq.6
 - **Motyw i kolor akcentowy:** przycisk z paletą w pasku narzędzi – Ciemny / Jasny i 10 kolorów akcentu (lub własny). Kolor obejmuje zaznaczenia, aktywne tagi, suwaki, ramki itd.
 - **Wielozaznaczenie jak w Eksploratorze:** Ctrl+klik, Shift+klik (zakres), ramka myszą od pustego miejsca galerii, Ctrl+A (cały widok), Esc czyści. Kółka w drzewie tagów działają na całe zaznaczenie: pełne = wszystkie mają, kropka = część ma, puste = żaden; klik dodaje do wszystkich albo usuwa ze wszystkich. Prawy panel pokazuje „zaznaczono: N” i tagi z licznikiem 1/2 (klik w licznik dodaje do wszystkich). Skróty 1–0 i kopiuj/wklej też działają na zaznaczenie.
