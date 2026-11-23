@@ -1,5 +1,9 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.21
+- Okno ustawień lżejsze dla karty graficznej: przyciemnienie tła bez rozmycia (wcześniej rozmyta warstwa wielokrotnie większa od okna), słabsze rozmycie samego okna. Mogło to zawieszać program przy zamykaniu ustawień.
+- Suwaki w Ustawienia → Wygląd przeliczają galerię dopiero po puszczeniu suwaka (przy dużych hubach każde przesunięcie mroziło okno).
+
 ### Nowe w wsq.20
 - Naprawione przyciski ─ ▢ ✕: po połączeniu paska tytułu z paskiem narzędzi obszar przeciągania okna przykrywał je i kliknięcia nie działały.
 

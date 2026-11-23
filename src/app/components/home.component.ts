@@ -3036,10 +3036,16 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     }
     this.writeLocal('wsq.' + key, String(value));
     this.applyGalleryLook();
-    this.computeTextBufferAmount();
-    this.computePreviewWidth();
-    this.virtualScroller()?.invalidateAllCachedMeasurements();
+    // re-measuring a big gallery on every slider step froze the window -- do it once the slider stops
+    clearTimeout(this.lookTimer);
+    this.lookTimer = setTimeout(() => {
+      this.computeTextBufferAmount();
+      this.computePreviewWidth();
+      this.virtualScroller()?.invalidateAllCachedMeasurements();
+    }, 200);
   }
+
+  private lookTimer: any;
 
   // ---------- WsQ: shortcuts of the old interface mapped to the new one ----------
 
