@@ -475,6 +475,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     this.accent = this.readLocal('wsq.accent', '#4cb4ff');
     this.applyAccent();
     this.applyGalleryLook();
+    this.tagLib.hoverDelay = this.wsqHoverDelay;
     this.translate.setDefaultLang('en');
     this.changeLanguage('en');
 
@@ -3018,6 +3019,13 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   wsqGap = Math.max(0, Math.min(60, parseInt(this.readLocal('wsq.gap', '16'), 10) || 0));
   wsqTitleSize = Math.max(9, Math.min(20, parseFloat(this.readLocal('wsq.titleSize', '12')) || 12));
   wsqTitleLines = Math.max(1, Math.min(3, parseInt(this.readLocal('wsq.titleLines', '2'), 10) || 2));
+  wsqHoverDelay = Math.max(0, Math.min(2000, parseInt(this.readLocal('wsq.hoverDelay', '250'), 10) || 0));
+
+  setHoverDelay(ms: number): void {
+    this.wsqHoverDelay = ms;
+    this.tagLib.hoverDelay = ms;
+    this.writeLocal('wsq.hoverDelay', String(ms));
+  }
 
   applyGalleryLook(): void {
     const st = document.documentElement.style;

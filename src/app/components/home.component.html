@@ -257,6 +257,12 @@
       </div>
 
       <label class="ws-row">
+        <span class="ws-lbl">{{ 'WSQ.setHoverDelay' | translate }}</span>
+        <input type="range" min="0" max="1500" step="50" [ngModel]="wsqHoverDelay" (ngModelChange)="setHoverDelay(+$event)">
+        <span class="ws-val">{{ wsqHoverDelay ? (wsqHoverDelay / 1000 | number : '1.2-2') + ' s' : ('WSQ.setHoverNone' | translate) }}</span>
+      </label>
+
+      <label class="ws-row">
         <span class="ws-lbl">{{ 'WSQ.setGap' | translate }}</span>
         <input type="range" min="0" max="60" step="2" [ngModel]="wsqGap" (ngModelChange)="setGalleryLook('gap', +$event)">
         <span class="ws-val">{{ wsqGap }} px</span>

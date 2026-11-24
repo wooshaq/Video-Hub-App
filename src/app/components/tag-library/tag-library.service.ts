@@ -453,6 +453,9 @@ export class TagLibraryService {
   // ---------- WsQ: custom folder icons (desktop.ini), key = folder partialPath ----------
 
   folderIcons = new Map<string, string>();
+
+  /** WsQ: delay (ms) before hovering a thumbnail starts the preview -- Settings -> Look */
+  hoverDelay = 0;
   folderIconVersion = 0;
 
   // ---------- WsQ: view tabs ----------

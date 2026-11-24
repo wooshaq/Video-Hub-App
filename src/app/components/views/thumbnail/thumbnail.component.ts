@@ -217,9 +217,33 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     return this.coverCode;   // WsQ: only JAV-style codes, never the plain file name
   }
 
+  private hoverDelayTimer: any = null;
+  private hoverReady = true;
+  private lastLayerX = -1;
+
+  /** WsQ: wait `hoverDelay` ms (Settings -> Look) before the preview starts */
   mouseEntered() {
+    clearTimeout(this.hoverDelayTimer);
+    const delay = this.tagLib.hoverDelay || 0;
+    if (delay > 0) {
+      this.hoverReady = false;
+      this.hoverDelayTimer = setTimeout(() => {
+        this.hoverReady = true;
+        this.startHoverPreview();
+      }, delay);
+    } else {
+      this.hoverReady = true;
+      this.startHoverPreview();
+    }
+  }
+
+  private startHoverPreview() {
     this.inside = true;
     this.containerWidth = this.filmstripHolder().nativeElement.getBoundingClientRect().width;
+    if (this.lastLayerX >= 0 && this.hoverScrub() && this.video.screens) {
+      this.indexToShow = Math.floor(this.lastLayerX * (this.video.screens / this.containerWidth));
+      this.percentOffset = this.indexToShow * (100 / this.video.screens);
+    }
 
     if (this.thumbAutoAdvance()) {
       this.hover = true;
@@ -235,6 +259,9 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   }
 
   mouseLeft() {
+    clearTimeout(this.hoverDelayTimer);
+    this.hoverReady = true;
+    this.lastLayerX = -1;
     this.inside = false;
     if (this.thumbAutoAdvance()) {
       clearInterval(this.scrollInterval);
@@ -251,6 +278,10 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   }
 
   mouseIsMoving($event: any) {
+    this.lastLayerX = $event.layerX;
+    if (!this.hoverReady) {
+      return;
+    }
     if (this.hoverScrub()) {
       const cursorX = $event.layerX;
       this.indexToShow = Math.floor(cursorX * (this.video.screens / this.containerWidth));
@@ -260,6 +291,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     clearInterval(this.scrollInterval);
+    clearTimeout(this.hoverDelayTimer);
     clearInterval(this.folderTimer);
     clearTimeout(this.folderRetry);
   }

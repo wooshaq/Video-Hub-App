@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.22
+- **Opóźnienie podglądu po najechaniu:** Ustawienia → Wygląd → „Opóźnienie podglądu po najechaniu” (0–1,5 s, domyślnie 0,25 s). Okładka zostaje, dopóki kursor nie postoi na filmie tyle czasu; potem rusza przewijanie klatek od miejsca, w którym jest kursor.
+
 ### Nowe w wsq.21
 - Okno ustawień lżejsze dla karty graficznej: przyciemnienie tła bez rozmycia (wcześniej rozmyta warstwa wielokrotnie większa od okna), słabsze rozmycie samego okna. Mogło to zawieszać program przy zamykaniu ustawień.
 - Suwaki w Ustawienia → Wygląd przeliczają galerię dopiero po puszczeniu suwaka (przy dużych hubach każde przesunięcie mroziło okno).

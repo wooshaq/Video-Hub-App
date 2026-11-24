@@ -763,6 +763,8 @@
     "folderView": "Widok folderów (przeglądanie jak w Eksploratorze)",
     "progMeta": "Odczyt plików",
     "progThumbs": "Miniatury",
-    "progLeft": "zostało"
+    "progLeft": "zostało",
+    "setHoverDelay": "Opóźnienie podglądu po najechaniu",
+    "setHoverNone": "od razu"
   }
 }

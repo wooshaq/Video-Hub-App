@@ -763,6 +763,8 @@
     "folderView": "Folder view (browse like Explorer)",
     "progMeta": "Reading files",
     "progThumbs": "Thumbnails",
-    "progLeft": "left"
+    "progLeft": "left",
+    "setHoverDelay": "Hover preview delay",
+    "setHoverNone": "instant"
   }
 }
