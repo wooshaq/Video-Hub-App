@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.41
+- Z kafelków usunięte ikonki „szczegóły” (prawy górny róg) i „dodaj do kolejki odtwarzania” (prawy dolny róg).
+
 ### Nowe w wsq.40
 - Pole wyszukiwania ma tę samą szerokość w trybie ciemnym i jasnym (w ciemnym było ucinane do 620 px).
 

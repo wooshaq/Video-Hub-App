@@ -132,22 +132,7 @@
      />
   }
 
-    <app-icon
-      title="{{ 'BUTTONS.viewDetails' | translate }}"
-      class="sheet-icon"
-      [icon]="'icon-show-thumbnails'"
-      (click)="openDetailsView($event)"
-    />
-
-    <div
-      class="playlist-icon"
-      [ngClass]="{ 'playlist-icon-active' : video.playlist }"
-      (click)="togglePlaylist($event)"
-      title="{{ video.playlist ? ('BUTTONS.removeFromPlaylist' | translate)
-                              : ('BUTTONS.addToPlaylist' | translate) }}"
-    >
-      <app-icon [icon]="'icon-playlist'" />
-    </div>
+    <!-- WsQ: "details sheet" and "add to playlist" icons removed (not used) -->
 
   @if (showMeta()) {
     <span class="rez" [ngClass]="{ 'dark-style': darkMode() }">{{ video.fileSizeDisplay }}
