@@ -57,6 +57,20 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   hover = false;
   inside = false;      // WsQ: mouse over the thumbnail (cover art is hidden while scrubbing)
   coverWide = true;    // WsQ: landscape cover fills the tile, portrait one is centered on a blurred copy
+  private coverFitsCache: boolean | null = null;
+
+  /** WsQ: cover has (almost) the tile's shape -> no blurred background copy needed (cheaper scrolling) */
+  get coverFits(): boolean {
+    if (this.coverFitsCache !== null) {
+      return this.coverFitsCache;
+    }
+    const a = this.video?.coverAspect;
+    if (!a) {
+      return false;
+    }
+    const box = (this.elWidth() || 1) / (this.imgHeight() || 1);
+    return Math.abs(a - box) / box < 0.05;
+  }
   indexToShow = 1;
   percentOffset = 0;
   scrollInterval: any = null;
@@ -195,6 +209,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
       // fill the tile unless the cover is much narrower than the tile (then: centered on a blurred copy)
       const box = (this.elWidth() || 1) / (this.imgHeight() || 1);
       this.coverWide = a >= box * 0.78;
+      this.coverFitsCache = Math.abs(a - box) / box < 0.05;
     }
   }
 

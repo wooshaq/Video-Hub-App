@@ -109,7 +109,9 @@
 
   @if (coverSrc && !inside) {
     <div class="cover-layer" [ngClass]="{ wide: coverWide }">
-      <img class="cover-bg" [src]="coverSrc" alt="">
+      @if (!coverFits) {
+        <img class="cover-bg" [src]="coverSrc" alt="" decoding="async">
+      }
       <img class="cover-img" [src]="coverSrc" (load)="onCoverLoad($event)" alt="">
     </div>
   }

@@ -3178,11 +3178,60 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
 
   reportGalleryItems = (items: ImageElement[]): void => {
     this.aspectItems = items;
+    setTimeout(() => this.preloadViewImages(items), 400);
     setTimeout(() => this.requestFolderIcons(items));
 
     clearTimeout(this.aspectTimer);
     this.aspectTimer = setTimeout(() => this.updateGalleryAspect(), 30);
   };
+
+  // ---------- WsQ: keep the covers / thumbnails of the current view in memory ----------
+
+  private preloadCache = new Map<string, HTMLImageElement>();
+  private preloadRun = 0;
+  private static readonly PRELOAD_MAX = 2500;
+
+  /** load + decode every cover (or thumbnail) of the view in the background, so scrolling does not pop them in */
+  private preloadViewImages(items: ImageElement[]): void {
+    const run = ++this.preloadRun;
+    const urls: string[] = [];
+    for (const it of items) {
+      if (!it || it.cleanName === '*FOLDER*') {
+        continue;
+      }
+      urls.push(it.cover > 0
+        ? this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'covers', it.hash) + '?v=' + it.cover
+        : this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'thumbnails', it.hash));
+      if (urls.length >= HomeComponent.PRELOAD_MAX) {
+        break;
+      }
+    }
+    // forget what is not in this view any more
+    const keep = new Set(urls);
+    for (const k of Array.from(this.preloadCache.keys())) {
+      if (!keep.has(k)) {
+        this.preloadCache.delete(k);
+      }
+    }
+    const todo = urls.filter(u => !this.preloadCache.has(u));
+    let i = 0;
+    const next = () => {
+      if (run !== this.preloadRun || i >= todo.length) {
+        return;
+      }
+      const url = todo[i++];
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      this.preloadCache.set(url, img);
+      img.decode().catch(() => this.preloadCache.delete(url)).then(() => setTimeout(next, 0));
+    };
+    this.zone.runOutsideAngular(() => {
+      for (let k = 0; k < 6; k++) {   // 6 at a time
+        next();
+      }
+    });
+  }
 
   private folderIconAsked = new Set<string>();
 

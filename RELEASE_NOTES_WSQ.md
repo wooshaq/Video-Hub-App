@@ -1,5 +1,10 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.23
+- **Okładki bieżącego widoku trzymane w pamięci:** po wejściu do folderu (lub zmianie filtra) program w tle wczytuje i dekoduje okładki (a bez okładki – miniatury) wszystkich filmów w widoku, do 2500, więc przy przewijaniu nie „wskakują”. Po zmianie widoku pamięć jest zwalniana z tych, których już nie ma.
+- Galeria renderuje dodatkowo po 2 rzędy powyżej i poniżej ekranu.
+- Rozmyta kopia okładki rysowana tylko wtedy, gdy okładka ma inne proporcje niż kafelek (lżejsze przewijanie).
+
 ### Nowe w wsq.22
 - **Opóźnienie podglądu po najechaniu:** Ustawienia → Wygląd → „Opóźnienie podglądu po najechaniu” (0–1,5 s, domyślnie 0,25 s). Okładka zostaje, dopóki kursor nie postoi na filmie tyle czasu; potem rusza przewijanie klatek od miejsca, w którym jest kursor.
 
