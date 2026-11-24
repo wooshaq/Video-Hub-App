@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.39
+- **Okładki otwartego folderu mają pierwszeństwo:** kolejka okładek też przestawia się na folder, który oglądasz (wcześniej tylko paski klatek), także dla okładek dodanych do kolejki później.
+
 ### Nowe w wsq.38
 - **Dolny pasek: „Ten folder: X / Y (%)”** — ile plików w otwartym folderze (razem z podfolderami; poza widokiem folderów: cały hub) ma już gotowe miniatury i paski klatek; ✓ gdy komplet.
 - **Klik w ten napis** otwiera okienko „Teraz przerabiane”: które pliki są właśnie obrabiane (paski klatek / okładka / sprawdzanie), od ilu sekund, i ile czeka w kolejce.

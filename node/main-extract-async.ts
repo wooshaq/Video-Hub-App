@@ -844,7 +844,23 @@ export function checkCovers(jobs: { fullPath: string, hash: string }[], now = fa
     jobs.slice().reverse().forEach(j => coverQueue.unshift(j));   // WsQ: asked by hand -> before the background checks
     return;
   }
-  jobs.forEach(j => coverQueue.push(j));
+  jobs.forEach(j => {
+    if (coverInPriority(j.fullPath)) {
+      coverQueue.unshift(j);
+    } else {
+      coverQueue.push(j);
+    }
+  });
+}
+
+/** WsQ: is this file (full path) inside the folder the user has open? */
+function coverInPriority(fullPath: string): boolean {
+  if (!priorityPrefix || !fullPath) {
+    return false;
+  }
+  const p = fullPath.replace(/\\/g, '/').toLowerCase();
+  const pre = '/' + priorityPrefix.replace(/^\/+/, '').toLowerCase();
+  return p.includes(pre + '/');
 }
 
 /**
@@ -916,6 +932,27 @@ export function prioritizeView(hashes: string[], partialPrefix: string): void {
       }
       if (moved.length) {
         console.log('prioritized thumbnails:', moved.length);
+      }
+    }
+    // WsQ: covers of the open folder first too
+    if (coverQueue && ((hashes && hashes.length) || priorityPrefix)) {
+      const wanted = new Set(hashes || []);
+      const movedCovers: { fullPath: string, hash: string }[] = [];
+      coverQueue.remove(({ data }) => {
+        if (data && (wanted.has(data.hash) || coverInPriority(data.fullPath))) {
+          movedCovers.push(data);
+          return true;
+        }
+        return false;
+      });
+      const order = new Map<string, number>();
+      (hashes || []).forEach((h, i) => order.set(h, i));
+      movedCovers.sort((a, b) => (order.has(a.hash) ? order.get(a.hash) : 1e9) - (order.has(b.hash) ? order.get(b.hash) : 1e9));
+      for (let i = movedCovers.length - 1; i >= 0; i--) {
+        coverQueue.unshift(movedCovers[i]);
+      }
+      if (movedCovers.length) {
+        console.log('prioritized covers:', movedCovers.length);
       }
     }
     if (metadataQueue && partialPrefix) {
