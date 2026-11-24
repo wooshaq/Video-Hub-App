@@ -239,7 +239,8 @@ export function extractAll(
   videoFolderPath: string,
   screenshotFolder: string,
   screenshotSettings: ScreenshotSettings,
-  done
+  done,
+  skipThumb = false   // WsQ: the file has cover art -> the single-frame thumbnail is not needed
 ): void {
 
   const clipHeight:       number = screenshotSettings.clipHeight;        // -- number in px how tall each clip should be
@@ -269,6 +270,8 @@ export function extractAll(
 
       if (!videoFileExists) {
         throw new Error('VIDEO FILE NOT PRESENT');
+      } else if (skipThumb) {
+        return true;                                                                      // WsQ: cover instead
       } else {
         return checkFileExists(thumbnailSavePath);                                        // (2)
       }

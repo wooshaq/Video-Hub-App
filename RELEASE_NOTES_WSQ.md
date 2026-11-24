@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.27
+- **Pliki z okładką nie dostają miniatury (thumbnails):** przy generowaniu program najpierw sprawdza okładkę; jeśli plik ją ma, robi tylko pasek klatek (filmstrip) do przewijania po najechaniu, a pojedynczą miniaturę pomija. Szybsze generowanie i mniej plików w `thumbnails`. Już zrobione miniatury zostają.
+
 ### Nowe w wsq.26
 - **Wyszukiwarka jak w Ritt:** przy wpisywaniu pod polem pojawia się lista pasujących tagów (nazwy i aliasy) ze ścieżką w drzewie (np. AKTORKI › JAV ›). ↑↓ wybór, Enter dodaje tag do filtra (Shift+Enter = UNIKA), Enter bez wyboru zamienia wpisany tekst w kafelek – kilka kafelków działa razem (AND), Backspace w pustym polu usuwa ostatni, Esc czyści.
 - **Wyszukiwanie globalne:** w widoku folderów wyszukiwanie szuka w całym hubie (pokazuje pliki, nie foldery).

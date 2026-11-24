@@ -188,6 +188,10 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   }
 
   get firstSrc(): string {
+    // WsQ: files with cover art get no single-frame thumbnail -- the cover is shown anyway
+    if (this.video.cover > 0) {
+      return this.coverSrc;
+    }
     return this.firstFilePath + this.thumbStamp;
   }
 

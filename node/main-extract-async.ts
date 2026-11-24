@@ -179,11 +179,13 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
   const screenshotOutputFolder: string = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName);
   const shouldExtractClips: boolean = GLOBALS.screenshotSettings.clipSnippets > 0;
 
-  hasAllThumbs(element.hash, screenshotOutputFolder, shouldExtractClips)
-    .then(() => {
-      done();
-    })
-    .catch(() => {
+  // WsQ: a file with cover art does not need the single-frame thumbnail -- find out about the cover first
+  coverOf(element)
+    .then((hasCover: boolean) => hasAllThumbs(element.hash, screenshotOutputFolder, shouldExtractClips, hasCover)
+      .then(() => done())
+      .catch(() => runExtraction(hasCover)));
+
+  const runExtraction = (hasCover: boolean) => {
       sendCurrentProgress( // TODO check whether sending data off by 1
         thumbsDone,
         thumbsDone + thumbQueue.length() + 1,
@@ -196,9 +198,10 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
         GLOBALS.selectedSourceFolders[element.inputSource].path,
         screenshotOutputFolder,
         GLOBALS.screenshotSettings,
-        done
+        done,
+        hasCover
       );
-    });
+  };
 }
 
 /**
@@ -550,7 +553,8 @@ export function startWatcher(inputSource: number, folderPath: string, persistent
 function hasAllThumbs(
   fileHash: string,
   screenshotFolder: string,
-  shouldExtractClips: boolean
+  shouldExtractClips: boolean,
+  hasCover = false
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
 
@@ -560,7 +564,7 @@ function hasAllThumbs(
     const clipThumb: string = path.join(screenshotFolder, '/clips/',      fileHash + '.jpg');
 
     Promise.all([
-      fs.promises.access(thumb, fs.constants.F_OK),
+      hasCover ? 'ok' : fs.promises.access(thumb, fs.constants.F_OK),
       fs.promises.access(filmstrip, fs.constants.F_OK),
       shouldExtractClips
         ? fs.promises.access(clip, fs.constants.F_OK)
@@ -590,7 +594,7 @@ export function extractAnyMissingThumbs(fullArray: ImageElement[]): void {
     element && element.hash && !(element as any).deleted && element.cleanName !== '*FOLDER*');
 
   Promise.all(candidates.map(el =>
-    hasAllThumbs(el.hash, screenshotOutputFolder, shouldExtractClips).then(() => null, () => el)
+    hasAllThumbs(el.hash, screenshotOutputFolder, shouldExtractClips, (el as any).cover > 0).then(() => null, () => el)
   )).then((missing: ImageElement[]) => {
     const todo = missing.filter(Boolean);
     console.log('missing thumbnails:', todo.length);
@@ -691,6 +695,34 @@ function logPerformance(message: string, initial: number): void {
 
 function coversFolder(): string {
   return path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'covers');
+}
+
+/**
+ * WsQ: does this file have cover art? Cover file already there -> yes; checked before without a cover -> no;
+ * otherwise extract it now (and tell Angular, like the cover queue does)
+ */
+function coverOf(element: ImageElement): Promise<boolean> {
+  const coverFile = path.join(coversFolder(), element.hash + '.jpg');
+  return fs.promises.access(coverFile, fs.constants.F_OK)
+    .then(() => true)
+    .catch(() => {
+      if ((element as any).cover === 0) {
+        return false;
+      }
+      const src = GLOBALS.selectedSourceFolders[element.inputSource];
+      if (!src) {
+        return false;
+      }
+      const fullPath = path.join(src.path, element.partialPath, element.fileName);
+      return extractCover(fullPath, element.hash, coversFolder())
+        .then((has: boolean) => {
+          try {
+            GLOBALS.angularApp.sender.send('cover-result', element.hash, has ? Date.now() : 0);
+          } catch { }
+          return has;
+        })
+        .catch(() => false);
+    });
 }
 
 function coverQueueRunner(job: { fullPath: string, hash: string }, done): void {
