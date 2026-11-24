@@ -720,3 +720,53 @@ function changedQueueRunner(job: { fullPath: string, inputSource: number, partia
       }, () => done());
   });
 }
+
+
+/**
+ * WsQ: move the files of the folder the user is looking at to the front of the queues
+ * @param hashes        -- files in the current view (thumbnails first for these)
+ * @param partialPrefix -- current folder ('/a/b'); new files below it get their metadata first ('' = no folder)
+ */
+export function prioritizeView(hashes: string[], partialPrefix: string): void {
+  try {
+    if (thumbQueue && hashes && hashes.length) {
+      const wanted = new Set(hashes);
+      const moved: ImageElement[] = [];
+      thumbQueue.remove(({ data }) => {
+        if (data && wanted.has(data.hash)) {
+          moved.push(data);
+          return true;
+        }
+        return false;
+      });
+      // keep the on-screen order: unshift from the last one
+      moved.sort((a, b) => hashes.indexOf(a.hash) - hashes.indexOf(b.hash));
+      for (let i = moved.length - 1; i >= 0; i--) {
+        thumbQueue.unshift(moved[i]);
+      }
+      if (moved.length) {
+        console.log('prioritized thumbnails:', moved.length);
+      }
+    }
+    if (metadataQueue && partialPrefix) {
+      const pre = partialPrefix.replace(/\\/g, '/');
+      const movedMeta: TempMetadataQueueObject[] = [];
+      metadataQueue.remove(({ data }) => {
+        const p = data && data.partialPath ? data.partialPath.replace(/\\/g, '/') : '';
+        if (p === pre || p.startsWith(pre + '/')) {
+          movedMeta.push(data);
+          return true;
+        }
+        return false;
+      });
+      for (let i = movedMeta.length - 1; i >= 0; i--) {
+        metadataQueue.unshift(movedMeta[i]);
+      }
+      if (movedMeta.length) {
+        console.log('prioritized new files:', movedMeta.length);
+      }
+    }
+  } catch (e) {
+    console.log('prioritizeView failed', e);
+  }
+}

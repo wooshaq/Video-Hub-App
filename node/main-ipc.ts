@@ -10,7 +10,7 @@ import { ImageElement, FinalObject, InputSources } from '../interfaces/final-obj
 import { SettingsObject } from '../interfaces/settings-object.interface';
 import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
-import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers } from './main-extract-async';
+import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers, prioritizeView } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
 import { folderIconData } from './folder-icons';
 
@@ -52,6 +52,13 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
    */
   ipc.on('check-covers', (event, jobs: { fullPath: string, hash: string }[]) => {
     checkCovers(jobs || []);
+  });
+
+  /**
+   * WsQ: the user opened a folder / changed the view -- do its files first
+   */
+  ipc.on('wsq-prioritize', (event, hashes: string[], partialPrefix: string) => {
+    prioritizeView(hashes || [], partialPrefix || '');
   });
 
   /**

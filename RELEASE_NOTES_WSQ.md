@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.24
+- **Najpierw otwarty folder:** gdy trwa skanowanie / robienie miniatur, pliki z folderu lub widoku, który właśnie oglądasz (widok folderów, zakładka Foldery, filtr), są przesuwane na początek kolejki – i miniatury, i odczyt nowych plików. Działa też po każdej zmianie folderu w trakcie.
+
 ### Nowe w wsq.23
 - **Okładki bieżącego widoku trzymane w pamięci:** po wejściu do folderu (lub zmianie filtra) program w tle wczytuje i dekoduje okładki (a bez okładki – miniatury) wszystkich filmów w widoku, do 2500, więc przy przewijaniu nie „wskakują”. Po zmianie widoku pamięć jest zwalniana z tych, których już nie ma.
 - Galeria renderuje dodatkowo po 2 rzędy powyżej i poniżej ekranu.

@@ -768,6 +768,10 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       stage: ImportStage
     ) => {
 
+      if (this.importStage === 'done' && stage !== 'done') {
+        this.lastPrioKey = '';
+        setTimeout(() => this.prioritizeCurrentView(), 300);   // WsQ: a scan just started -- current folder first
+      }
       this.importStage = stage;
 
       if (this.isFirstRunEver) {
@@ -3179,6 +3183,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   reportGalleryItems = (items: ImageElement[]): void => {
     this.aspectItems = items;
     setTimeout(() => this.preloadViewImages(items), 400);
+    clearTimeout(this.prioTimer);
+    this.prioTimer = setTimeout(() => this.prioritizeCurrentView(), 600);
     setTimeout(() => this.requestFolderIcons(items));
 
     clearTimeout(this.aspectTimer);
@@ -3231,6 +3237,27 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
         next();
       }
     });
+  }
+
+  private prioTimer: any;
+  private lastPrioKey = '';
+
+  /** WsQ: tell the scanner to do the files of the current folder / view first */
+  private prioritizeCurrentView(): void {
+    if (this.importStage === 'done') {
+      return;   // nothing is being scanned / generated
+    }
+    const view = (this.tagLib.viewItems || []).slice(0, 3000);
+    const hashes = view.map(e => e.hash).filter(Boolean);
+    const folder = this.settingsButtons['showFolders'].toggled
+      ? (this.folderViewNavigationPath ? '/' + this.folderViewNavigationPath.replace(/^\/+/, '') : '')
+      : (this.tagLib.folderFilter ? this.tagLib.folderFilter.path : '');
+    const key = folder + '|' + hashes.length + '|' + (hashes[0] || '');
+    if (key === this.lastPrioKey) {
+      return;
+    }
+    this.lastPrioKey = key;
+    (window as any).myElectron.sendToMain('wsq-prioritize', hashes, folder === '/' ? '' : folder);
   }
 
   private folderIconAsked = new Set<string>();
