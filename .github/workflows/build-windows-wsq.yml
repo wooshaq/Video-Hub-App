@@ -71,6 +71,7 @@ jobs:
         with:
           name: VideoHubApp-WsQ-windows
           path: out/*
+          retention-days: 1   # WsQ: the exe is in the Release anyway -- keeps Actions storage near zero
 
       - name: Publish release (tag = v + version from package.json)
         shell: bash
