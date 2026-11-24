@@ -789,6 +789,18 @@
     "kvYear": "Year",
     "kvPlayed": "Played",
     "kvAdded": "Created",
-    "bookmarksTitle": "Bookmarks"
+    "bookmarksTitle": "Bookmarks",
+    "rittSyncTab": "Ritt",
+    "rittSyncTitle": "Tag sync with Ritt",
+    "rittSyncHint": "VHA and Ritt share the same tags: the tag tree (names, icons, colours, aliases) and which files and folders carry which tags. Thumbnails, covers and everything else stay in VHA — nothing is rescanned.",
+    "rittSyncFile": "Ritt database",
+    "rittSyncNone": "not chosen",
+    "rittSyncPick": "Choose .ritt file…",
+    "rittSyncOff": "Turn off",
+    "rittSyncAuto": "Automatic (after a hub is opened and every 3 min when there are changes)",
+    "rittSyncNow": "Sync now",
+    "rittSyncBusy": "Syncing…",
+    "rittSyncLast": "last:",
+    "rittSyncRules": "Rules: added or removed in one program — added or removed in the other. Conflicting name, icon or colour changes: VHA wins. Files are matched by path. While Ritt is open VHA only takes its changes and writes its own next time. A copy of the .ritt is made before every write (10 newest, folder ritt-backups next to the hub)."
   }
 }

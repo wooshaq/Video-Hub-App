@@ -1,5 +1,13 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.35
+- **Synchronizacja tagów z Ritt (w obie strony):** Ustawienia → Ritt → „Wybierz plik .ritt…”. VHA i Ritt mają wtedy te same tagi: drzewo tagów (nazwy, ikony, kolory, aliasy, nowe i usunięte tagi) oraz przypisania tagów do plików i folderów. Miniatury, okładki i reszta danych zostają w VHA — nic nie jest skanowane od nowa.
+  - Automatycznie po otwarciu huba i co 3 minuty, gdy w VHA coś się zmieniło; przycisk „Synchronizuj teraz”.
+  - Dodane / usunięte w jednym programie → dodane / usunięte w drugim. Przy sprzecznej zmianie nazwy, ikony lub koloru wygrywa VHA. Pliki dopasowywane po ścieżce.
+  - Gdy Ritt jest otwarty, VHA tylko pobiera jego zmiany; swoje zapisze przy następnej synchronizacji.
+  - Przed każdym zapisem kopia .ritt (10 ostatnich) w folderze `ritt-backups` obok huba.
+  - Nowa biblioteka: sql.js 1.15.2 (SQLite w WebAssembly, MIT).
+
 ### Nowe w wsq.34
 - **Nowy wygląd „Grafit” (tryb ciemny):** jedna rodzina grafitowych szarości + kolor akcentu, ujednolicone wysokości przycisków i pól, zaokrąglone „pigułki” tagów.
 - **Górny pasek:** logo w kolorze akcentu, wyszukiwarka z lupą i podpowiedzią Ctrl F, przyciski widoku (miniatury / lista / klipy) w jednej grupie.

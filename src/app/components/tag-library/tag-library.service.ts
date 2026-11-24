@@ -136,6 +136,183 @@ export class TagLibraryService {
     (window as any).myElectron.receiveFromMain('ritt-import-data', (data: RittImportData) => {
       this.zone.run(() => this.rittImportReceived.next(data));
     });
+
+    (window as any).myElectron.receiveFromMain('wsq-ritt-sync-result', (res: any) => {
+      this.zone.run(() => {
+        this.rittSyncing = false;
+        const msg = this.applyRittSync(res);
+        this.rittSyncDone.next(msg);
+        if (res && res.ok) {
+          this.rittCommit.next();   // home saves the hub and confirms (wsq-ritt-commit)
+        }
+      });
+    });
+    (window as any).myElectron.receiveFromMain('wsq-ritt-picked', (file: string) => {
+      this.zone.run(() => {
+        this.rittSyncFile = file;
+        this.rittSyncNow();
+      });
+    });
+  }
+
+  // ===========================================================================================
+  // WsQ: two-way tag sync with a Ritt database (node/ritt-sync.ts)
+  // ===========================================================================================
+
+  rittSyncing = false;
+  rittSyncDone = new Subject<{ ok: boolean, text: string }>();
+  rittCommit = new Subject<void>();
+  rittLastSync = '';
+  private rittDirty = false;
+
+  get rittSyncFile(): string {
+    try { return localStorage.getItem('wsq.rittSyncFile') || ''; } catch { return ''; }
+  }
+
+  set rittSyncFile(f: string) {
+    try {
+      if (f) { localStorage.setItem('wsq.rittSyncFile', f); } else { localStorage.removeItem('wsq.rittSyncFile'); }
+    } catch { }
+  }
+
+  get rittSyncAuto(): boolean {
+    try { return localStorage.getItem('wsq.rittSyncAuto') !== '0'; } catch { return true; }
+  }
+
+  set rittSyncAuto(v: boolean) {
+    try { localStorage.setItem('wsq.rittSyncAuto', v ? '1' : '0'); } catch { }
+  }
+
+  pickRittSyncFile(): void {
+    (window as any).myElectron.sendToMain('wsq-ritt-pick-sync');
+  }
+
+  /** a tag or an assignment changed -- the next automatic sync will run */
+  markRittDirty(): void {
+    this.rittDirty = true;
+  }
+
+  /** automatic sync: after a hub is opened, and every few minutes when VHA has changes */
+  rittAutoTick(force = false): void {
+    if (this.rittSyncFile && this.rittSyncAuto && !this.rittSyncing && (force || this.rittDirty)) {
+      this.rittSyncNow();
+    }
+  }
+
+  rittSyncNow(): void {
+    const file = this.rittSyncFile;
+    if (!file || this.rittSyncing || !this.loaded) {
+      return;
+    }
+    this.rittSyncing = true;
+    this.rittDirty = false;
+    const tags: any[] = [];
+    const walk = (nodes: TagNode[], parent: TagNode | null) => nodes.forEach(n => {
+      if (n.type !== 'separator') {
+        tags.push({
+          key: n.id, rittId: n.rittId, name: n.name, icon: n.icon || '', color: n.color || '',
+          aliases: n.aliases || [], parentKey: parent ? parent.id : null,
+        });
+      }
+      if (n.children) {
+        walk(n.children, n.type === 'separator' ? parent : n);
+      }
+    });
+    walk(this.lib.roots, null);
+    const idOf = new Map<string, string>();
+    this.byName.forEach((n, name) => idOf.set(name, n.id));
+    const files = this.imageElementService.imageElements
+      .filter(i => !i.deleted && i.cleanName !== '*FOLDER*')
+      .map(i => ({
+        hash: i.hash,
+        segs: [...(i.partialPath || '').split('/').filter(x => x !== ''), i.fileName],
+        tags: (i.tags || []).map(t => idOf.get(t)).filter(x => !!x),
+      }));
+    const folderSet = new Set<string>(Object.keys(this.folderTags));
+    this.imageElementService.imageElements.forEach(i => { if (!i.deleted) { this.folderAncestors(i.partialPath).forEach(f => folderSet.add(f)); } });
+    const folders = Array.from(folderSet).filter(f => f && f !== '/').map(f => ({
+      path: f, tags: (this.folderTags[f] || []).map(t => idOf.get(t)).filter(x => !!x),
+    }));
+    (window as any).myElectron.sendToMain('wsq-ritt-sync', { rittFile: file, tags, files, folders });
+  }
+
+  /** apply what the sync decided; returns a short report */
+  private applyRittSync(res: any): { ok: boolean, text: string } {
+    if (!res || !res.ok) {
+      return { ok: false, text: 'Ritt: ' + ((res && res.error) || 'błąd synchronizacji') };
+    }
+    const byKey = new Map<string, TagNode>();
+    const byRitt = new Map<number, TagNode>();
+    const walk = (nodes: TagNode[]) => nodes.forEach(n => {
+      byKey.set(n.id, n);
+      if (n.rittId !== undefined) { byRitt.set(n.rittId, n); }
+      if (n.children) { walk(n.children); }
+    });
+    walk(this.lib.roots);
+
+    // tags deleted in Ritt
+    (res.deletedKeys || []).forEach((k: string) => {
+      const n = byKey.get(k);
+      if (n) { this.deleteNode(n); byKey.delete(k); }
+    });
+    this.reindex();
+
+    // tag list: ids, properties, new tags
+    const nameOf = new Map<number, string>();
+    (res.tags || []).forEach((t: any) => {
+      let node = (t.key && byKey.get(t.key)) || byRitt.get(t.rittId);
+      if (!node) {
+        const parent = t.parentRittId !== null ? byRitt.get(t.parentRittId) : null;
+        node = this.newNode(this.byName.has(t.name) ? this.uniqueName(t.name + ' (Ritt)') : t.name);
+        if (parent) {
+          parent.children = parent.children || [];
+          parent.children.push(node);
+        } else {
+          this.lib.roots.push(node);
+        }
+        this.reindex();
+      } else if (t.name && t.name !== node.name && !this.byName.has(t.name)) {
+        this.renameTag(node, t.name);
+      }
+      if (!t.pending) { node.rittId = t.rittId; }
+      if ((t.icon || '') !== (node.icon || '')) { if (t.icon) { node.icon = t.icon; } else { delete node.icon; } }
+      if ((t.color || '') !== (node.color || '')) { if (t.color) { node.color = t.color; } else { delete node.color; } }
+      const al = (t.aliases || []).join(';');
+      if (al !== (node.aliases || []).join(';')) { if (al) { node.aliases = t.aliases.slice(); } else { delete node.aliases; } }
+      byRitt.set(t.rittId, node);
+      nameOf.set(t.rittId, node.name);
+    });
+
+    // assignments
+    const byHash = new Map<string, ImageElement>();
+    this.imageElementService.imageElements.forEach(i => byHash.set(i.hash, i));
+    (res.fileTags || []).forEach((f: any) => {
+      const item = byHash.get(f.hash);
+      if (item) {
+        item.tags = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
+      }
+    });
+    (res.folderTags || []).forEach((f: any) => {
+      const names = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
+      if (names.length) { this.folderTags[f.path] = names; } else { delete this.folderTags[f.path]; }
+    });
+    this.rebuildManualTagCounts();
+    this.imageElementService.finalArrayNeedsSaving = true;
+    this.touchLib();
+    this.touchData();
+    this.saveNow();
+    this.rittDirty = false;
+
+    const s = res.stats || {};
+    this.rittLastSync = new Date().toLocaleTimeString().slice(0, 5);
+    const parts = [
+      'pliki: ' + (s.pairedFiles || 0),
+      '→ VHA: ' + (s.toVha || 0),
+      '→ Ritt: ' + (res.error === 'ritt-running' ? 'czeka (Ritt otwarty)' : (s.toRitt || 0)),
+    ];
+    if (s.newTagsVha || s.newTagsRitt) { parts.push('nowe tagi: ' + (s.newTagsVha || 0) + ' / ' + (s.newTagsRitt || 0)); }
+    if (s.deletedTags) { parts.push('usunięte tagi: ' + s.deletedTags); }
+    return { ok: true, text: 'Ritt: ' + parts.join(' · ') };
   }
 
   /** emits the parsed Ritt database after the user picked a file */
@@ -233,12 +410,14 @@ export class TagLibraryService {
     this.countsCache.key = '';
     if (save) {
       this.scheduleSave();
+      this.rittDirty = true;
     }
     this.changed.next();
   }
 
   /** assignments changed */
   touchData(): void {
+    this.rittDirty = true;
     this.dataVersion++;
     this.filterVersion++;
     this.countsCache.key = '';
@@ -1299,7 +1478,7 @@ export class TagLibraryService {
       claimed.add(name);
       idToName.set(t.id, name);
       const orphans = detachExisting(name);
-      const node: TagNode = { id: this.uuid(), type: 'tag', name };
+      const node: TagNode = { id: this.uuid(), type: 'tag', name, rittId: t.id };
       created.add(node);
       if (t.icon) { node.icon = t.icon; }
       if (t.hidden) { node.hidden = true; }

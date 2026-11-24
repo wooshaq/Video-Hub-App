@@ -286,6 +286,37 @@
   }
 
 
+  @if (settingTabToShow == 6) {
+    <div class="wsq-settings" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }">
+      <h3>{{ 'WSQ.rittSyncTitle' | translate }}</h3>
+      <p class="ws-hint">{{ 'WSQ.rittSyncHint' | translate }}</p>
+
+      <div class="ws-row">
+        <span class="ws-lbl">{{ 'WSQ.rittSyncFile' | translate }}</span>
+        <span class="ws-path" [title]="tagLib.rittSyncFile">{{ tagLib.rittSyncFile || ('WSQ.rittSyncNone' | translate) }}</span>
+        <button class="ws-btn" (click)="tagLib.pickRittSyncFile()">{{ 'WSQ.rittSyncPick' | translate }}</button>
+        @if (tagLib.rittSyncFile) {
+          <button class="ws-btn" (click)="tagLib.rittSyncFile = ''">{{ 'WSQ.rittSyncOff' | translate }}</button>
+        }
+      </div>
+
+      @if (tagLib.rittSyncFile) {
+        <label class="ws-row">
+          <span class="ws-lbl">{{ 'WSQ.rittSyncAuto' | translate }}</span>
+          <input type="checkbox" [ngModel]="tagLib.rittSyncAuto" (ngModelChange)="tagLib.rittSyncAuto = $event">
+        </label>
+        <div class="ws-row">
+          <button class="ws-btn primary" [disabled]="tagLib.rittSyncing" (click)="tagLib.rittSyncNow()">
+            {{ (tagLib.rittSyncing ? 'WSQ.rittSyncBusy' : 'WSQ.rittSyncNow') | translate }}
+          </button>
+          @if (tagLib.rittLastSync) { <span class="ws-val">{{ 'WSQ.rittSyncLast' | translate }} {{ tagLib.rittLastSync }}</span> }
+        </div>
+        @if (rittSyncReport) { <p class="ws-hint">{{ rittSyncReport }}</p> }
+      }
+      <p class="ws-hint">{{ 'WSQ.rittSyncRules' | translate }}</p>
+    </div>
+  }
+
   @if (settingTabToShow == 3) {
     <div class="shortcut-menu">
       <app-statistics

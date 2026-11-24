@@ -12,6 +12,7 @@ import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
 import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers, prioritizeView, setWorkerCount } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
+import { syncWithRitt, commitRittSnapshot } from './ritt-sync';
 import { folderIconData } from './folder-icons';
 
 /**
@@ -121,6 +122,57 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
         event.sender.send('ritt-import-data', readRittDatabase(filePath));
       }
     }).catch(err => {});
+  });
+
+  // WsQ: two-way tag sync with a Ritt database
+  let rittSyncBusy = false;
+  let pendingRittSnapshot: { file: string, data: any } | null = null;
+
+  // VHA applied the sync result: save the hub, then remember this sync as the new base
+  ipc.on('wsq-ritt-commit', (event, finalObject: FinalObject | null) => {
+    const snap = pendingRittSnapshot;
+    pendingRittSnapshot = null;
+    if (!snap) {
+      return;
+    }
+    const done = () => {
+      try { commitRittSnapshot(snap); } catch (e) { console.log('ritt snapshot not saved', e); }
+    };
+    if (finalObject && GLOBALS.currentlyOpenVhaFile) {
+      writeVhaFileToDisk(finalObject, GLOBALS.currentlyOpenVhaFile, done);
+    } else {
+      done();
+    }
+  });
+  ipc.on('wsq-ritt-sync', (event, req: any) => {
+    if (rittSyncBusy) {
+      return;
+    }
+    rittSyncBusy = true;
+    const hubDir = path.join(GLOBALS.selectedOutputFolder || '', 'vha-' + (GLOBALS.hubName || 'hub'));
+    req.stateFile = path.join(hubDir, 'ritt-sync.json');
+    req.backupDir = path.join(hubDir, 'ritt-backups');
+    syncWithRitt(req)
+      .then(res => {
+        pendingRittSnapshot = res.snapshot || null;
+        delete res.snapshot;
+        event.sender.send('wsq-ritt-sync-result', res);
+      })
+      .catch(e => event.sender.send('wsq-ritt-sync-result', { ok: false, error: String(e) }))
+      .finally(() => { rittSyncBusy = false; });
+  });
+
+  ipc.on('wsq-ritt-pick-sync', (event) => {
+    dialog.showOpenDialog(win, {
+      title: 'Ritt',
+      filters: [{ name: 'Ritt', extensions: ['ritt'] }],
+      properties: ['openFile']
+    }).then(result => {
+      const filePath: string = result.filePaths && result.filePaths[0];
+      if (filePath) {
+        event.sender.send('wsq-ritt-picked', filePath);
+      }
+    }).catch(() => { });
   });
 
   ipc.on('save-tag-library', (event, library) => {

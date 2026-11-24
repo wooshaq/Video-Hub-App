@@ -16,6 +16,7 @@ export interface TagNode {
   color?: string;               // hex color of the tag
   notes?: string;               // free-form notes
   collapsed?: boolean;
+  rittId?: number;              // WsQ: id of the same tag in the synced Ritt database
   children?: TagNode[];
 }
 

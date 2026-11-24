@@ -855,6 +855,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       this.manualTagsService.loadTagColors(finalObject.tagColors);
       this.tagLib.onHubLoaded(finalObject.folderTags);
       this.applyWsqLayoutDefaults();
+      // WsQ: two-way tag sync with Ritt -- once after the hub is opened
+      setTimeout(() => this.tagLib.rittAutoTick(true), 4000);
 
       // WsQ: files never checked for cover art (hubs made before this version) -- check them once, in the background
       // and rescan the folders that are not watched, so renamed / changed / new files are noticed on every hub open
@@ -1012,6 +1014,19 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     });
 
     // WsQ: cover art from file metadata
+    // WsQ: Ritt sync -- report, and an automatic run every 3 minutes when VHA has changes
+    this.tagLib.rittSyncDone.subscribe(r => {
+      this.rittSyncReport = r.text;
+      this.modalService.openSnackbar(r.text, r.ok ? 3000 : 6000);
+      this.cd.detectChanges();
+    });
+    this.tagLib.rittCommit.subscribe(() => {
+      this.imageElementService.finalArrayNeedsSaving = true;
+      (window as any).myElectron.sendToMain('wsq-ritt-commit', this.getFinalObjectForSaving());
+    });
+    clearInterval(this.rittTimer);
+    this.rittTimer = setInterval(() => this.tagLib.rittAutoTick(), 3 * 60 * 1000);
+
     (window as any).myElectron.receiveFromMain('wsq-thumb-ready', (hash: string) => {
       this.tagLib.thumbReady.set(hash, Date.now());
       clearTimeout(this.thumbReadyTimer);
@@ -1744,12 +1759,16 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   // WsQ: sections of the settings window (tab numbers of the original VHA settings + 5 = WsQ)
-  settingsSections: { tab: number, label: string, icon: string }[] = [
+  rittSyncReport = '';
+  private rittTimer: any;
+
+    settingsSections: { tab: number, label: string, icon: string }[] = [
     { tab: 5, label: 'WSQ.settingsTab', icon: 'M8 1.8a6.2 6.2 0 1 0 0 12.4c1 0 1.4-.8 1-1.6-.5-1 .1-2 1.2-2h1.6a2.4 2.4 0 0 0 2.4-2.6C14.2 4.6 11.4 1.8 8 1.8z' },
     { tab: 2, label: 'SETTINGS.tabMain', icon: 'M8 5.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4' },
     { tab: 1, label: 'SETTINGS.tabView', icon: 'M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z' },
     { tab: 0, label: 'SETTINGS.tabFilter', icon: 'M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zM10.3 10.3l3.2 3.2' },
     { tab: 3, label: 'SETTINGS.tabCurrentHub', icon: 'M1.5 4h5l1.5 1.5h6.5v7h-13z' },
+    { tab: 6, label: 'WSQ.rittSyncTab', icon: 'M3 5.5h8.5M9 3l2.5 2.5L9 8M13 10.5H4.5M7 8l-2.5 2.5L7 13' },
     { tab: 4, label: 'SETTINGS.tabShortcuts', icon: 'M2 4.5h12v7H2zM4.5 7h1M7.5 7h1M10.5 7h1M5 9.5h6' },
   ];
 

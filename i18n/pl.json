@@ -789,6 +789,18 @@
     "kvYear": "Rok",
     "kvPlayed": "Odtworzono",
     "kvAdded": "Utworzono",
-    "bookmarksTitle": "Zakładki"
+    "bookmarksTitle": "Zakładki",
+    "rittSyncTab": "Ritt",
+    "rittSyncTitle": "Synchronizacja tagów z Ritt",
+    "rittSyncHint": "VHA i Ritt mają te same tagi: drzewo tagów (nazwy, ikony, kolory, aliasy) oraz to, które pliki i foldery mają które tagi. Miniatury, okładki i reszta danych zostają w VHA — nic nie trzeba skanować od nowa.",
+    "rittSyncFile": "Baza Ritt",
+    "rittSyncNone": "nie wybrano",
+    "rittSyncPick": "Wybierz plik .ritt…",
+    "rittSyncOff": "Wyłącz",
+    "rittSyncAuto": "Automatycznie (po otwarciu huba i co 3 min, gdy są zmiany)",
+    "rittSyncNow": "Synchronizuj teraz",
+    "rittSyncBusy": "Synchronizuję…",
+    "rittSyncLast": "ostatnio:",
+    "rittSyncRules": "Zasady: dodane lub usunięte w jednym programie — dodane lub usunięte w drugim. Przy sprzecznej zmianie nazwy, ikony czy koloru wygrywa VHA. Pliki dopasowywane są po ścieżce. Gdy Ritt jest otwarty, VHA tylko pobiera jego zmiany, a swoje zapisze przy następnej synchronizacji. Przed każdym zapisem robiona jest kopia .ritt (10 ostatnich, folder ritt-backups obok huba)."
   }
 }
