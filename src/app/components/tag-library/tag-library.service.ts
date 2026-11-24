@@ -1,3 +1,4 @@
+import { javKey } from './jav-code';
 import { Injectable, NgZone } from '@angular/core';
 import { Subject } from 'rxjs';
 
@@ -462,6 +463,42 @@ export class TagLibraryService {
   hoverDelay = 0;
   folderIconVersion = 0;
 
+  // ---------- WsQ: duplicates (more files with the same JAV code) ----------
+
+  dupMode = false;
+  private dupCache: { key: string, keys: Set<string>, files: number, codes: number } = { key: '', keys: new Set(), files: 0, codes: 0 };
+
+  dupStats(): { keys: Set<string>, files: number, codes: number } {
+    const items = this.imageElementService.imageElements;
+    const key = items.length + ':' + this.dataVersion;
+    if (this.dupCache.key !== key) {
+      const count = new Map<string, number>();
+      items.forEach(e => {
+        if (e && !e.deleted && e.cleanName !== '*FOLDER*') {
+          const k = javKey(e.fileName);
+          if (k) {
+            count.set(k, (count.get(k) || 0) + 1);
+          }
+        }
+      });
+      const keys = new Set<string>();
+      let files = 0;
+      count.forEach((n, k) => {
+        if (n > 1) {
+          keys.add(k);
+          files += n;
+        }
+      });
+      this.dupCache = { key, keys, files, codes: keys.size };
+    }
+    return this.dupCache;
+  }
+
+  toggleDupMode(): void {
+    this.dupMode = !this.dupMode;
+    this.filterVersion++;
+  }
+
   // ---------- WsQ: view tabs ----------
 
   tabs: ViewTabState[] = [{ active: [], excluded: [], search: '', folder: null }];
@@ -551,6 +588,10 @@ export class TagLibraryService {
 
   /** filter used by the gallery pipe */
   filter(items: ImageElement[]): ImageElement[] {
+    if (this.dupMode) {
+      const keys = this.dupStats().keys;
+      items = items.filter(i => i.cleanName !== '*FOLDER*' && keys.has(javKey(i.fileName)));
+    }
     if (this.folderFilter) {
       items = items.filter(i => i.cleanName === '*FOLDER*' || this.inFolder(i));
     }
@@ -745,6 +786,7 @@ export class TagLibraryService {
     this.active = [];
     this.excluded = [];
     this.folderFilter = null;
+    this.dupMode = false;
     this.filterVersion++;
   }
 

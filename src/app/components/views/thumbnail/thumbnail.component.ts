@@ -1,6 +1,7 @@
 import type { OnInit, ElementRef, OnDestroy } from '@angular/core';
 import { Component, Input, input, output, viewChild } from '@angular/core';
 
+import { javCode } from '../../tag-library/jav-code';
 import { TagLibraryService } from '../../tag-library/tag-library.service';
 import { FilePathService } from '../file-path.service';
 
@@ -115,17 +116,7 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
 
   /** WsQ: JAV-style code from the file name (e.g. PPPE029 -> PPPE-029), shown on the cover */
   get coverCode(): string {
-    const name = this.video?.fileName || '';
-    // WsQ: skip codec / format tokens (H265, X264, MP4 ...) -- only JAV-style codes
-    const NOT_CODES = /^(H|X|HEVC|AVC|AAC|AC|DTS|MP|FLAC|DDP|DD|EAC|CH|BIT|HDR|FPS|VP|AV|S|E|PART|CD|DISC|VOL|EP)$/i;
-    const re = /(?:^|[^A-Za-z0-9])([A-Za-z]{2,6})-?(\d{2,5})(?![0-9])/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(name))) {
-      if (!NOT_CODES.test(m[1])) {
-        return m[1].toUpperCase() + '-' + m[2];
-      }
-    }
-    return '';
+    return javCode(this.video?.fileName || '');
   }
 
   // ---------- WsQ: folder tiles ----------

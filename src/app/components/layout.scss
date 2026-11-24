@@ -1779,3 +1779,119 @@
   top: 0;
   width: 140px;
 }
+
+// ----- WsQ: search chips + tag suggestions -----
+.wsq-search .wsq-term {
+  align-items: center;
+  background: rgba(var(--wsq-accent-rgb), 0.18);
+  border: 1px solid rgba(var(--wsq-accent-rgb), 0.45);
+  border-radius: 5px;
+  display: inline-flex;
+  flex: 0 1 auto;
+  font-size: 12px;
+  font-style: italic;
+  gap: 2px;
+  height: 22px;
+  max-width: 180px;
+  padding: 0 2px 0 8px;
+
+  .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  button {
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    font-size: 9px;
+    height: 18px;
+    width: 18px;
+
+    &:hover { background: rgba(127, 127, 127, 0.25); }
+  }
+}
+
+.wsq-sug {
+  -webkit-backdrop-filter: blur(20px);
+  animation: wsq-pop-in 120ms ease-out both;
+  backdrop-filter: blur(20px);
+  background: rgba(249, 249, 249, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  color: #222;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  max-width: 640px;
+  padding: 4px;
+  position: fixed;
+  z-index: 700;
+
+  &.dark {
+    background: rgba(36, 36, 36, 0.94);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e6e6e6;
+  }
+
+  .sug-row {
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 6px 10px;
+
+    &.on { background: rgba(var(--wsq-accent-rgb), 0.2); }
+  }
+
+  .sug-name {
+    align-items: center;
+    display: flex;
+    font-size: 13.5px;
+    font-weight: 600;
+    gap: 8px;
+
+    .ic {
+      font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+      font-weight: 400;
+      text-align: center;
+      width: 18px;
+    }
+  }
+
+  .sug-path {
+    font-size: 11.5px;
+    opacity: 0.6;
+    padding: 2px 0 0 26px;
+
+    .sep { margin: 0 4px; }
+  }
+
+  .sug-hint {
+    border-top: 1px solid rgba(127, 127, 127, 0.2);
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.55;
+    padding: 6px 10px 3px;
+  }
+}
+
+// ----- WsQ: duplicates button -----
+.wsq-dup-btn {
+  position: relative;
+}
+
+.wsq-dup-count {
+  background: #e5534b;
+  border-radius: 8px;
+  color: #fff;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 14px;
+  min-width: 14px;
+  padding: 0 3px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  box-sizing: border-box;
+  text-align: center;
+}

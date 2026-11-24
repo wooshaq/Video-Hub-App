@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.26
+- **Wyszukiwarka jak w Ritt:** przy wpisywaniu pod polem pojawia się lista pasujących tagów (nazwy i aliasy) ze ścieżką w drzewie (np. AKTORKI › JAV ›). ↑↓ wybór, Enter dodaje tag do filtra (Shift+Enter = UNIKA), Enter bez wyboru zamienia wpisany tekst w kafelek – kilka kafelków działa razem (AND), Backspace w pustym polu usuwa ostatni, Esc czyści.
+- **Wyszukiwanie globalne:** w widoku folderów wyszukiwanie szuka w całym hubie (pokazuje pliki, nie foldery).
+- **Duble po kodzie JAV:** nowy przycisk w pasku narzędzi (dwie kartki) z czerwonym licznikiem kodów, które występują więcej niż raz (PPPE-029, PPPE029 i PPPE-29 to ten sam kod). Klik pokazuje tylko te pliki, pogrupowane kodem; ponowny klik albo „Wszystko” wraca.
+- **Szybsza nawigacja po folderach:** ikony z desktop.ini wszystkich folderów huba są wczytywane w tle po otwarciu huba, a podglądy folderów na ekranie trafiają do pamięci razem z okładkami.
+
 ### Nowe w wsq.25
 - **Miniatury pojawiają się od razu, gdy są gotowe:** wcześniej film, dla którego miniatura powstała w trakcie, został z pustym obrazkiem do czasu przewinięcia/ponownego otwarcia. Dotyczy też podglądów w folderach.
 - **Priorytet otwartego folderu naprawiony:** w widoku folderów brane były wszystkie pliki huba zamiast plików folderu; teraz najpierw idą pliki widoczne na ekranie, potem cały folder z podfolderami – także pliki dorzucane do kolejki później.

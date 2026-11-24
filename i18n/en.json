@@ -765,6 +765,8 @@
     "progThumbs": "Thumbnails",
     "progLeft": "left",
     "setHoverDelay": "Hover preview delay",
-    "setHoverNone": "instant"
+    "setHoverNone": "instant",
+    "sugHint": "↑↓ pick · Enter adds the tag to the filter (Shift+Enter = avoid) · Enter without a pick turns the text into a chip",
+    "dupTitle": "Duplicates – films with the same JAV code ({{codes}} codes, {{files}} files). Click shows only them, grouped."
   }
 }

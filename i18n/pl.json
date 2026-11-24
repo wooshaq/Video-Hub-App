@@ -765,6 +765,8 @@
     "progThumbs": "Miniatury",
     "progLeft": "zostało",
     "setHoverDelay": "Opóźnienie podglądu po najechaniu",
-    "setHoverNone": "od razu"
+    "setHoverNone": "od razu",
+    "sugHint": "↑↓ wybór · Enter dodaje tag do filtra (Shift+Enter = unika) · Enter bez wyboru zamienia tekst w kafelek",
+    "dupTitle": "Duble – filmy z tym samym kodem JAV ({{codes}} kodów, {{files}} plików). Klik pokazuje tylko je, pogrupowane."
   }
 }

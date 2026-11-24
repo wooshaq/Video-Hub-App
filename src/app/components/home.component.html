@@ -401,21 +401,56 @@
         }
         <button class="wsq-tb-btn wsq-newtab" (click)="tagLib.newTab()" title="{{ 'WSQ.newTab' | translate }}" aria-label="Nowa karta"><svg viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9" /></svg></button>
 
-        <label class="wsq-search">
+        <label class="wsq-search" #wsqSearchBox>
+          @for (term of wsqTerms; track $index; let i = $index) {
+            <span class="wsq-term" [title]="term">
+              <span class="t">{{ term }}</span>
+              <button (click)="$event.preventDefault(); removeTerm(i)" aria-label="Usuń">✕</button>
+            </span>
+          }
           <input
             #wsqSearchInput
             type="text"
-            [(ngModel)]="wsqSearch"
-            (ngModelChange)="searchChanged()"
-            (keyup.escape)="wsqSearch = ''; searchChanged()"
-            placeholder="{{ 'WSQ.searchPlaceholder' | translate }}"
+            [(ngModel)]="wsqText"
+            (ngModelChange)="searchTextChanged()"
+            (keydown)="searchKey($event)"
+            (focus)="searchFocused = true; updateSugPos()"
+            (blur)="searchBlur()"
+            placeholder="{{ wsqTerms.length ? '' : ('WSQ.searchPlaceholder' | translate) }}"
           >
           @if (wsqSearch) {
-            <button class="wsq-clear" (click)="wsqSearch = ''; searchChanged()" aria-label="Wyczyść">✕</button>
+            <button class="wsq-clear" (click)="$event.preventDefault(); clearSearch()" aria-label="Wyczyść">✕</button>
           } @else {
             <svg viewBox="0 0 16 16"><path d="M7 2.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zM10.5 10.5l3 3" /></svg>
           }
         </label>
+        @if (searchFocused && wsqText.trim() && tagSuggestions().length) {
+          <div
+            class="wsq-sug"
+            [ngClass]="{ dark: settingsButtons['darkMode'].toggled }"
+            [ngStyle]="{ left: sugPos.left + 'px', top: sugPos.top + 'px', width: sugPos.width + 'px' }"
+            (mousedown)="$event.preventDefault()"
+          >
+            @for (s of tagSuggestions(); track s.name; let i = $index) {
+              <div
+                class="sug-row"
+                [ngClass]="{ on: i === sugIndex }"
+                (mouseenter)="sugIndex = i"
+                (click)="pickSuggestion(s.name, $event.shiftKey)"
+              >
+                <div class="sug-name"><span class="ic">{{ s.icon }}</span>{{ s.name }}</div>
+                @if (s.path.length) {
+                  <div class="sug-path">
+                    @for (p of s.path; track $index) {
+                      <span>{{ p }}</span><span class="sep">›</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            <div class="sug-hint">{{ 'WSQ.sugHint' | translate }}</div>
+          </div>
+        }
 
         <button class="wsq-tb-text" [ngClass]="{ on: filtersOpen || activeFilterCount() }" (click)="filtersOpen = !filtersOpen">
           <svg viewBox="0 0 16 16"><path d="M2 3h12l-4.5 5.5V13l-3-1.5v-3z" /></svg>
@@ -452,6 +487,17 @@
         <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showThumbnails' }" (click)="toggleButton('showThumbnails')" title="{{ 'BUTTONS.showThumbnailsHint' | translate }}" aria-label="Miniatury"><svg viewBox="0 0 16 16"><path d="M2.5 2.5h4.5v4.5h-4.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5h-4.5zM9 9h4.5v4.5H9z" /></svg></button>
         <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showFiles' }" (click)="toggleButton('showFiles')" title="{{ 'BUTTONS.showFilesHint' | translate }}" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M5 4h9M5 8h9M5 12h9M2 4h.01M2 8h.01M2 12h.01" /></svg></button>
         <button class="wsq-tb-btn" [ngClass]="{ on: appState.currentView === 'showClips' }" (click)="toggleButton('showClips')" title="{{ 'BUTTONS.showClipsHint' | translate }}" aria-label="Klipy"><svg viewBox="0 0 16 16"><path d="M3.5 3h9a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5v-7A1.5 1.5 0 0 1 3.5 3zM7 6v4l3-2z" /></svg></button>
+        @let dup = tagLib.dupStats();
+        <button
+          class="wsq-tb-btn wsq-dup-btn"
+          [ngClass]="{ on: tagLib.dupMode }"
+          (click)="tagLib.toggleDupMode(); onTagFilterChanged()"
+          title="{{ 'WSQ.dupTitle' | translate : { codes: dup.codes, files: dup.files } }}"
+          aria-label="Duble"
+        >
+          <svg viewBox="0 0 16 16"><path d="M5.5 2.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM2.5 5v7.5a1 1 0 0 0 1 1H11" /></svg>
+          @if (dup.codes) { <span class="wsq-dup-count">{{ dup.codes }}</span> }
+        </button>
         <button class="wsq-tb-btn" [ngClass]="{ on: settingsButtons['showFolders'].toggled }" (click)="toggleButton('showFolders')" title="{{ 'WSQ.folderView' | translate }}" aria-label="Widok folderów"><svg viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg></button>
 
         <!-- WsQ: size slider removed (Ctrl + mouse wheel resizes the thumbnails) -->
@@ -1128,6 +1174,8 @@
                 | wsqAspectPipe : reportViewItems : coverVersion
 
                 | folderViewPipe : (settingsButtons['showFolders'].toggled)
+                                   && !wsqSearch
+                                   && !tagLib.dupMode
                                    && (   appState.currentView === 'showThumbnails'
                                        || appState.currentView === 'showFiles'
                                        || appState.currentView === 'showClips')
@@ -1140,7 +1188,7 @@
 
                 | playlistPipe
 
-                | wsqAspectPipe : reportGalleryItems : coverVersion"
+                | wsqAspectPipe : reportGalleryItems : coverVersion + tagLib.filterVersion : true"
     >
 
       <!-- ==================================== THUMBNAILS ==================================== -->

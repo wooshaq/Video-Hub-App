@@ -853,6 +853,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       setTimeout(() => {
         this.checkCoversOf(this.imageElementService.imageElements.filter(e => e.cover === undefined));
       }, 3000);
+      setTimeout(() => this.requestAllFolderIcons(), 4000);
       // WsQ: finish thumbnails that were never made (e.g. the app was closed / updated during an import)
       setTimeout(() => {
         (window as any).myElectron.sendToMain(
@@ -3208,7 +3209,16 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     const run = ++this.preloadRun;
     const urls: string[] = [];
     for (const it of items) {
-      if (!it || it.cleanName === '*FOLDER*') {
+      if (!it) {
+        continue;
+      }
+      if (it.cleanName === '*FOLDER*') {
+        // folder tiles: the preview of the first file (cover, else thumbnail)
+        const h = (it.hash || '').split(':').filter(Boolean)[0];
+        if (h) {
+          urls.push(this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'covers', h));
+          urls.push(this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'thumbnails', h));
+        }
         continue;
       }
       urls.push(it.cover > 0
@@ -3269,6 +3279,27 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   private folderIconAsked = new Set<string>();
+
+  /** WsQ: read the desktop.ini icons of every folder in the hub once, so folder navigation is instant */
+  private requestAllFolderIcons(): void {
+    const paths = new Set<string>();
+    this.imageElementService.imageElements.forEach(el => {
+      if (!el || el.deleted || !el.partialPath) {
+        return;
+      }
+      let p = el.partialPath.replace(/\\/g, '/');
+      while (p && p !== '/' && !paths.has(p)) {
+        paths.add(p);
+        p = p.substring(0, p.lastIndexOf('/'));
+      }
+    });
+    const pseudo = Array.from(paths).map(p => ({ cleanName: '*FOLDER*', fileName: 'x', partialPath: p } as any));
+    // in chunks, so the main process stays responsive
+    for (let i = 0; i < pseudo.length; i += 200) {
+      const chunk = pseudo.slice(i, i + 200);
+      setTimeout(() => this.requestFolderIcons(chunk), (i / 200) * 300);
+    }
+  }
 
   /** WsQ: ask Node for desktop.ini icons of the folders on screen (once per folder) */
   private requestFolderIcons(items: ImageElement[]): void {
@@ -3502,7 +3533,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     this.tagLib.excluded = snap.excluded.slice();
     this.tagLib.folderFilter = snap.folder ? { ...snap.folder } : null;
     this.tagLib.filterVersion++;
-    this.wsqSearch = snap.search;
+    this.setSearchQuery(snap.search);
     this.onTagFilterChanged();
     this.historyLock = false;
   }
@@ -3524,9 +3555,132 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   /** everything: no tag filter, no search, top folder */
   goHome(): void {
     this.tagLib.clearFilter();
-    this.wsqSearch = '';
+    this.setSearchQuery('');
     this.folderViewNavigationPath = '';
     this.onTagFilterChanged();
+  }
+
+  // ---------- WsQ: search box with chips + tag suggestions (Ritt style) ----------
+
+  wsqTerms: string[] = [];
+  wsqText = '';
+  searchFocused = false;
+  sugIndex = -1;
+  sugPos = { left: 0, top: 48, width: 400 };
+  private tagPathCache: { v: number, map: Map<string, string[]> } = { v: -1, map: new Map() };
+
+  /** the query used by the gallery = chips + what is being typed */
+  private rebuildSearch(): void {
+    const quote = (t: string) => /\s/.test(t) && !/^".*"$/.test(t) ? '"' + t + '"' : t;
+    this.wsqSearch = [...this.wsqTerms.map(quote), this.wsqText].join(' ').trim();
+  }
+
+  searchTextChanged(): void {
+    this.sugIndex = -1;
+    this.updateSugPos();
+    this.rebuildSearch();
+    this.searchChanged();
+  }
+
+  updateSugPos(): void {
+    const box = document.querySelector('.wsq-search') as HTMLElement;
+    if (box) {
+      const r = box.getBoundingClientRect();
+      this.sugPos = { left: r.left, top: r.bottom + 4, width: Math.max(320, r.width) };
+    }
+  }
+
+  searchBlur(): void {
+    setTimeout(() => { this.searchFocused = false; }, 120);
+  }
+
+  removeTerm(i: number): void {
+    this.wsqTerms.splice(i, 1);
+    this.rebuildSearch();
+    this.searchChanged();
+  }
+
+  clearSearch(): void {
+    this.wsqTerms = [];
+    this.wsqText = '';
+    this.rebuildSearch();
+    this.searchChanged();
+  }
+
+  /** set the whole query from outside (history, tabs, home) */
+  setSearchQuery(q: string): void {
+    this.wsqTerms = [];
+    this.wsqText = q || '';
+    this.wsqSearch = (q || '').trim();
+  }
+
+  searchKey(ev: KeyboardEvent): void {
+    const sug = this.wsqText.trim() ? this.tagSuggestions() : [];
+    if (ev.key === 'ArrowDown' && sug.length) {
+      ev.preventDefault();
+      this.sugIndex = Math.min(sug.length - 1, this.sugIndex + 1);
+    } else if (ev.key === 'ArrowUp' && sug.length) {
+      ev.preventDefault();
+      this.sugIndex = Math.max(-1, this.sugIndex - 1);
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      if (this.sugIndex >= 0 && sug[this.sugIndex]) {
+        this.pickSuggestion(sug[this.sugIndex].name, ev.shiftKey);
+      } else if (this.wsqText.trim()) {
+        this.wsqTerms.push(this.wsqText.trim());   // the typed text becomes a chip
+        this.wsqText = '';
+        this.rebuildSearch();
+        this.searchChanged();
+      }
+    } else if (ev.key === 'Backspace' && !this.wsqText && this.wsqTerms.length) {
+      this.removeTerm(this.wsqTerms.length - 1);
+    } else if (ev.key === 'Escape') {
+      if (this.wsqText || this.wsqTerms.length) {
+        ev.stopPropagation();
+        this.clearSearch();
+      }
+      (ev.target as HTMLInputElement).blur();
+    }
+  }
+
+  /** a tag from the list goes to the tag filter (Shift = avoid) and leaves the search box */
+  pickSuggestion(name: string, exclude: boolean): void {
+    this.tagLib.activate(name, exclude ? 'exclude' : 'toggle');
+    this.wsqText = '';
+    this.sugIndex = -1;
+    this.rebuildSearch();
+    this.onTagFilterChanged();
+  }
+
+  tagSuggestions(): { name: string, icon: string, path: string[] }[] {
+    const q = this.wsqText.trim().toLowerCase();
+    if (!q) {
+      return [];
+    }
+    const names = this.tagLib.orderedNames();
+    const starts = names.filter(n => n.toLowerCase().startsWith(q));
+    const inner = names.filter(n => !n.toLowerCase().startsWith(q) && (n.toLowerCase().includes(q) || this.tagLib.aliasMatches(n, q)));
+    const paths = this.tagPaths();
+    return [...starts, ...inner].slice(0, 8).map(name => ({ name, icon: this.tagLib.iconOf(name), path: paths.get(name) || [] }));
+  }
+
+  /** tag name -> names of its parents (root first) */
+  private tagPaths(): Map<string, string[]> {
+    const v = this.tagLib.libVersion;
+    if (this.tagPathCache.v === v) {
+      return this.tagPathCache.map;
+    }
+    const map = new Map<string, string[]>();
+    const walk = (nodes: any[], trail: string[]) => (nodes || []).forEach(n => {
+      if (n.type === 'separator') {
+        return;
+      }
+      map.set(n.name, trail);
+      walk(n.children, [...trail, n.name]);
+    });
+    walk(this.tagLib.lib.roots, []);
+    this.tagPathCache = { v, map };
+    return map;
   }
 
   searchChanged(): void {
