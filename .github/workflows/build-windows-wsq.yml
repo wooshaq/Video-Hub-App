@@ -55,7 +55,7 @@ jobs:
       - name: Build Angular + main
         run: npm run build:prod
 
-      - name: Package (NSIS installer + portable)
+      - name: Package (NSIS installer)
         run: npx electron-builder build --win --x64 --publish never
 
       - name: Collect
