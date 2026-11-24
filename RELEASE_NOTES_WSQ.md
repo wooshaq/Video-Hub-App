@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.40
+- Pole wyszukiwania ma tę samą szerokość w trybie ciemnym i jasnym (w ciemnym było ucinane do 620 px).
+
 ### Nowe w wsq.39
 - **Okładki otwartego folderu mają pierwszeństwo:** kolejka okładek też przestawia się na folder, który oglądasz (wcześniej tylko paski klatek), także dla okładek dodanych do kolejki później.
 
