@@ -1512,7 +1512,8 @@
               }
             </div>
           </div>
-          <div class="wsq-d-title">{{ it.fileName }}</div>
+          @let dTitle = titleOf(it);
+          @if (dTitle) { <div class="wsq-d-title" [title]="it.fileName">{{ dTitle }}</div> }
           <div class="wsq-d-path" [title]="filePathService.getPathFromImageElement(it)">{{ folderPathOf(it) }}</div>
 
           <div class="wsq-d-actions">

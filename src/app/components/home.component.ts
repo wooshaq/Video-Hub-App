@@ -3962,6 +3962,26 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     return item ? javCode(item.fileName) : '';
   }
 
+  /** WsQ: title for the details panel -- "Actress - CODE - Title.mkv" -> "Title" (actress goes to tags, code is shown above) */
+  titleOf(item: ImageElement): string {
+    if (!item) {
+      return '';
+    }
+    const base = item.fileName.replace(/\.[^.]+$/, '');
+    const code = javCode(item.fileName);
+    if (!code) {
+      return base;
+    }
+    const [letters, num] = code.split('-');
+    const codeRe = new RegExp('(^|[^A-Za-z0-9])' + letters + '-?0*' + parseInt(num, 10) + '(?![0-9])', 'i');
+    const parts = base.split(/\s+[-–]\s+/).map(x => x.trim()).filter(Boolean);
+    const rest = parts
+      .map((x, i) => codeRe.test(x) ? x.replace(codeRe, '$1') : (i === 0 && parts.length > 1 ? '' : x))
+      .map(x => x.replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    return rest.join(' – ');
+  }
+
   starsOf(item: ImageElement): number {
     return item && item.stars ? Math.max(0, Math.round(item.stars - 0.5)) : 0;
   }
