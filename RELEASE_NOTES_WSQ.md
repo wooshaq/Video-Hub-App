@@ -1,5 +1,13 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.34
+- **Nowy wygląd „Grafit” (tryb ciemny):** jedna rodzina grafitowych szarości + kolor akcentu, ujednolicone wysokości przycisków i pól, zaokrąglone „pigułki” tagów.
+- **Górny pasek:** logo w kolorze akcentu, wyszukiwarka z lupą i podpowiedzią Ctrl F, przyciski widoku (miniatury / lista / klipy) w jednej grupie.
+- **Lewy panel:** zakładki jako jeden przełącznik, nagłówki sekcji wielkimi literami, wiersze tagów 24 px z liczbami wyrównanymi do prawej.
+- **Kafelki:** pod nazwą linijka „rok · rozdzielczość”, ikonki tagów po prawej, zaznaczenie z obwódką i znaczkiem ✓. Foldery jako karta z podglądem zawartości (własne ikony z desktop.ini działają dalej).
+- **Panel szczegółów:** kod JAV + gwiazdki, sam tytuł filmu (bez aktorki i kodu), ścieżka, informacje o pliku w jednej linijce, przyciski Odtwórz / folder / kopiuj tagi / wklej tagi / więcej, tagi, klatki w 4 kolumnach, notatki.
+- **Dolny pasek:** postęp generowania z paskiem w kolorze akcentu.
+
 ### Nowe w wsq.33
 - **Menu kontekstowe → Przenieś do kosza:** zawsze dostępne (bez włączania w ustawieniach), działa na pojedynczy plik albo na całe zaznaczenie (liczba w nawiasie), z potwierdzeniem i listą plików. Gdy w ustawieniach jest włączone „usuwanie z pominięciem kosza”, pozycja zmienia się na „Usuń trwale”.
 - **Menu kontekstowe → Właściwości:** otwiera systemowe okno właściwości pliku Windows.
