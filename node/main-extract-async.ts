@@ -165,6 +165,9 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
     if (!finished) {
       finished = true;
       clearTimeout(watchdog);
+      try {
+        GLOBALS.angularApp.sender.send('wsq-thumb-ready', element.hash);
+      } catch (e) { }
       queueDone();
     }
   };
@@ -202,6 +205,33 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
  * Send element back to Angular; if any screenshots missing, queue it for extraction
  * @param imageElement
  */
+// WsQ: folder the user is looking at -- its files jump the queues, also the ones found later
+let priorityPrefix = '';
+
+function inPriority(partialPath: string): boolean {
+  if (!priorityPrefix) {
+    return false;
+  }
+  const p = (partialPath || '').replace(/\\/g, '/');
+  return p === priorityPrefix || p.startsWith(priorityPrefix + '/');
+}
+
+function pushThumb(el: ImageElement): void {
+  if (inPriority(el.partialPath)) {
+    thumbQueue.unshift(el);
+  } else {
+    thumbQueue.push(el);
+  }
+}
+
+function pushMeta(item: TempMetadataQueueObject): void {
+  if (inPriority(item.partialPath)) {
+    metadataQueue.unshift(item);
+  } else {
+    metadataQueue.push(item);
+  }
+}
+
 function sendNewVideoMetadata(imageElement: ImageElementPlus): void {
 
   alreadyInAngular.set(imageElement.fullPath, knownOf(imageElement));
@@ -217,7 +247,7 @@ function sendNewVideoMetadata(imageElement: ImageElementPlus): void {
     thumbExtractionStartTime = performance.now();
   }
 
-  thumbQueue.push(imageElement);
+  pushThumb(imageElement);
 }
 
 /**
@@ -312,7 +342,7 @@ function superFastSystemScan(inputDir: string, inputSource: number): void {
         partialPath: '/' + partial,
       };
 
-      metadataQueue.push(newItem);
+      pushMeta(newItem);
 
     });
 
@@ -357,15 +387,18 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
 
   console.log('starting watcher ', inputSource, typeof(inputSource), inputDir);
 
-  GLOBALS.angularApp.sender.send('started-watching-this-dir', inputSource);
-
   // WARNING - there are other ways to have a network address that are not accounted here !!!
   const isNetworkAddress: boolean =    inputDir.startsWith('//')
                                     || inputDir.startsWith('\\\\');
 
+  // WsQ: the first pass is the fast `fdir` scan; chokidar only reports changes from now on
+  // (an initial chokidar pass over thousands of files kept the main process -- and the window -- busy)
+  superFastSystemScan(inputDir, inputSource);
+
   const watcherConfig = {
     cwd: inputDir,
     disableGlobbing: true,
+    ignoreInitial: true,
     ignored: 'vha-*', // WARNING - dangerously ignores any path that includes `vha-` anywhere!!!
     persistent: true, // NOTE: if `!persistent` we use `superFastSystemScan()` instead !!!
     usePolling: isNetworkAddress ? true : false,
@@ -374,9 +407,6 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
   const watcher: FSWatcher = chokidar.watch(inputDir, watcherConfig);
 
   const allAcceptableFiles: string[] = [...acceptableFiles, ...GLOBALS.additionalExtensions];
-
-  metadataQueue.pause();
-  thumbQueue.pause();
 
   watcher
     .on('add', (filePath: string) => {
@@ -409,7 +439,7 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
         partialPath: partialPath,
       };
 
-      metadataQueue.push(newItem);
+      pushMeta(newItem);
     })
     .on('change', (filePath: string) => {
       const subPath = ('/' + filePath.replace(/\\/g, '/')).replace('//', '/');
@@ -429,11 +459,12 @@ export function startFileSystemWatching(inputDir: string, inputSource: number, p
       // note: there is no need to watch for `unlinkDir` since `unlink` fires for every file anyway!
     })
     .on('ready', () => {
-      console.log('Finished scanning', inputSource);
+      console.log('Watcher ready', inputSource);
 
       metadataQueue.resume();
-
-      GLOBALS.angularApp.sender.send('all-files-found-in-dir', inputSource, allFoundFilesMap.get(inputSource));
+      if (metadataQueue.idle()) {
+        thumbQueue.resume();
+      }
 
       if (persistent) {
         console.log('^^^^^^^^ - CONTINUING to watch this directory!');
@@ -570,7 +601,7 @@ export function extractAnyMissingThumbs(fullArray: ImageElement[]): void {
     if (thumbExtractionStartTime === 0) {
       thumbExtractionStartTime = performance.now();
     }
-    todo.forEach(el => thumbQueue.push(el));
+    todo.forEach(el => pushThumb(el));
     // the queue may still be paused after a folder scan -- go on if nothing is being imported
     if (metadataQueue.idle()) {
       thumbQueue.resume();
@@ -713,7 +744,7 @@ function changedQueueRunner(job: { fullPath: string, inputSource: number, partia
         GLOBALS.angularApp.sender.send('video-file-changed', forAngular, known.hash);
 
         if (!sameVideo) {
-          thumbQueue.push(el);
+          pushThumb(el);
         }
         coverQueue.push({ fullPath: job.fullPath, hash: el.hash });
         done();
@@ -729,18 +760,21 @@ function changedQueueRunner(job: { fullPath: string, inputSource: number, partia
  */
 export function prioritizeView(hashes: string[], partialPrefix: string): void {
   try {
-    if (thumbQueue && hashes && hashes.length) {
-      const wanted = new Set(hashes);
+    priorityPrefix = (partialPrefix || '').replace(/\\/g, '/').replace(/\/+$/, '');
+    if (thumbQueue && ((hashes && hashes.length) || priorityPrefix)) {
+      const wanted = new Set(hashes || []);
       const moved: ImageElement[] = [];
       thumbQueue.remove(({ data }) => {
-        if (data && wanted.has(data.hash)) {
+        if (data && (wanted.has(data.hash) || inPriority(data.partialPath))) {
           moved.push(data);
           return true;
         }
         return false;
       });
       // keep the on-screen order: unshift from the last one
-      moved.sort((a, b) => hashes.indexOf(a.hash) - hashes.indexOf(b.hash));
+      const order = new Map<string, number>();
+      (hashes || []).forEach((h, i) => order.set(h, i));
+      moved.sort((a, b) => (order.has(a.hash) ? order.get(a.hash) : 1e9) - (order.has(b.hash) ? order.get(b.hash) : 1e9));
       for (let i = moved.length - 1; i >= 0; i--) {
         thumbQueue.unshift(moved[i]);
       }

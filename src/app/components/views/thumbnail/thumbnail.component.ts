@@ -140,8 +140,9 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     const hashes = (this.video.hash || '').split(':').filter(Boolean).slice(0, 4);
     const out: string[] = [];
     hashes.forEach(h => {
+      const t = this.tagLib.thumbReady.get(h);
       out.push(this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'covers', h));
-      out.push(this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'thumbnails', h));
+      out.push(this.filePathService.createFilePath(this.folderPath(), this.hubName(), 'thumbnails', h) + (t ? '?r=' + t : ''));
     });
     return out;
   }
@@ -187,6 +188,20 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
     } else if (!on) {
       this.folderPreviewIndex = 0;
     }
+  }
+
+  /** WsQ: thumbnail / filmstrip with a stamp once Node made them, so a broken picture refreshes by itself */
+  get thumbStamp(): string {
+    const t = this.tagLib.thumbReady.get(this.video.hash);
+    return t ? '?r=' + t : '';
+  }
+
+  get firstSrc(): string {
+    return this.firstFilePath + this.thumbStamp;
+  }
+
+  get fullSrc(): string {
+    return this.fullFilePath + this.thumbStamp;
   }
 
   get scrubTicks(): number[] {

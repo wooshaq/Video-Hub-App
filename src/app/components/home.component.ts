@@ -1002,6 +1002,12 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     });
 
     // WsQ: cover art from file metadata
+    (window as any).myElectron.receiveFromMain('wsq-thumb-ready', (hash: string) => {
+      this.tagLib.thumbReady.set(hash, Date.now());
+      clearTimeout(this.thumbReadyTimer);
+      this.thumbReadyTimer = setTimeout(() => this.zone.run(() => { this.tagLib.thumbReadyVersion++; }), 250);
+    });
+
     (window as any).myElectron.receiveFromMain('wsq-folder-icons-result', (map: Record<string, string>) => {
       this.zone.run(() => {
         Object.keys(map || {}).forEach(k => this.tagLib.folderIcons.set(k, map[k]));
@@ -3240,6 +3246,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   private prioTimer: any;
+  private thumbReadyTimer: any;
   private lastPrioKey = '';
 
   /** WsQ: tell the scanner to do the files of the current folder / view first */
@@ -3247,7 +3254,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     if (this.importStage === 'done') {
       return;   // nothing is being scanned / generated
     }
-    const view = (this.tagLib.viewItems || []).slice(0, 3000);
+    // files really on screen (in folder view: this folder only), then the whole folder by path
+    const view = (this.aspectItems || []).filter(e => e && e.cleanName !== '*FOLDER*').slice(0, 3000);
     const hashes = view.map(e => e.hash).filter(Boolean);
     const folder = this.settingsButtons['showFolders'].toggled
       ? (this.folderViewNavigationPath ? '/' + this.folderViewNavigationPath.replace(/^\/+/, '') : '')

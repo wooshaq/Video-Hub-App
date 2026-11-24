@@ -454,6 +454,10 @@ export class TagLibraryService {
 
   folderIcons = new Map<string, string>();
 
+  /** WsQ: thumbnails made while the app runs -> hash: time (used to refresh the picture on screen) */
+  thumbReady = new Map<string, number>();
+  thumbReadyVersion = 0;
+
   /** WsQ: delay (ms) before hovering a thumbnail starts the preview -- Settings -> Look */
   hoverDelay = 0;
   folderIconVersion = 0;

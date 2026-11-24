@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.25
+- **Miniatury pojawiają się od razu, gdy są gotowe:** wcześniej film, dla którego miniatura powstała w trakcie, został z pustym obrazkiem do czasu przewinięcia/ponownego otwarcia. Dotyczy też podglądów w folderach.
+- **Priorytet otwartego folderu naprawiony:** w widoku folderów brane były wszystkie pliki huba zamiast plików folderu; teraz najpierw idą pliki widoczne na ekranie, potem cały folder z podfolderami – także pliki dorzucane do kolejki później.
+- **„Obserwuj folder” nie zatrzymuje już miniatur i nie przeciąża okna:** pierwsze przejście robi szybki skaner, a obserwator reaguje tylko na późniejsze zmiany (wcześniej przeglądał wszystkie pliki od nowa i wstrzymywał kolejkę miniatur na stałe).
+- Od tej wersji wydanie zawiera tylko instalator (Setup).
+
 ### Nowe w wsq.24
 - **Najpierw otwarty folder:** gdy trwa skanowanie / robienie miniatur, pliki z folderu lub widoku, który właśnie oglądasz (widok folderów, zakładka Foldery, filtr), są przesuwane na początek kolejki – i miniatury, i odczyt nowych plików. Działa też po każdej zmianie folderu w trakcie.
 
