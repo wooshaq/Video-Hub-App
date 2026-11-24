@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.29
+- **Równoległe generowanie:** Ustawienia → Wygląd → „Równoległe procesy” (1, 2, 3, 4, 6, 8; domyślnie 3). Tyle okładek, pasków klatek i odczytów nowych plików robi się jednocześnie (wcześniej zawsze po jednym). Zmiana działa od razu, także w trakcie generowania. HDD: najlepiej 2–3, SSD/NVMe: 4–6.
+
 ### Nowe w wsq.28
 - Kształt kafelków bierze się z okładek zawsze, gdy w widoku jest choć jedna okładka (wcześniej dopiero przy połowie plików z okładką – w folderach z mniejszą liczbą okładek kafelki były 16:9, a okładki pomniejszone z rozmytymi pasami po bokach). Klatki plików bez okładki są przycinane tak, żeby wypełniały kafelek.
 

@@ -767,6 +767,9 @@
     "setHoverDelay": "Hover preview delay",
     "setHoverNone": "instant",
     "sugHint": "↑↓ pick · Enter adds the tag to the filter (Shift+Enter = avoid) · Enter without a pick turns the text into a chip",
-    "dupTitle": "Duplicates – films with the same JAV code ({{codes}} codes, {{files}} files). Click shows only them, grouped."
+    "dupTitle": "Duplicates – films with the same JAV code ({{codes}} codes, {{files}} files). Click shows only them, grouped.",
+    "settingsSpeed": "Generation speed",
+    "setWorkers": "Parallel processes (covers, filmstrips, reading files)",
+    "setWorkersHint": "More processes = faster, but more CPU and disk load. On an HDD 2–3 is usually best, on SSD/NVMe 4–6. Applies right away, also while generating."
   }
 }

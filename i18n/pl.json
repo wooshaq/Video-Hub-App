@@ -767,6 +767,9 @@
     "setHoverDelay": "Opóźnienie podglądu po najechaniu",
     "setHoverNone": "od razu",
     "sugHint": "↑↓ wybór · Enter dodaje tag do filtra (Shift+Enter = unika) · Enter bez wyboru zamienia tekst w kafelek",
-    "dupTitle": "Duble – filmy z tym samym kodem JAV ({{codes}} kodów, {{files}} plików). Klik pokazuje tylko je, pogrupowane."
+    "dupTitle": "Duble – filmy z tym samym kodem JAV ({{codes}} kodów, {{files}} plików). Klik pokazuje tylko je, pogrupowane.",
+    "settingsSpeed": "Szybkość generowania",
+    "setWorkers": "Równoległe procesy (okładki, paski klatek, odczyt plików)",
+    "setWorkersHint": "Więcej procesów = szybciej, ale większe obciążenie procesora i dysku. Na dysku HDD zwykle najlepiej 2–3, na SSD/NVMe 4–6. Zmiana działa od razu, także w trakcie generowania."
   }
 }

@@ -66,6 +66,19 @@ function knownOf(el: ImageElement): KnownFile {
 // cover queue (WsQ) -- cover art from file metadata
 let coverQueue;          // QueueObject - accepts `{ fullPath, hash }`
 
+// WsQ: how many ffmpeg / ffprobe jobs run at the same time (Settings -> Look -> parallel processes)
+let workerCount = 3;
+
+export function setWorkerCount(n: number): void {
+  workerCount = Math.max(1, Math.min(8, Math.round(n) || 1));
+  [thumbQueue, coverQueue, metadataQueue].forEach(q => {
+    if (q) {
+      q.concurrency = workerCount;
+    }
+  });
+  console.log('parallel workers:', workerCount);
+}
+
 // changed files queue (WsQ) -- files already in the hub whose size / modification time changed
 let changedQueue;        // QueueObject - accepts `{ fullPath, inputSource, partialPath, fileName }`
 
@@ -110,14 +123,14 @@ export function resetAllQueues(): void {
     changedQueue.kill();
   }
 
-  coverQueue = async.queue(coverQueueRunner, 1);
+  coverQueue = async.queue(coverQueueRunner, workerCount);
   changedQueue = async.queue(changedQueueRunner, 1);
 
   // Meta queue ========================================================================================================
   metaDone = 0;
   metaExtractionStartTime = 0;
 
-  metadataQueue = async.queue(metadataQueueRunner, 1); // 1 is the number of parallel worker functions
+  metadataQueue = async.queue(metadataQueueRunner, workerCount); // WsQ: parallel workers (Settings)
                                                        // ^--- experiment with numbers to see what is fastest (try 8)
 
   metadataQueue.drain(() => {
@@ -131,7 +144,7 @@ export function resetAllQueues(): void {
   thumbsDone = 0;
   thumbExtractionStartTime = 0;
 
-  thumbQueue = async.queue(thumbQueueRunner, 1); // 1 is the number of threads
+  thumbQueue = async.queue(thumbQueueRunner, workerCount); // WsQ: parallel ffmpeg processes (Settings)
 
   thumbQueue.drain(() => {
 

@@ -476,6 +476,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     this.applyAccent();
     this.applyGalleryLook();
     this.tagLib.hoverDelay = this.wsqHoverDelay;
+    (window as any).myElectron.sendToMain('wsq-set-workers', this.wsqWorkers);
     this.translate.setDefaultLang('en');
     this.changeLanguage('en');
 
@@ -3031,6 +3032,13 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   wsqTitleSize = Math.max(9, Math.min(20, parseFloat(this.readLocal('wsq.titleSize', '12')) || 12));
   wsqTitleLines = Math.max(1, Math.min(3, parseInt(this.readLocal('wsq.titleLines', '2'), 10) || 2));
   wsqHoverDelay = Math.max(0, Math.min(2000, parseInt(this.readLocal('wsq.hoverDelay', '250'), 10) || 0));
+  wsqWorkers = Math.max(1, Math.min(8, parseInt(this.readLocal('wsq.workers', '3'), 10) || 3));
+
+  setWorkers(n: number): void {
+    this.wsqWorkers = n;
+    this.writeLocal('wsq.workers', String(n));
+    (window as any).myElectron.sendToMain('wsq-set-workers', n);
+  }
 
   setHoverDelay(ms: number): void {
     this.wsqHoverDelay = ms;
