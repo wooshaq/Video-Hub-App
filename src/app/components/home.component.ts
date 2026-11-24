@@ -1070,7 +1070,24 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       return (p.split(/[\\/]/).filter(Boolean).pop() || '').toLowerCase();
     };
 
+    // WsQ: files still waiting for pictures, and what is being worked on right now
+    (window as any).myElectron.receiveFromMain('wsq-thumbs-queued', (hashes: string[]) => {
+      (hashes || []).forEach(h => this.thumbsMissing.add(h));
+      this.bumpMissing();
+    });
+    (window as any).myElectron.receiveFromMain('wsq-active-jobs', (jobs: any[], thumbQ: number, coverQ: number) => {
+      this.activeJobs = jobs || [];
+      this.queuedThumbs = thumbQ || 0;
+      this.queuedCovers = coverQ || 0;
+      if (this.jobsOpen) {
+        this.zone.run(() => this.cd.markForCheck());
+      }
+    });
+
     (window as any).myElectron.receiveFromMain('wsq-thumb-ready', (hash: string) => {
+      if (this.thumbsMissing.delete(hash)) {
+        this.bumpMissing();
+      }
       this.tagLib.thumbReady.set(hash, Date.now());
       clearTimeout(this.thumbReadyTimer);
       this.thumbReadyTimer = setTimeout(() => this.zone.run(() => { this.tagLib.thumbReadyVersion++; }), 250);
@@ -1140,6 +1157,81 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   coverVersion = 0;
   coverShrinkDone = 0;    // WsQ: old covers scaled down so far
   coverShrinkTotal = 0;
+
+  // ---------- WsQ: completeness of the open folder + "what is being worked on" popup ----------
+  thumbsMissing = new Set<string>();
+  missingVersion = 0;
+  private missingTimer: any;
+  activeJobs: { name: string, folder: string, step: string, since: number }[] = [];
+  queuedThumbs = 0;
+  queuedCovers = 0;
+  jobsOpen = false;
+  private folderStatCache = { key: '', done: 0, total: 0 };
+
+  private bumpMissing(): void {
+    if (this.missingTimer) {
+      return;
+    }
+    this.missingTimer = setTimeout(() => {
+      this.missingTimer = null;
+      this.zone.run(() => { this.missingVersion++; });
+    }, 400);
+  }
+
+  /** files below the folder that is open (whole hub when not in folder view) and how many already have their pictures */
+  folderStat(): { done: number, total: number } {
+    const prefix = (this.settingsButtons['showFolders'] && this.settingsButtons['showFolders'].toggled ? this.folderViewNavigationPath : '')
+      .replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+    const list = this.imageElementService.imageElements;
+    const key = prefix + '|' + this.missingVersion + '|' + list.length;
+    if (key !== this.folderStatCache.key) {
+      let total = 0;
+      let missing = 0;
+      list.forEach(e => {
+        if (e.deleted || e.cleanName === '*FOLDER*') {
+          return;
+        }
+        const p = (e.partialPath || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+        if (prefix && p !== prefix && !p.startsWith(prefix + '/')) {
+          return;
+        }
+        total++;
+        if (this.thumbsMissing.has(e.hash)) {
+          missing++;
+        }
+      });
+      this.folderStatCache = { key, done: total - missing, total };
+    }
+    return this.folderStatCache;
+  }
+
+  jobStepLabel(step: string): string {
+    return this.translate.instant(step === 'cover' ? 'WSQ.jobCover' : step === 'filmstrip' ? 'WSQ.jobFilmstrip' : 'WSQ.jobCheck');
+  }
+
+  jobSeconds(since: number): string {
+    const s = Math.max(0, Math.round((Date.now() - since) / 1000));
+    return s < 60 ? s + ' s' : Math.floor(s / 60) + ' min ' + (s % 60) + ' s';
+  }
+
+  toggleJobs(): void {
+    this.jobsOpen = !this.jobsOpen;
+  }
+
+  /** right-click -> make the filmstrips again (whole selection in selection mode) */
+  regenFilmstripsNow(): void {
+    const items = (this.batchTaggingMode
+      ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
+      : [this.currentRightClickedItem])
+      .filter(el => el && el.cleanName !== '*FOLDER*');
+    if (!items.length) {
+      return;
+    }
+    items.forEach(el => this.thumbsMissing.add(el.hash));
+    this.bumpMissing();
+    (window as any).myElectron.sendToMain('wsq-regen-filmstrips', items);
+    this.modalService.openSnackbar(this.translate.instant('WSQ.regenQueued', { n: items.length }), 2000);
+  }
   private lastProgPaint = 0;
   private lastProgStage: any = '';
 

@@ -188,12 +188,65 @@ export function resetAllQueues(): void {
  * @param element -- ImageElement to extract screenshots for
  * @param done    -- callback to indicate the current extraction finished
  */
+// WsQ: what is being worked on right now (status bar popup) and which files still miss pictures
+const activeJobs = new Map<string, { name: string, folder: string, step: string, since: number }>();
+let activeTimer: any = null;
+const queuedHashes: string[] = [];
+let queuedTimer: any = null;
+
+function sendActive(): void {
+  if (activeTimer) {
+    return;
+  }
+  activeTimer = setTimeout(() => {
+    activeTimer = null;
+    try {
+      GLOBALS.angularApp.sender.send('wsq-active-jobs', Array.from(activeJobs.values()), thumbQueue ? thumbQueue.length() : 0, coverQueue ? coverQueue.length() : 0);
+    } catch (e) { }
+  }, 300);
+}
+
+function setActive(key: string, el: { fileName?: string, partialPath?: string, fullPath?: string }, step: string | null): void {
+  if (step === null) {
+    activeJobs.delete(key);
+  } else {
+    const name = el.fileName || (el.fullPath ? path.basename(el.fullPath) : key);
+    const folder = el.partialPath || (el.fullPath ? path.dirname(el.fullPath) : '');
+    const prev = activeJobs.get(key);
+    activeJobs.set(key, { name, folder, step, since: prev ? prev.since : Date.now() });
+  }
+  sendActive();
+}
+
+function flushQueued(): void {
+  if (queuedTimer) {
+    clearTimeout(queuedTimer);
+    queuedTimer = null;
+  }
+  if (queuedHashes.length) {
+    try { GLOBALS.angularApp.sender.send('wsq-thumbs-queued', queuedHashes.splice(0)); } catch (e) { }
+  }
+}
+
+function noteQueued(hash: string): void {
+  queuedHashes.push(hash);
+  if (!queuedTimer) {
+    queuedTimer = setTimeout(() => {
+      queuedTimer = null;
+      try { GLOBALS.angularApp.sender.send('wsq-thumbs-queued', queuedHashes.splice(0)); } catch (e) { }
+    }, 500);
+  }
+}
+
 function thumbQueueRunner(element: ImageElement, queueDone): void {
   // WsQ: watchdog -- one broken file must never stop the whole queue
   let finished = false;
+  setActive('t:' + element.hash, element, 'check');
   const done = () => {
     if (!finished) {
       finished = true;
+      setActive('t:' + element.hash, element, null);
+      flushQueued();   // "queued" must reach Angular before "ready"
       clearTimeout(watchdog);
       try {
         GLOBALS.angularApp.sender.send('wsq-thumb-ready', element.hash);
@@ -216,6 +269,7 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
       .catch(() => runExtraction(hasCover)));
 
   const runExtraction = (hasCover: boolean) => {
+      setActive('t:' + element.hash, element, 'filmstrip');
       sendCurrentProgress( // TODO check whether sending data off by 1
         thumbsDone,
         thumbsDone + thumbQueue.length() + 1,
@@ -250,6 +304,7 @@ function inPriority(partialPath: string): boolean {
 }
 
 function pushThumb(el: ImageElement): void {
+  noteQueued(el.hash);
   if (inPriority(el.partialPath)) {
     thumbQueue.unshift(el);
   } else {
@@ -758,7 +813,9 @@ function coverOf(element: ImageElement): Promise<boolean> {
     });
 }
 
-function coverQueueRunner(job: { fullPath: string, hash: string, tries?: number }, done): void {
+function coverQueueRunner(job: { fullPath: string, hash: string, tries?: number }, queueDone): void {
+  setActive('c:' + job.hash, job, 'cover');
+  const done = () => { setActive('c:' + job.hash, job, null); queueDone(); };
   extractCover(job.fullPath, job.hash, coversFolder())
     .then((has: boolean | null) => {
       if (has === null) {
@@ -882,4 +939,24 @@ export function prioritizeView(hashes: string[], partialPrefix: string): void {
   } catch (e) {
     console.log('prioritizeView failed', e);
   }
+}
+
+
+/**
+ * WsQ: right-click -> make the filmstrips (and the frame thumbnail) again for these files, first in the queue
+ */
+export function regenerateFilmstrips(elements: ImageElement[]): void {
+  const out = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName);
+  (elements || []).filter(el => el && el.hash && el.cleanName !== '*FOLDER*').reverse().forEach(el => {
+    ['filmstrips', 'thumbnails'].forEach(dir => {
+      try { fs.unlinkSync(path.join(out, dir, el.hash + '.jpg')); } catch (e) { }
+    });
+    noteQueued(el.hash);
+    thumbQueue.unshift(el);
+  });
+  if (thumbExtractionStartTime === 0) {
+    thumbExtractionStartTime = performance.now();
+  }
+  preventSleep();
+  thumbQueue.resume();
 }

@@ -804,6 +804,16 @@
     "rittRating": "Stars = tags of group",
     "rittRatingNone": "— do not use (VHA stars) —",
     "rittRatingHint": "Pick the tag whose sub-tags are your ratings. 1st sub-tag = 1 star, 2nd = 2 stars etc. Clicking the stars sets that tag (and removes the previous rating).",
-    "coverShrink": "Scaling down covers"
+    "coverShrink": "Scaling down covers",
+    "folderDone": "This folder:",
+    "jobsHint": "Click to see which files are being worked on",
+    "jobsTitle": "Working on",
+    "jobsQueue": "queued: filmstrips {{t}} · covers {{c}}",
+    "jobsNone": "Nothing is being worked on.",
+    "jobCheck": "checking",
+    "jobFilmstrip": "filmstrip",
+    "jobCover": "cover",
+    "regenFilmstrips": "Generate filmstrips again",
+    "regenQueued": "Filmstrips to generate again: {{n}} (first in the queue)"
   }
 }

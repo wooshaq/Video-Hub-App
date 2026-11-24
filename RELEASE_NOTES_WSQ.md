@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.38
+- **Dolny pasek: „Ten folder: X / Y (%)”** — ile plików w otwartym folderze (razem z podfolderami; poza widokiem folderów: cały hub) ma już gotowe miniatury i paski klatek; ✓ gdy komplet.
+- **Klik w ten napis** otwiera okienko „Teraz przerabiane”: które pliki są właśnie obrabiane (paski klatek / okładka / sprawdzanie), od ilu sekund, i ile czeka w kolejce.
+- **Menu kontekstowe → „Wygeneruj paski klatek ponownie”** — kasuje paski i miniaturę wybranych plików (albo całego zaznaczenia) i generuje je od nowa na początku kolejki.
+- Usunięty przycisk widoku „Klipy” z paska narzędzi.
+
 ### Nowe w wsq.37
 - **Mniejsze okładki:** nowe okładki są zapisywane od razu w szerokości max 480 px (wcześniej do 960 px) – to trochę więcej niż kafelek przy 4 miniaturach w rzędzie.
 - **Zmniejszanie starych okładek:** po otwarciu huba program najpierw przeskalowuje już zapisane okładki do 480 px (postęp na dolnym pasku), a dopiero potem wraca do wyciągania okładek i miniatur. Robi to raz na hub.

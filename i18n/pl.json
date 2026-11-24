@@ -804,6 +804,16 @@
     "rittRating": "Gwiazdki = tagi z grupy",
     "rittRatingNone": "— nie używaj (gwiazdki VHA) —",
     "rittRatingHint": "Wybierz tag, którego podtagi to Twoje oceny. 1. podtag = 1 gwiazdka, 2. = 2 gwiazdki itd. Kliknięcie gwiazdek nadaje odpowiedni tag (i zdejmuje poprzednią ocenę).",
-    "coverShrink": "Zmniejszanie okładek"
+    "coverShrink": "Zmniejszanie okładek",
+    "folderDone": "Ten folder:",
+    "jobsHint": "Kliknij, aby zobaczyć, które pliki są teraz przerabiane",
+    "jobsTitle": "Teraz przerabiane",
+    "jobsQueue": "w kolejce: paski {{t}} · okładki {{c}}",
+    "jobsNone": "Nic nie jest teraz przerabiane.",
+    "jobCheck": "sprawdzanie",
+    "jobFilmstrip": "paski klatek",
+    "jobCover": "okładka",
+    "regenFilmstrips": "Wygeneruj paski klatek ponownie",
+    "regenQueued": "Paski klatek do ponownego wygenerowania: {{n}} (na początku kolejki)"
   }
 }

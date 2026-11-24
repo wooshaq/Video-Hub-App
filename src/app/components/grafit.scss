@@ -472,3 +472,115 @@
 .wsq-glass-scroll ::ng-deep .total-padding {
   padding-bottom: var(--wsq-top, 0px);
 }
+
+// ----- status bar: completeness of the open folder + popup with the files being worked on -----
+
+.st-folder {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1;
+  font: inherit;
+  gap: 8px;
+  height: 20px;
+  justify-content: flex-end;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 6px;
+  white-space: nowrap;
+
+  &:hover,
+  &.open { background: rgba(127, 127, 127, 0.14); color: var(--g-tx, inherit); }
+
+  .st-prog-txt { overflow: hidden; text-overflow: ellipsis; }
+}
+
+.st-jobs {
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  background: rgba(23, 24, 27, 0.92);
+  border: 1px solid var(--g-line2, #34383f);
+  border-radius: 10px;
+  bottom: 34px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color: var(--g-tx, #e9eaec);
+  font-size: 12px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 8px;
+  position: fixed;
+  right: 12px;
+  width: 460px;
+  z-index: 300;
+}
+
+.st-jobs-head {
+  align-items: center;
+  display: flex;
+  font-weight: 600;
+  gap: 10px;
+  padding: 2px 4px 8px;
+}
+
+.st-jobs-q {
+  color: var(--g-tx3, #80858d);
+  flex: 1;
+  font-weight: 400;
+  text-align: right;
+}
+
+.st-jobs-x {
+  background: transparent;
+  border: 0;
+  color: var(--g-tx3, #80858d);
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover { color: var(--g-tx, #fff); }
+}
+
+.st-job {
+  align-items: center;
+  border-radius: 6px;
+  display: flex;
+  gap: 8px;
+  height: 26px;
+  padding: 0 4px;
+
+  &:hover { background: rgba(255, 255, 255, 0.05); }
+}
+
+.st-job-step {
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  padding: 1px 7px;
+  background: rgba(127, 127, 127, 0.2);
+  color: var(--g-tx2, #a3a7ae);
+
+  &.filmstrip { background: rgba(var(--wsq-accent-rgb), 0.22); color: var(--g-tx, #fff); }
+  &.cover { background: rgba(224, 168, 74, 0.22); color: #f0c77a; }
+}
+
+.st-job-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-job-time {
+  color: var(--g-tx3, #80858d);
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-job-none {
+  color: var(--g-tx3, #80858d);
+  padding: 6px 4px;
+}
