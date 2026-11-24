@@ -3325,7 +3325,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     const covered = files.filter(e => e.cover > 0);
     let target = 16 / 9;
 
-    if (covered.length && covered.length * 2 >= files.length) {
+    // WsQ: any cover in the view decides the tile shape -- frames are cropped to fill, covers are never shrunk into a wider tile
+    if (covered.length) {
       const known: number[] = [];
       let toLoad = 0;
       covered.forEach(e => {

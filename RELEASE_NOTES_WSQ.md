@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.28
+- Kształt kafelków bierze się z okładek zawsze, gdy w widoku jest choć jedna okładka (wcześniej dopiero przy połowie plików z okładką – w folderach z mniejszą liczbą okładek kafelki były 16:9, a okładki pomniejszone z rozmytymi pasami po bokach). Klatki plików bez okładki są przycinane tak, żeby wypełniały kafelek.
+
 ### Nowe w wsq.27
 - **Pliki z okładką nie dostają miniatury (thumbnails):** przy generowaniu program najpierw sprawdza okładkę; jeśli plik ją ma, robi tylko pasek klatek (filmstrip) do przewijania po najechaniu, a pojedynczą miniaturę pomija. Szybsze generowanie i mniej plików w `thumbnails`. Już zrobione miniatury zostają.
 
