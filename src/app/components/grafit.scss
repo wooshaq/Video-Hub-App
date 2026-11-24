@@ -440,3 +440,20 @@
     transition: width 0.4s ease;
   }
 }
+
+// compact media info: one wrapping line
+.wsq-d-media {
+  color: var(--d-dim);
+  display: flex;
+  flex-wrap: wrap;
+  font: 500 11px/18px var(--g-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  gap: 0;
+  margin: -6px 0 2px;
+
+  span + span::before {
+    color: var(--g-line2, #999);
+    content: '·';
+    margin: 0 6px;
+  }
+}

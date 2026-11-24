@@ -1516,6 +1516,15 @@
           @if (dTitle) { <div class="wsq-d-title" [title]="it.fileName">{{ dTitle }}</div> }
           <div class="wsq-d-path" [title]="filePathService.getPathFromImageElement(it)">{{ folderPathOf(it) }}</div>
 
+          <div class="wsq-d-media" [title]="it.birthtime ? ('WSQ.kvAdded' | translate) + ': ' + (it.birthtime | date : 'dd.MM.yyyy') : ''">
+            <span>{{ it.durationDisplay }}</span>
+            @if (it.width) { <span>{{ it.width }}×{{ it.height }}</span> }
+            @if (it.fps) { <span>{{ it.fps }} fps</span> }
+            <span>{{ it.fileSizeDisplay }}</span>
+            @if (it.year) { <span>{{ it.year }}</span> }
+            @if (it.timesPlayed) { <span>▶ {{ it.timesPlayed }}</span> }
+          </div>
+
           <div class="wsq-d-actions">
             <button class="wsq-d-play" (click)="openVideo(it, 0)">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>{{ 'WSQ.play' | translate }}
@@ -1533,16 +1542,6 @@
             <button class="wsq-d-ib" (click)="rightMouseClicked($event, it)" title="{{ 'WSQ.more' | translate }}" aria-label="Więcej">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="18" cy="12" r="1.2" /></svg>
             </button>
-          </div>
-
-          <div class="wsq-d-kv">
-            <div><span>{{ 'WSQ.kvDuration' | translate }}</span><span>{{ it.durationDisplay }}</span></div>
-            @if (it.width) { <div><span>{{ 'WSQ.kvResolution' | translate }}</span><span>{{ it.width }} × {{ it.height }}</span></div> }
-            @if (it.fps) { <div><span>{{ 'WSQ.kvFps' | translate }}</span><span>{{ it.fps }}</span></div> }
-            <div><span>{{ 'WSQ.kvSize' | translate }}</span><span>{{ it.fileSizeDisplay }}</span></div>
-            @if (it.year) { <div><span>{{ 'WSQ.kvYear' | translate }}</span><span>{{ it.year }}</span></div> }
-            @if (it.timesPlayed) { <div><span>{{ 'WSQ.kvPlayed' | translate }}</span><span>{{ it.timesPlayed }}×</span></div> }
-            @if (it.birthtime) { <div><span>{{ 'WSQ.kvAdded' | translate }}</span><span>{{ it.birthtime | date : 'dd.MM.yyyy' }}</span></div> }
           </div>
 
           <div class="wsq-sec">

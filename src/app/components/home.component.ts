@@ -3979,7 +3979,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       .map((x, i) => codeRe.test(x) ? x.replace(codeRe, '$1') : (i === 0 && parts.length > 1 ? '' : x))
       .map(x => x.replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim())
       .filter(Boolean);
-    return rest.join(' – ');
+    return rest.join(' – ') || base;   // no title part -> the plain file name
   }
 
   starsOf(item: ImageElement): number {
