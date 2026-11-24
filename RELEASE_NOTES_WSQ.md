@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.30
+- **Stały kształt kafelków:** proporcje miniatur bierze się z okładek całego huba (np. JAV) i są takie same w każdym folderze i w widoku folderów — przechodzenie między folderami już nie przeskalowuje siatki. Kształt jest zapamiętywany, więc od startu programu jest od razu właściwy.
+
 ### Nowe w wsq.29
 - **Równoległe generowanie:** Ustawienia → Wygląd → „Równoległe procesy” (1, 2, 3, 4, 6, 8; domyślnie 3). Tyle okładek, pasków klatek i odczytów nowych plików robi się jednocześnie (wcześniej zawsze po jednym). Zmiana działa od razu, także w trakcie generowania. HDD: najlepiej 2–3, SSD/NVMe: 4–6.
 

@@ -3185,7 +3185,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
 
   // ---------- WsQ: tile shape follows the covers in the current view ----------
 
-  wsqAspect = 16 / 9;
+  wsqAspect = Math.max(0.6, Math.min(2.4, parseFloat(this.readLocal('wsq.aspect', '0')) || 16 / 9));
   private aspectItems: ImageElement[] = [];
   private aspectTimer: any;
   private aspectLoading = new Set<string>();
@@ -3329,30 +3329,40 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   private updateGalleryAspect(): void {
-    const files = this.aspectItems.filter(e => e && e.cleanName !== '*FOLDER*');
-    const covered = files.filter(e => e.cover > 0);
-    let target = 16 / 9;
-
-    // WsQ: any cover in the view decides the tile shape -- frames are cropped to fill, covers are never shrunk into a wider tile
-    if (covered.length) {
-      const known: number[] = [];
-      let toLoad = 0;
-      covered.forEach(e => {
-        if (e.coverAspect) {
-          known.push(e.coverAspect);
-        } else if (toLoad < 300) {
-          toLoad++;
-          this.measureCover(e);
-        }
-      });
-      if (!known.length) {
-        return;   // wait for the first measurements
+    // WsQ: one fixed tile shape for the whole hub (taken from its covers, e.g. JAV), so going between folders never rescales the grid
+    const viewCovered = this.aspectItems.filter(e => e && e.cleanName !== '*FOLDER*' && e.cover > 0);
+    const allCovered = (this.imageElementService.imageElements || []).filter(e => e && !e.deleted && e.cover > 0);
+    const known: number[] = [];
+    let toLoad = 0;
+    [...viewCovered, ...allCovered].forEach(e => {
+      if (e.coverAspect) {
+        return;
       }
-      known.sort((a, b) => a - b);
+      if (toLoad < 300) {
+        toLoad++;
+        this.measureCover(e);
+      }
+    });
+    allCovered.forEach(e => {
+      if (e.coverAspect) {
+        known.push(e.coverAspect);
+      }
+    });
+
+    let target = parseFloat(this.readLocal('wsq.aspect', '0')) || 16 / 9;
+    if (known.length) {
+      known.sort((x, y) => x - y);
       target = known[Math.floor(known.length / 2)];
+    } else if (allCovered.length) {
+      // covers exist but are not measured yet -- keep the remembered shape meanwhile
+    } else {
+      target = 16 / 9;
     }
 
-    target = Math.max(0.6, Math.min(2.4, target));
+    target = Math.max(0.6, Math.min(2.4, Math.round(target * 100) / 100));
+    if (known.length) {
+      this.writeLocal('wsq.aspect', String(target));
+    }
     if (Math.abs(target - this.wsqAspect) > 0.01) {
       this.wsqAspect = target;
       this.computePreviewWidth();
