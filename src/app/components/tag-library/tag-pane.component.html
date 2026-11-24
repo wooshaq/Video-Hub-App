@@ -47,7 +47,7 @@
           }
           <svg class="tp-folder-ic" viewBox="0 0 16 16"><path d="M1.5 4h5l1.5 1.5h6.5v7h-13z" /></svg>
           <span class="tp-name">{{ r.node.name }}</span>
-          <span class="tp-count">({{ r.node.count | number }})</span>
+          <span class="tp-count">{{ r.node.count | number }}</span>
         </div>
       }
       <div class="tp-bottom-space"></div>
@@ -220,7 +220,7 @@
         } @else {
           <span class="tp-name" [ngStyle]="{ color: row.node.color || null }">{{ row.node.name }}</span>
           @let vc = lib.viewFiltered ? lib.getViewCount(row.node.name) : lib.getCount(row.node.name);
-          <span class="tp-count" [title]="lib.viewFiltered ? ('TAGLIB.countInView' | translate) + ' · ' + ('TAGLIB.countTotal' | translate) + ': ' + lib.getCount(row.node.name) : ''">({{ vc | number }})</span>
+          <span class="tp-count" [title]="lib.viewFiltered ? ('TAGLIB.countInView' | translate) + ' · ' + ('TAGLIB.countTotal' | translate) + ': ' + lib.getCount(row.node.name) : ''">{{ vc | number }}</span>
         }
 
         <span class="tp-attrs">

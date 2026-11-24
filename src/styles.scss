@@ -52,7 +52,23 @@ html, body {
 // WsQ: no light flashes -- dark canvas and transparent scroll-bar tracks everywhere
 html.wsq-root-dark,
 html.wsq-root-dark body {
-  background: #1b1b1b;
+  background: #111214;
+}
+
+// WsQ: "Grafit" look -- one family of greys, one accent (dark mode)
+html.wsq-root-dark {
+  --g-bg: #111214;      // window
+  --g-s1: #17181b;      // side panels, bars
+  --g-s2: #1d1f23;      // fields, chips
+  --g-s3: #25282d;      // raised / active
+  --g-line: #2a2d33;    // borders
+  --g-line2: #34383f;   // stronger borders
+  --g-tx: #e9eaec;      // text
+  --g-tx2: #a3a7ae;     // labels
+  --g-tx3: #80858d;     // hints, counts
+  --g-soft: rgba(var(--wsq-accent-rgb), 0.16);
+  --g-font: Inter, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --g-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
 }
 
 html.wsq-root-dark {

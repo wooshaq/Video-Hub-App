@@ -779,6 +779,16 @@
     "delMessageForever": "Usunąć TRWALE {{n}} plik(ów)? Tego nie da się cofnąć.",
     "delYes": "Przenieś do kosza",
     "delYesForever": "Usuń trwale",
-    "delNo": "Anuluj"
+    "delNo": "Anuluj",
+    "play": "Odtwórz",
+    "more": "Więcej",
+    "kvDuration": "Czas",
+    "kvResolution": "Rozdzielczość",
+    "kvFps": "Klatki/s",
+    "kvSize": "Rozmiar",
+    "kvYear": "Rok",
+    "kvPlayed": "Odtworzono",
+    "kvAdded": "Utworzono",
+    "bookmarksTitle": "Zakładki"
   }
 }

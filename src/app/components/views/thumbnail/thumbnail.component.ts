@@ -76,6 +76,22 @@ export class ThumbnailComponent implements OnInit, OnDestroy {
   percentOffset = 0;
   scrollInterval: any = null;
 
+  /** WsQ (Grafit): "year · resolution" under the title */
+  get metaLine(): string {
+    const v = this.video;
+    if (!v) {
+      return '';
+    }
+    const parts: string[] = [];
+    if (v.year) {
+      parts.push(String(v.year));
+    }
+    if (v.height) {
+      parts.push(v.height >= 2000 ? '4K' : v.height + 'p');
+    }
+    return parts.join(' · ');
+  }
+
   constructor(
     public filePathService: FilePathService,
     public imageElementService: ImageElementService,

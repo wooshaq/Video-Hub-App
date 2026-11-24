@@ -91,7 +91,8 @@ import {
     './gallery.scss',
     './wizard-button.scss',
     './resolution.scss',
-    './rightclick.scss'
+    './rightclick.scss',
+    './grafit.scss'
   ],
   animations: [
     bottomTrayAnimation,
@@ -3954,6 +3955,11 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     if (close) {
       this.quickTag = null;
     }
+  }
+
+  /** WsQ: JAV code shown above the title in the details panel */
+  codeOf(item: ImageElement): string {
+    return item ? javCode(item.fileName) : '';
   }
 
   starsOf(item: ImageElement): number {

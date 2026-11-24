@@ -25,35 +25,25 @@
       [ngStyle]="{ height: imgHeight() + 'px' }"
     >
       @let icon = folderIcon;
-      <div class="wf">
+      <!-- WsQ (Grafit): folder card -- a peek of what is inside (or the folder's own desktop.ini icon) -->
+      <div class="gf" [ngClass]="{ 'gf-has-icon': icon }">
         @if (icon) {
-          <img class="wf-custom" [src]="icon" alt="" draggable="false">
+          <img class="gf-icon" [src]="icon" alt="" draggable="false">
         } @else {
-          <svg class="wf-back" viewBox="0 0 216 170" aria-hidden="true">
-            <path d="M2 12a10 10 0 0 1 10-10h62a10 10 0 0 1 7.4 3.3L95 22h109a10 10 0 0 1 10 10v126a10 10 0 0 1-10 10H12a10 10 0 0 1-10-10z" />
-          </svg>
-          @if (folderPreviewSrc) {
-            <div class="wf-paper">
+          <span class="gf-sheet back"></span>
+          <span class="gf-sheet">
+            @if (folderPreviewSrc) {
               <img [src]="folderPreviewSrc" (error)="folderPreviewFailed()" alt="" draggable="false">
-            </div>
-          }
-          <svg class="wf-front" viewBox="0 0 216 170" aria-hidden="true">
-            <defs>
-              <linearGradient id="wfg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#ffe08a" />
-                <stop offset="1" stop-color="#f7c843" />
-              </linearGradient>
-            </defs>
-            <path d="M2 100a10 10 0 0 1 10-10h192a10 10 0 0 1 10 10v58a10 10 0 0 1-10 10H12a10 10 0 0 1-10-10z" fill="url(#wfg)" />
-          </svg>
+            }
+          </span>
         }
+        <span class="gf-lid"></span>
+        <svg class="gf-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" /></svg>
         @if (showMeta()) {
           <span class="wf-count">{{ video.fileSizeDisplay }}</span>
         }
       </div>
     </div>
-
-    <app-tag-badges class="tag-badges-row wf-badges" [video]="video" [darkMode]="darkMode()" />
 
   } @else {  <!-- ========================= UP FOLDER TEMPLATE ===================================== -->
 
@@ -73,12 +63,15 @@
 
   @if (video.fileName !== '*UP*') {
     <span
-      [ngStyle]="{ color: darkMode() ? '#d6d6d6' : '#222222' }"
+      [ngStyle]="{ color: darkMode() ? null : '#222222' }"
       class="title wsq-folder-name"
       [title]="video.partialPath"
     >
       {{ video.fileName }}
     </span>
+    <div class="wsq-meta-row">
+      <app-tag-badges class="tag-badges-row wf-badges" [video]="video" [darkMode]="darkMode()" />
+    </div>
   }
 
 } @else { <!-- END of folder `video.cleanName === '*FOLDER*'` -->
@@ -125,7 +118,7 @@
   }
 
   @if (video.selected) {
-    <app-icon class="selected" [icon]="'icon-show-more-info'" />
+    <span class="wsq-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12l4 4 8-8" /></svg></span>
   }
 
   @if (showFavorites()) {
@@ -174,19 +167,22 @@
 
   </div> <!-- end of (B) div --->
 
-  <app-tag-badges class="tag-badges-row" [video]="video" [darkMode]="darkMode()" />
-
-
 @if (showMeta()) {
   <span
     [ngClass]="{ 'larger-font': largerFont() }"
-    [ngStyle]="{ color: darkMode() ? '#d6d6d6' : '#222222' }"
+    [ngStyle]="{ color: darkMode() ? null : '#222222' }"
     class="title wsq-title-2l"
     [title]="video.fileName"
   >
     {{ video.fileName }}
   </span>
 }
+
+  <!-- WsQ (Grafit): year · resolution on the left, tag badges on the right -->
+  <div class="wsq-meta-row">
+    @if (showMeta()) { <span class="wsq-meta-text">{{ metaLine }}</span> }
+    <app-tag-badges class="tag-badges-row" [video]="video" [darkMode]="darkMode()" />
+  </div>
 
 } <!-- end of the @else -- the INDIVIDUAL FILE TEMPLATE -->
 

@@ -779,6 +779,16 @@
     "delMessageForever": "PERMANENTLY delete {{n}} file(s)? This cannot be undone.",
     "delYes": "Move to trash",
     "delYesForever": "Delete permanently",
-    "delNo": "Cancel"
+    "delNo": "Cancel",
+    "play": "Play",
+    "more": "More",
+    "kvDuration": "Duration",
+    "kvResolution": "Resolution",
+    "kvFps": "Frames/s",
+    "kvSize": "Size",
+    "kvYear": "Year",
+    "kvPlayed": "Played",
+    "kvAdded": "Created",
+    "bookmarksTitle": "Bookmarks"
   }
 }

@@ -39,8 +39,10 @@ import type { ImageElement } from '../../../../interfaces/final-object.interface
   padding: 0 5px;
   pointer-events: auto;
 }
-.badges.dark .b { background: rgba(38,38,38,.92); color: #ddd; }
+.badges.dark .b { background: var(--g-s3, #262626); color: var(--g-tx2, #ddd); border-radius: 999px; padding: 0 7px; }
 .b-icon { padding: 0 3px; }
+.badges.dark .b-icon { background: transparent; padding: 0 1px; }
+.badges { justify-content: flex-end; }
 .ic { font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 12px; line-height: 1; }
 .nm { white-space: nowrap; }
   `]

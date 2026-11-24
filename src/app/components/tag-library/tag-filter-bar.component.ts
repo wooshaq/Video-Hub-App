@@ -102,7 +102,10 @@ import { TagLibraryService } from './tag-library.service';
   padding: 7px 10px 7px 10px;
   position: relative;
 }
-.tfb.dark { --bg: #181818; --fg: #e0e0e0; --dim: #8a8a8a; --chip: #232323; --border: #2e2e2e; --accent: var(--wsq-accent); --red: #e06a6a; }
+.tfb.dark { --bg: var(--g-bg, #181818); --fg: var(--g-tx, #e0e0e0); --dim: var(--g-tx3, #8a8a8a); --chip: var(--g-s2, #232323); --border: var(--g-line, #2e2e2e); --accent: var(--wsq-accent); --red: #e06a6a; font-family: var(--g-font); }
+.tfb.dark .chip { color: var(--g-tx2); }
+.tfb.dark .chip:hover { color: var(--g-tx); border-color: var(--g-line2); }
+.tfb.dark .chip.active { background: rgba(var(--wsq-accent-rgb), .16); color: var(--g-tx); border-color: var(--accent); }
 
 .tfb-chips {
   align-items: center;
@@ -118,7 +121,7 @@ button { font: inherit; }
   align-items: center;
   background: var(--chip);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 999px;
   box-sizing: border-box;
   color: var(--fg);
   cursor: pointer;
@@ -126,13 +129,13 @@ button { font: inherit; }
   flex: 0 0 auto;
   font-size: 12px;
   gap: 6px;
-  height: 28px;
-  padding: 0 9px;
+  height: 26px;
+  padding: 0 10px;
   white-space: nowrap;
 }
 .chip:hover { border-color: var(--accent); }
 .ic { font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; font-size: 14px; }
-.cnt { color: var(--dim); font-size: 10px; }
+.cnt { color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 .chip.related { color: var(--dim); }
 .chip.related .ic { opacity: .65; }
@@ -292,7 +295,7 @@ export class TagFilterBarComponent implements AfterViewChecked, OnDestroy {
 
     const first = box.firstElementChild as HTMLElement;
     const top0 = first ? first.offsetTop : 0;
-    const rowStep = 34; // 28 px chip + 6 px gap
+    const rowStep = 32; // 26 px chip + 6 px gap
     const rowOf = (el: HTMLElement) => Math.round((el.offsetTop - top0) / rowStep);
 
     const lastRelated = related[related.length - 1];

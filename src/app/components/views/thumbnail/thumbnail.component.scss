@@ -318,3 +318,188 @@
 .wf-badges {
   text-align: left;
 }
+
+// =====================================================================================
+// WsQ: "Grafit" tiles
+// =====================================================================================
+
+.video-box,
+.video-box::after {
+  border-radius: 8px;
+}
+
+.wsq-title-2l,
+.wsq-folder-name {
+  color: var(--g-tx, #222);
+  font-weight: 500;
+  margin: 7px 2px 0;
+  max-height: none;
+  position: relative;
+  width: calc(100% - 4px);
+}
+
+.wsq-folder-name {
+  text-align: left;
+}
+
+.wsq-meta-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  height: 18px;
+  margin: 3px 2px 0;
+  min-width: 0;
+
+  .tag-badges-row {
+    flex: 0 1 auto;
+    height: 18px;
+    margin: 0 0 0 auto;
+    min-width: 0;
+  }
+}
+
+.wsq-meta-text {
+  color: var(--g-tx3, #777);
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.video-box .wsq-pill,
+.video-box .wsq-pill.dark-style {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  background: rgba(10, 10, 12, 0.62);
+  bottom: 6px;
+  color: #f1f1f3;
+  font-family: var(--g-mono, 'JetBrains Mono', Consolas, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 18px;
+  padding: 0 6px;
+}
+
+.wsq-check {
+  align-items: center;
+  background: var(--wsq-accent);
+  border-radius: 999px;
+  color: #111;
+  display: flex;
+  height: 20px;
+  justify-content: center;
+  left: 6px;
+  position: absolute;
+  top: 6px;
+  width: 20px;
+  z-index: 31;
+
+  svg {
+    fill: none;
+    height: 14px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    width: 14px;
+  }
+}
+
+:host(.wsq-selected) .video-box::after,
+:host-context(.wsq-layout) .video-box.wsq-sel::after {
+  box-shadow: 0 0 0 2px var(--wsq-accent), inset 0 0 0 2px var(--wsq-accent);
+}
+
+// ----- folder card -----
+
+.gf {
+  background: var(--g-s2, #e9e9e9);
+  border: 1px solid var(--g-line, #d0d0d0);
+  border-radius: 8px;
+  box-sizing: border-box;
+  inset: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.gf-sheet {
+  background: var(--g-s3, #ddd);
+  border-radius: 6px 6px 0 0;
+  bottom: 0;
+  left: 6.5%;
+  overflow: hidden;
+  position: absolute;
+  right: 6.5%;
+  top: 12%;
+
+  img {
+    height: 100%;
+    object-fit: cover;
+    object-position: center 30%;
+    width: 100%;
+  }
+
+  &.back {
+    left: 9%;
+    opacity: 0.55;
+    right: 9%;
+    top: 7%;
+    transform: rotate(-3deg);
+  }
+}
+
+.gf-lid {
+  background: var(--g-s3, #e2e2e2);
+  border-radius: 10px 10px 0 0;
+  border-top: 1px solid var(--g-line2, #cfcfcf);
+  bottom: 0;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.25);
+  height: 40%;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.gf-glyph {
+  bottom: 9px;
+  color: var(--g-tx2, #666);
+  fill: none;
+  height: 18px;
+  left: 10px;
+  position: absolute;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  width: 18px;
+}
+
+.gf-has-icon {
+  .gf-lid { display: none; }
+  .gf-glyph { display: none; }
+}
+
+.gf-icon {
+  height: 82%;
+  left: 50%;
+  object-fit: contain;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+}
+
+.video-box.wsq-folder-box .wf-count {
+  background: rgba(10, 10, 12, 0.5);
+  bottom: 8px;
+  color: var(--g-tx2, #fff);
+  font-family: var(--g-mono, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  padding: 0 6px;
+  right: 8px;
+}
+
+:host-context(.wsq-layout) .video-box.wsq-folder-box:hover .gf {
+  border-color: rgba(var(--wsq-accent-rgb), 0.7);
+}
