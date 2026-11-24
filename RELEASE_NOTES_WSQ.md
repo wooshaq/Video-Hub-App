@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.32
+- **Poprawka brakujących okładek przy generowaniu równoległym:** kolejka okładek i kolejka miniatur mogły naraz wyciągać okładkę z tego samego pliku — jedna drugiej kasowała plik tymczasowy i plik dostawał „brak okładki”. Teraz jeden plik = jedno wyciąganie naraz. Gdy dysk nie zdąży odpowiedzieć (timeout przy dużym obciążeniu), okładka jest ponawiana później (do 3 razy), a nie oznaczana na stałe jako brak. Odczyt metadanych max 2 procesy naraz, dłuższy limit czasu.
+- **Szybszy start dużego huba:** pomiar kształtu okładek nie odświeża już całego okna przy każdym obrazku, pasek postępu odświeża się max 4× na sekundę, ikony folderów są czytane po kawałku (okno nie zamarza).
+- **Panel tagów:** ciaśniejsze wiersze (22 px) i własne powiększenie Ctrl + kółko myszy nad drzewem tagów / folderów (70–160%, zapamiętywane, widoczne na dolnym pasku).
+- „Odśwież okładkę” z menu kontekstowego idzie teraz na początek kolejki.
+
 ### Nowe w wsq.31
 - **Kształt kafelków z okładek JAV:** stała proporcja miniatur liczy się teraz tylko z okładek plików z kodem JAV (te, które wyglądały dobrze), a nie ze wszystkich okładek huba — koniec z obniżonymi kafelkami. Inne okładki decydują tylko wtedy, gdy w hubie nie ma żadnych JAV.
 

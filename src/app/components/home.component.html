@@ -1648,7 +1648,7 @@
   <!-- ===========  WsQ: status bar  =========== -->
   <div class="wsq-status" [ngClass]="{ dark: settingsButtons['darkMode'].toggled }">
     <span class="st-left" [ngStyle]="{ width: tagPaneWidth + 'px' }">
-      @if (tagPaneWidth) { {{ tagLib.orderedNames().length | number }} {{ 'WSQ.tagsCount' | translate }} }
+      @if (tagPaneWidth) { {{ tagLib.orderedNames().length | number }} {{ 'WSQ.tagsCount' | translate }} · {{ (tagLib.paneZoom * 100) | number : '1.0-0' }}% · Ctrl + {{ 'WSQ.wheel' | translate }} }
     </span>
     <span class="st-mid">
       <span>{{ numberOfVideosFound | number }} {{ 'WSQ.items' | translate }} · {{ 'WSQ.selected' | translate }} {{ selectedCount() }}@if (importStage !== 'done') { · {{ progressString }} }</span>

@@ -27,7 +27,7 @@
         </button>
       }
     </div>
-    <div class="tp-tree tp-folders">
+    <div class="tp-tree tp-folders" [style.zoom]="lib.paneZoom" (wheel)="lib.paneWheel($event)">
       @for (r of folderRows(); track r.node.key) {
         <div
           class="tp-row tp-folder-row"
@@ -128,6 +128,8 @@
   <!-- ============ tree ============ -->
   <div
     class="tp-tree"
+    [style.zoom]="lib.paneZoom"
+    (wheel)="lib.paneWheel($event)"
     (contextmenu)="openMenu($event, null)"
     (dragover)="dragOverEmpty($event)"
     (drop)="dropOnEmpty($event)"

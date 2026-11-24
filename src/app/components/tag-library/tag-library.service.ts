@@ -461,6 +461,27 @@ export class TagLibraryService {
 
   /** WsQ: delay (ms) before hovering a thumbnail starts the preview -- Settings -> Look */
   hoverDelay = 0;
+
+  // WsQ: own zoom of the tag / folder tree (Ctrl + mouse wheel over it)
+  paneZoom = (() => {
+    try {
+      return Math.max(0.7, Math.min(1.6, parseFloat(localStorage.getItem('wsq.tagZoom') || '1') || 1));
+    } catch {
+      return 1;
+    }
+  })();
+
+  paneWheel(event: WheelEvent): void {
+    if (!event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.paneZoom = Math.max(0.7, Math.min(1.6, Math.round((this.paneZoom + (event.deltaY < 0 ? 0.1 : -0.1)) * 10) / 10));
+    try {
+      localStorage.setItem('wsq.tagZoom', String(this.paneZoom));
+    } catch { }
+  }
   folderIconVersion = 0;
 
   // ---------- WsQ: duplicates (more files with the same JAV code) ----------

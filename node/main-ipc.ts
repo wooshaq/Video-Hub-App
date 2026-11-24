@@ -50,8 +50,8 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
   /**
    * WsQ: (re)check cover art of these files -- [{ fullPath, hash }]
    */
-  ipc.on('check-covers', (event, jobs: { fullPath: string, hash: string }[]) => {
-    checkCovers(jobs || []);
+  ipc.on('check-covers', (event, jobs: { fullPath: string, hash: string }[], now?: boolean) => {
+    checkCovers(jobs || [], !!now);
   });
 
   /**
@@ -69,8 +69,18 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
    * WsQ: custom folder icons (desktop.ini) -- [{ key, paths: candidate absolute folder paths }]
    */
   ipc.on('wsq-folder-icons', (event, jobs: { key: string, paths: string[] }[]) => {
-    const out: Record<string, string> = {};
-    (jobs || []).forEach(j => {
+    // WsQ: one folder at a time with breaks in between, results sent in small batches -- the window stays responsive
+    const list = (jobs || []).slice();
+    let out: Record<string, string> = {};
+    let n = 0;
+    const step = () => {
+      const j = list.shift();
+      if (!j) {
+        if (n) {
+          event.sender.send('wsq-folder-icons-result', out);
+        }
+        return;
+      }
       let icon = '';
       for (const p of (j.paths || [])) {
         icon = folderIconData(p);
@@ -79,8 +89,15 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
         }
       }
       out[j.key] = icon;
-    });
-    event.sender.send('wsq-folder-icons-result', out);
+      n++;
+      if (n >= 25) {
+        event.sender.send('wsq-folder-icons-result', out);
+        out = {};
+        n = 0;
+      }
+      setImmediate(step);
+    };
+    step();
   });
 
   /**

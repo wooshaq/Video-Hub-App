@@ -71,11 +71,14 @@ let workerCount = 3;
 
 export function setWorkerCount(n: number): void {
   workerCount = Math.max(1, Math.min(8, Math.round(n) || 1));
-  [thumbQueue, coverQueue, metadataQueue].forEach(q => {
+  [thumbQueue, coverQueue].forEach(q => {
     if (q) {
       q.concurrency = workerCount;
     }
   });
+  if (metadataQueue) {
+    metadataQueue.concurrency = Math.min(2, workerCount);   // metadata is quick; more readers only fight over the disk
+  }
   console.log('parallel workers:', workerCount);
 }
 
@@ -130,7 +133,7 @@ export function resetAllQueues(): void {
   metaDone = 0;
   metaExtractionStartTime = 0;
 
-  metadataQueue = async.queue(metadataQueueRunner, workerCount); // WsQ: parallel workers (Settings)
+  metadataQueue = async.queue(metadataQueueRunner, Math.min(2, workerCount)); // WsQ: parallel workers (Settings)
                                                        // ^--- experiment with numbers to see what is fastest (try 8)
 
   metadataQueue.drain(() => {
@@ -728,7 +731,10 @@ function coverOf(element: ImageElement): Promise<boolean> {
       }
       const fullPath = path.join(src.path, element.partialPath, element.fileName);
       return extractCover(fullPath, element.hash, coversFolder())
-        .then((has: boolean) => {
+        .then((has: boolean | null) => {
+          if (has === null) {
+            return false;   // unknown now -- the cover queue tries again, do not mark "no cover"
+          }
           try {
             GLOBALS.angularApp.sender.send('cover-result', element.hash, has ? Date.now() : 0);
           } catch { }
@@ -738,9 +744,19 @@ function coverOf(element: ImageElement): Promise<boolean> {
     });
 }
 
-function coverQueueRunner(job: { fullPath: string, hash: string }, done): void {
+function coverQueueRunner(job: { fullPath: string, hash: string, tries?: number }, done): void {
   extractCover(job.fullPath, job.hash, coversFolder())
-    .then((has: boolean) => {
+    .then((has: boolean | null) => {
+      if (has === null) {
+        // WsQ: reading failed (disk busy / timeout) -- try again later instead of marking "no cover" for good
+        const tries = (job.tries || 0) + 1;
+        if (tries <= 3) {
+          setTimeout(() => coverQueue.push({ ...job, tries }), 20000 * tries);
+          done();
+          return;
+        }
+        has = false;
+      }
       try {
         GLOBALS.angularApp.sender.send('cover-result', job.hash, has ? Date.now() : 0);
       } catch { }
@@ -752,7 +768,11 @@ function coverQueueRunner(job: { fullPath: string, hash: string }, done): void {
 /**
  * Angular asks to (re)check covers of these files (first run of a hub, "refresh cover", "check all")
  */
-export function checkCovers(jobs: { fullPath: string, hash: string }[]): void {
+export function checkCovers(jobs: { fullPath: string, hash: string }[], now = false): void {
+  if (now) {
+    jobs.slice().reverse().forEach(j => coverQueue.unshift(j));   // WsQ: asked by hand -> before the background checks
+    return;
+  }
   jobs.forEach(j => coverQueue.push(j));
 }
 

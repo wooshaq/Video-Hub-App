@@ -809,7 +809,13 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
         + this.translate.instant('WSQ.progLeft') + ' ' + nf(left) + eta;
       this.extractionPercent = percentProgress;
 
-      this.cd.detectChanges(); // seems needed to update the donut
+      // WsQ: at most ~4 refreshes a second -- with several workers a refresh per file made the whole window sluggish
+      const nowMs = Date.now();
+      if (stage !== this.lastProgStage || current >= total || nowMs - this.lastProgPaint > 250) {
+        this.lastProgPaint = nowMs;
+        this.lastProgStage = stage;
+        this.cd.detectChanges(); // seems needed to update the donut
+      }
     });
 
     // Final object returns
@@ -1062,14 +1068,16 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   coverVersion = 0;
+  private lastProgPaint = 0;
+  private lastProgStage: any = '';
 
   /** ask the main process to (re)check the cover art of these files */
-  checkCoversOf(items: ImageElement[]): void {
+  checkCoversOf(items: ImageElement[], now = false): void {
     const jobs = items
       .filter(el => el && !el.deleted && el.cleanName !== '*FOLDER*' && this.sourceFolderService.sourceFolderConnected[el.inputSource])
       .map(el => ({ fullPath: this.filePathService.getPathFromImageElement(el), hash: el.hash }));
     if (jobs.length) {
-      (window as any).myElectron.sendToMain('check-covers', jobs);
+      (window as any).myElectron.sendToMain('check-covers', jobs, now);
     }
   }
 
@@ -1091,7 +1099,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     const items = this.batchTaggingMode
       ? this.imageElementService.imageElements.filter(e => e.selected)
       : [this.currentRightClickedItem];
-    this.checkCoversOf(items);
+    this.checkCoversOf(items, true);
     this.modalService.openSnackbar(this.translate.instant('WSQ.coverRefreshing'), 1500);
   }
 
@@ -3374,27 +3382,43 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     }
   }
 
+  private measureQueue: ImageElement[] = [];
+  private measureRunning = 0;
+
+  /** WsQ: read a cover's shape -- outside Angular, a few at a time, so starting a big hub does not trigger a refresh per image */
   private measureCover(e: ImageElement): void {
     const key = e.hash + ':' + e.cover;
     if (this.aspectLoading.has(key)) {
       return;
     }
     this.aspectLoading.add(key);
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalHeight) {
-        const a = Math.round(img.naturalWidth / img.naturalHeight * 1000) / 1000;
-        this.imageElementService.imageElements.forEach(x => {
-          if (x.hash === e.hash) {
-            x.coverAspect = a;
-          }
-        });
-        this.imageElementService.finalArrayNeedsSaving = true;
-      }
-      clearTimeout(this.aspectTimer);
-      this.aspectTimer = setTimeout(() => this.zone.run(() => this.updateGalleryAspect()), 120);
-    };
-    img.src = this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'covers', e.hash) + '?v=' + e.cover;
+    this.measureQueue.push(e);
+    this.zone.runOutsideAngular(() => this.measureNext());
+  }
+
+  private measureNext(): void {
+    while (this.measureRunning < 6 && this.measureQueue.length) {
+      const e = this.measureQueue.shift();
+      this.measureRunning++;
+      const img = new Image();
+      img.decoding = 'async';
+      const finish = () => {
+        this.measureRunning--;
+        clearTimeout(this.aspectTimer);
+        this.aspectTimer = setTimeout(() => this.zone.run(() => this.updateGalleryAspect()), 400);
+        setTimeout(() => this.measureNext(), 0);
+      };
+      img.onload = () => {
+        if (img.naturalHeight) {
+          const a = Math.round(img.naturalWidth / img.naturalHeight * 1000) / 1000;
+          e.coverAspect = a;   // the same object the hub list holds
+          this.imageElementService.finalArrayNeedsSaving = true;
+        }
+        finish();
+      };
+      img.onerror = finish;
+      img.src = this.filePathService.createFilePath(this.appState.selectedOutputFolder, this.appState.hubName, 'covers', e.hash) + '?v=' + e.cover;
+    }
   }
 
   activeFilterCount(): number {

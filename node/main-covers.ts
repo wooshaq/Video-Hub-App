@@ -35,7 +35,7 @@ function run(cmd: string, args: string[], timeout: number): Promise<{ stdout: st
 
 /** which streams of the file are cover images */
 async function findCovers(fullPath: string): Promise<CoverCandidate[]> {
-  const { stdout } = await run(ffprobePath, ['-v', 'quiet', '-of', 'json', '-show_streams', fullPath], 60000);
+  const { stdout } = await run(ffprobePath, ['-v', 'quiet', '-of', 'json', '-show_streams', fullPath], 180000);
   const data = JSON.parse(stdout || '{}');
   const out: CoverCandidate[] = [];
   (data.streams || []).forEach((st: any) => {
@@ -67,13 +67,27 @@ async function findCovers(fullPath: string): Promise<CoverCandidate[]> {
  * Extract the best cover of a video into `coversDir/<hash>.jpg`
  * @returns true if the file has a cover (and it was saved)
  */
-export async function extractCover(fullPath: string, hash: string, coversDir: string): Promise<boolean> {
+// WsQ: one extraction per file at a time -- the cover queue and the thumbnail queue could both ask for the same file,
+// and two ffmpeg runs on the same temp / target file made one of them report "no cover"
+const inFlight = new Map<string, Promise<boolean | null>>();
+
+export function extractCover(fullPath: string, hash: string, coversDir: string): Promise<boolean | null> {
+  const running = inFlight.get(hash);
+  if (running) {
+    return running;
+  }
+  const p = extractCoverOnce(fullPath, hash, coversDir).finally(() => inFlight.delete(hash));
+  inFlight.set(hash, p);
+  return p;
+}
+
+async function extractCoverOnce(fullPath: string, hash: string, coversDir: string): Promise<boolean | null> {
   const target = path.join(coversDir, hash + '.jpg');
   let candidates: CoverCandidate[] = [];
   try {
     candidates = await findCovers(fullPath);
   } catch (e) {
-    return false;
+    return null;   // WsQ: could not read the file now (busy disk, timeout) -- unknown, not "no cover"
   }
 
   if (!candidates.length) {
@@ -85,33 +99,34 @@ export async function extractCover(fullPath: string, hash: string, coversDir: st
     fs.mkdirSync(coversDir, { recursive: true });
   }
 
+  let failed = false;
   const scale = ['-vf', 'scale=w=min(960\\,iw):h=-2', '-q:v', '3', '-frames:v', '1'];
 
   for (const c of candidates) {
     try {
       if (c.kind === 'attached_pic') {
-        await run(ffmpegPath, ['-y', '-v', 'error', '-i', fullPath, '-map', '0:' + c.index, ...scale, target], 60000);
+        await run(ffmpegPath, ['-y', '-v', 'error', '-i', fullPath, '-map', '0:' + c.index, ...scale, target], 180000);
       } else {
         // dump the attachment to a temp file, then convert / scale it to jpg
         const tmp = path.join(os.tmpdir(), 'vha-cover-' + hash + '-' + c.index + c.ext);
         try { fs.unlinkSync(tmp); } catch { }
         try {
-          await run(ffmpegPath, ['-y', '-v', 'error', '-dump_attachment:' + c.index, tmp, '-i', fullPath, '-t', '0', '-f', 'null', '-'], 60000);
+          await run(ffmpegPath, ['-y', '-v', 'error', '-dump_attachment:' + c.index, tmp, '-i', fullPath, '-t', '0', '-f', 'null', '-'], 180000);
         } catch {
           // ffmpeg exits with an error when there is no output, but the attachment is dumped anyway
         }
         if (!fs.existsSync(tmp)) {
           continue;
         }
-        await run(ffmpegPath, ['-y', '-v', 'error', '-i', tmp, ...scale, target], 60000);
+        await run(ffmpegPath, ['-y', '-v', 'error', '-i', tmp, ...scale, target], 180000);
         try { fs.unlinkSync(tmp); } catch { }
       }
       if (fs.existsSync(target) && fs.statSync(target).size > 0) {
         return true;
       }
     } catch (e) {
-      // try the next candidate
+      failed = true;   // try the next candidate
     }
   }
-  return false;
+  return failed ? null : false;
 }
