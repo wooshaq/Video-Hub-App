@@ -1075,6 +1075,17 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       (hashes || []).forEach(h => this.thumbsMissing.add(h));
       this.bumpMissing();
     });
+    (window as any).myElectron.receiveFromMain('wsq-verify-progress', (done: number, total: number, bad: number, finished: boolean) => {
+      this.zone.run(() => {
+        this.verifyText = finished
+          ? this.translate.instant(bad ? 'WSQ.verifyDoneBad' : 'WSQ.verifyDoneOk', { n: total, b: bad })
+          : this.translate.instant('WSQ.verifyRunning', { d: done, n: total });
+        if (finished) {
+          this.modalService.openSnackbar(this.verifyText, 3500);
+        }
+      });
+    });
+
     (window as any).myElectron.receiveFromMain('wsq-active-jobs', (jobs: any[], thumbQ: number, coverQ: number) => {
       this.activeJobs = jobs || [];
       this.queuedThumbs = thumbQ || 0;
@@ -1216,6 +1227,50 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
 
   toggleJobs(): void {
     this.jobsOpen = !this.jobsOpen;
+  }
+
+  verifyText = '';
+
+  /** files below the open folder (whole hub outside folder view) */
+  private filesOfOpenFolder(): ImageElement[] {
+    const prefix = (this.settingsButtons['showFolders'] && this.settingsButtons['showFolders'].toggled ? this.folderViewNavigationPath : '')
+      .replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+    return this.imageElementService.imageElements.filter(e => {
+      if (e.deleted || e.cleanName === '*FOLDER*') {
+        return false;
+      }
+      const p = (e.partialPath || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+      return !prefix || p === prefix || p.startsWith(prefix + '/');
+    });
+  }
+
+  /** check filmstrips (missing / all black) and generate the bad ones again */
+  verifyFilmstrips(items?: ImageElement[]): void {
+    let list = items;
+    if (!list) {
+      const el = this.currentRightClickedItem;
+      if (this.batchTaggingMode) {
+        list = this.imageElementService.imageElements.filter(e => e.selected && !e.deleted);
+      } else if (el && el.cleanName === '*FOLDER*') {
+        const pre = ((el.partialPath || '') + '/' + el.fileName).replace(/^\/+|\/+$/g, '').toLowerCase();
+        list = this.imageElementService.imageElements.filter(e => {
+          const p = (e.partialPath || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+          return !e.deleted && e.cleanName !== '*FOLDER*' && (p === pre || p.startsWith(pre + '/'));
+        });
+      } else {
+        list = el ? [el] : [];
+      }
+    }
+    list = list.filter(e => e && e.cleanName !== '*FOLDER*');
+    if (!list.length) {
+      return;
+    }
+    this.verifyText = this.translate.instant('WSQ.verifyRunning', { d: 0, n: list.length });
+    (window as any).myElectron.sendToMain('wsq-verify-filmstrips', list);
+  }
+
+  verifyOpenFolder(): void {
+    this.verifyFilmstrips(this.filesOfOpenFolder());
   }
 
   /** right-click -> make the filmstrips again (whole selection in selection mode) */

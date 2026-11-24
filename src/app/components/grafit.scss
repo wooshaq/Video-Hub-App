@@ -583,3 +583,27 @@
   color: var(--g-tx3, #80858d);
   padding: 6px 4px;
 }
+
+.st-jobs-verify {
+  align-items: center;
+  border-bottom: 1px solid var(--g-line, #2a2d33);
+  color: var(--g-tx2, #a3a7ae);
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding: 0 4px 8px;
+
+  .ws-btn {
+    background: var(--g-s2, #1d1f23);
+    border: 1px solid var(--g-line2, #34383f);
+    border-radius: 6px;
+    color: var(--g-tx, #e9eaec);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    height: 26px;
+    padding: 0 10px;
+
+    &:hover { border-color: var(--wsq-accent); }
+  }
+}

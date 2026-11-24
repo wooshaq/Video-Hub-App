@@ -1,7 +1,7 @@
 // async & chokidar Code written by Cal2195
 // Was originally added to `main-extract.ts` but was moved here for clarity
 
-const { powerSaveBlocker } = require('electron');
+const { powerSaveBlocker, nativeImage } = require('electron');
 const async = require('async');
 const chokidar = require('chokidar');
 import * as path from 'path';
@@ -282,7 +282,16 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
         GLOBALS.selectedSourceFolders[element.inputSource].path,
         screenshotOutputFolder,
         GLOBALS.screenshotSettings,
-        done,
+        () => {
+          // WsQ: a filmstrip that came out missing or all black gets one more try
+          if (filmstripBad(element.hash) && !retriedStrips.has(element.hash)) {
+            retriedStrips.add(element.hash);
+            try { fs.unlinkSync(path.join(screenshotOutputFolder, 'filmstrips', element.hash + '.jpg')); } catch (e) { }
+            console.log('filmstrip bad, retrying once:', element.fileName);
+            thumbQueue.push(element);
+          }
+          done();
+        },
         hasCover
       );
   };
@@ -996,4 +1005,67 @@ export function regenerateFilmstrips(elements: ImageElement[]): void {
   }
   preventSleep();
   thumbQueue.resume();
+}
+
+
+// =====================================================================================
+// WsQ: is a filmstrip really there? (missing, unreadable or all black = bad)
+// =====================================================================================
+
+const retriedStrips = new Set<string>();
+
+export function filmstripBad(hash: string): boolean {
+  const file = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'filmstrips', hash + '.jpg');
+  try {
+    if (!fs.existsSync(file) || fs.statSync(file).size < 200) {
+      return true;
+    }
+    const img = nativeImage.createFromPath(file);
+    if (img.isEmpty()) {
+      return true;
+    }
+    const small = img.resize({ width: 96, quality: 'good' });
+    const bmp: Buffer = small.toBitmap();   // BGRA
+    let bright = 0;
+    const px = bmp.length / 4;
+    for (let i = 0; i < bmp.length; i += 4) {
+      if (bmp[i] > 28 || bmp[i + 1] > 28 || bmp[i + 2] > 28) {
+        bright++;
+      }
+    }
+    return px === 0 || bright / px < 0.01;
+  } catch (e) {
+    return true;
+  }
+}
+
+/**
+ * WsQ: check the filmstrips of these files (missing or all black) and generate the bad ones again
+ */
+export function verifyFilmstrips(elements: ImageElement[]): void {
+  const list = (elements || []).filter(el => el && el.hash && el.cleanName !== '*FOLDER*');
+  const bad: ImageElement[] = [];
+  let i = 0;
+  const send = (finished: boolean) => {
+    try { GLOBALS.angularApp.sender.send('wsq-verify-progress', i, list.length, bad.length, finished); } catch (e) { }
+  };
+  const step = () => {
+    const end = Math.min(list.length, i + 20);
+    for (; i < end; i++) {
+      if (filmstripBad(list[i].hash)) {
+        bad.push(list[i]);
+      }
+    }
+    send(false);
+    if (i < list.length) {
+      setImmediate(step);
+      return;
+    }
+    send(true);
+    if (bad.length) {
+      bad.forEach(el => retriedStrips.delete(el.hash));
+      regenerateFilmstrips(bad);
+    }
+  };
+  step();
 }

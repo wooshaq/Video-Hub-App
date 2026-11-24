@@ -1,5 +1,9 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.42
+- **Sprawdzanie pasków klatek:** w okienku „Teraz przerabiane” (klik w „Ten folder” na dole) przycisk „Sprawdź paski w tym folderze”, a w menu kontekstowym „Sprawdź paski klatek (brakujące / czarne)” — dla pliku, zaznaczenia albo całego folderu (prawy klik na kafelku folderu). Paski, których brakuje, są uszkodzone albo całe czarne, idą od razu do ponownego wygenerowania na początku kolejki.
+- Pasek, który po wygenerowaniu wyjdzie czarny albo go nie będzie, jest automatycznie generowany jeszcze raz (jedna ponowna próba).
+
 ### Nowe w wsq.41
 - Z kafelków usunięte ikonki „szczegóły” (prawy górny róg) i „dodaj do kolejki odtwarzania” (prawy dolny róg).
 

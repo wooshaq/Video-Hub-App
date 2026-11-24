@@ -814,6 +814,11 @@
     "jobFilmstrip": "filmstrip",
     "jobCover": "cover",
     "regenFilmstrips": "Generate filmstrips again",
-    "regenQueued": "Filmstrips to generate again: {{n}} (first in the queue)"
+    "regenQueued": "Filmstrips to generate again: {{n}} (first in the queue)",
+    "verifyFilmstrips": "Check filmstrips (missing / black)",
+    "verifyFolder": "Check filmstrips in this folder",
+    "verifyRunning": "Checking filmstrips: {{d}} / {{n}}",
+    "verifyDoneOk": "Filmstrips are fine ({{n}} files).",
+    "verifyDoneBad": "Bad filmstrips: {{b}} of {{n}} — generating them again."
   }
 }

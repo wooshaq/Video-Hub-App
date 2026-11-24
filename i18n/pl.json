@@ -814,6 +814,11 @@
     "jobFilmstrip": "paski klatek",
     "jobCover": "okładka",
     "regenFilmstrips": "Wygeneruj paski klatek ponownie",
-    "regenQueued": "Paski klatek do ponownego wygenerowania: {{n}} (na początku kolejki)"
+    "regenQueued": "Paski klatek do ponownego wygenerowania: {{n}} (na początku kolejki)",
+    "verifyFilmstrips": "Sprawdź paski klatek (brakujące / czarne)",
+    "verifyFolder": "Sprawdź paski w tym folderze",
+    "verifyRunning": "Sprawdzam paski: {{d}} / {{n}}",
+    "verifyDoneOk": "Paski klatek w porządku ({{n}} plików).",
+    "verifyDoneBad": "Złe paski klatek: {{b}} z {{n}} — generuję je od nowa."
   }
 }

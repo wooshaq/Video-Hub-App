@@ -10,7 +10,7 @@ import { ImageElement, FinalObject, InputSources } from '../interfaces/final-obj
 import { SettingsObject } from '../interfaces/settings-object.interface';
 import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
-import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers, prioritizeView, setWorkerCount, regenerateFilmstrips } from './main-extract-async';
+import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers, prioritizeView, setWorkerCount, regenerateFilmstrips, verifyFilmstrips } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
 import { syncWithRitt, commitRittSnapshot, rittMtime } from './ritt-sync';
 import { folderIconData } from './folder-icons';
@@ -58,6 +58,10 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
   /**
    * WsQ: the user opened a folder / changed the view -- do its files first
    */
+  ipc.on('wsq-verify-filmstrips', (event, elements: ImageElement[]) => {
+    verifyFilmstrips(elements || []);
+  });
+
   ipc.on('wsq-regen-filmstrips', (event, elements: ImageElement[]) => {
     regenerateFilmstrips(elements || []);
   });

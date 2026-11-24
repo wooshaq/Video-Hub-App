@@ -107,6 +107,7 @@
           [ngClass]="{ 'right-click-disabled': !copiedTags.length }">{{ 'WSQ.pasteTags' | translate }}</li>
       <li (click)="refreshCoverNow()">                          {{ 'WSQ.refreshCover' | translate }}</li>
       <li (click)="regenFilmstripsNow()">                       {{ 'WSQ.regenFilmstrips' | translate }}@if (rightClickCount > 1) { ({{ rightClickCount }}) }</li>
+      <li (click)="verifyFilmstrips()">                         {{ 'WSQ.verifyFilmstrips' | translate }}</li>
       <li (click)="checkAllCoversNow()">                        {{ 'WSQ.checkAllCovers'      | translate }}</li>
       <li
         (click)="fileProperties()"
@@ -1736,6 +1737,10 @@
           <span>{{ 'WSQ.jobsTitle' | translate }}</span>
           <span class="st-jobs-q">{{ 'WSQ.jobsQueue' | translate : { t: queuedThumbs, c: queuedCovers } }}</span>
           <button class="st-jobs-x" (click)="jobsOpen = false" aria-label="Zamknij">✕</button>
+        </div>
+        <div class="st-jobs-verify">
+          <button class="ws-btn" (click)="verifyOpenFolder()">{{ 'WSQ.verifyFolder' | translate }}</button>
+          @if (verifyText) { <span>{{ verifyText }}</span> }
         </div>
         @for (j of activeJobs; track j.name + j.step) {
           <div class="st-job">
