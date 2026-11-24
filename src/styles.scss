@@ -91,3 +91,39 @@ html.wsq-root-dark {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+// =====================================================================================
+// WsQ: one scrollbar style everywhere -- a 3 px line that grows to 8 px when the cursor
+// comes close (class .wsq-sb-near is set by home.component on the scrolled element)
+// =====================================================================================
+
+*::-webkit-scrollbar {
+  background: transparent !important;
+  height: 12px !important;
+  width: 12px !important;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-clip: padding-box !important;
+  background-color: rgba(127, 127, 127, 0.38) !important;
+  border: 4.5px solid transparent !important;
+  border-radius: 8px !important;
+  min-height: 40px;
+}
+
+.wsq-sb-near::-webkit-scrollbar-thumb {
+  background-color: rgba(150, 150, 150, 0.6) !important;
+  border-width: 2px !important;
+}
+
+.wsq-sb-near::-webkit-scrollbar-thumb:hover,
+.wsq-sb-near::-webkit-scrollbar-thumb:active {
+  background-color: rgba(var(--wsq-accent-rgb, 155, 140, 255), 0.85) !important;
+}

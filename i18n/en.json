@@ -791,16 +791,18 @@
     "kvAdded": "Created",
     "bookmarksTitle": "Bookmarks",
     "rittSyncTab": "Ritt",
-    "rittSyncTitle": "Tag sync with Ritt",
-    "rittSyncHint": "VHA and Ritt share the same tags: the tag tree (names, icons, colours, aliases) and which files and folders carry which tags. Thumbnails, covers and everything else stay in VHA — nothing is rescanned.",
-    "rittSyncFile": "Ritt database",
+    "rittSyncTitle": "Tag database: Ritt",
+    "rittSyncHint": "Once a .ritt file is chosen it is the tag database of VHA: the tag tree with all settings (icons, colours, aliases, hidden, inheritance, hotkeys, separators), tags and notes of files and folders. VHA writes changes straight to the .ritt and reads changes made in Ritt. The VHA hub keeps only thumbnails, covers, media info and tags of files Ritt does not know.",
+    "rittSyncFile": ".ritt file",
     "rittSyncNone": "not chosen",
     "rittSyncPick": "Choose .ritt file…",
     "rittSyncOff": "Turn off",
-    "rittSyncAuto": "Automatic (after a hub is opened and every 3 min when there are changes)",
-    "rittSyncNow": "Sync now",
-    "rittSyncBusy": "Syncing…",
+    "rittSyncNow": "Refresh now",
+    "rittSyncBusy": "Refreshing…",
     "rittSyncLast": "last:",
-    "rittSyncRules": "Rules: added or removed in one program — added or removed in the other. Conflicting name, icon or colour changes: VHA wins. Files are matched by path. While Ritt is open VHA only takes its changes and writes its own next time. A copy of the .ritt is made before every write (10 newest, folder ritt-backups next to the hub)."
+    "rittSyncRules": "VHA changes reach the .ritt after ~1.5 s; Ritt changes are checked every 15 s. While Ritt is open VHA does not write the file — it does once Ritt is closed. A copy of the .ritt is made before every write (10 newest, folder ritt-backups next to the hub). Turning this off makes VHA keep tags itself again.",
+    "rittRating": "Stars = tags of group",
+    "rittRatingNone": "— do not use (VHA stars) —",
+    "rittRatingHint": "Pick the tag whose sub-tags are your ratings. 1st sub-tag = 1 star, 2nd = 2 stars etc. Clicking the stars sets that tag (and removes the previous rating)."
   }
 }

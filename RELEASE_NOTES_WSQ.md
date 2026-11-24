@@ -1,5 +1,15 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.36
+- **Ritt jako baza tagów VHA** (Ustawienia → Ritt → wybierz plik .ritt). Plik .ritt trzyma wszystko, co Ritt umie: drzewo tagów (kolejność, zagnieżdżenie, separatory), ustawienia tagów (ikona, kolor, aliasy, notatki, ukrycie, „pokazuj w podtagach”, plakietka, skrót 0–9, dziedziczenie), tagi plików i folderów oraz **notatki plików, folderów i tagów**. VHA nie trzyma już własnej kopii tych danych — w hubie zostają tylko miniatury, okładki, informacje o filmach i tagi plików, których Ritt nie zna.
+  - Zmiany z VHA trafiają do .ritt po ok. 1,5 s, zmiany z Ritta VHA sprawdza co 15 s.
+  - Gdy Ritt jest otwarty, VHA nie zapisuje do pliku — zrobi to po jego zamknięciu. Kopia .ritt przed każdym zapisem (10 ostatnich, `ritt-backups` obok huba).
+  - Pliki dopasowywane po ścieżce: nazwa folderu źródłowego VHA = nazwa folderu podpiętego w Ritt.
+  - **Gwiazdki = tagi oceny:** w ustawieniach Ritt wybierasz tag, którego podtagi są ocenami (1. podtag = 1 gwiazdka …). Kliknięcie gwiazdek nadaje tag oceny (także na zaznaczonych plikach), liczba gwiazdek = liczba ocen w grupie.
+  - Wyłączenie pliku .ritt przywraca trzymanie tagów w VHA (dane z Ritta zostają wtedy zapisane w hubie).
+- **Efekt szkła:** galeria przewija się pod paskiem tagów i ścieżką folderów, które są półprzezroczyste i rozmyte (rozmywane są tylko te dwa cienkie paski, więc nie obciąża to procesora).
+- **Jednolite, cienkie suwaki** w całym programie (3 px); rozszerzają się do 8 px, gdy kursor zbliży się do krawędzi, a pod kursorem podświetlają się kolorem akcentu.
+
 ### Nowe w wsq.35
 - **Synchronizacja tagów z Ritt (w obie strony):** Ustawienia → Ritt → „Wybierz plik .ritt…”. VHA i Ritt mają wtedy te same tagi: drzewo tagów (nazwy, ikony, kolory, aliasy, nowe i usunięte tagi) oraz przypisania tagów do plików i folderów. Miniatury, okładki i reszta danych zostają w VHA — nic nie jest skanowane od nowa.
   - Automatycznie po otwarciu huba i co 3 minuty, gdy w VHA coś się zmieniło; przycisk „Synchronizuj teraz”.

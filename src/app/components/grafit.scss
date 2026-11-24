@@ -457,3 +457,18 @@
     margin: 0 6px;
   }
 }
+
+// ----- gallery scrolls under the tag bar and breadcrumbs (frosted glass) -----
+// only these two thin bars are blurred, so it stays cheap for the GPU
+
+.gallery-container.wsq-glass-scroll {
+  margin-top: 0 !important;
+}
+
+.wsq-glass-scroll ::ng-deep .scrollable-content {
+  top: var(--wsq-top, 0px) !important;
+}
+
+.wsq-glass-scroll ::ng-deep .total-padding {
+  padding-bottom: var(--wsq-top, 0px);
+}

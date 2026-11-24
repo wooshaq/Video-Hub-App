@@ -99,8 +99,11 @@
 }
 
 .breadcrumbs-dark-mode {
-  background: #1d1d1d !important;
-  border-bottom: 1px solid #262626 !important;
+  // WsQ (Grafit): frosted glass -- the gallery scrolls underneath
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+  background: rgba(17, 18, 20, 0.62) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 .breadcrumb-folder-word {

@@ -1401,6 +1401,20 @@
   .ws-row .ws-val { width: auto; }
 
   input[type=checkbox] { accent-color: var(--wsq-accent); height: 16px; width: 16px; }
+
+  .ws-select {
+    background: transparent;
+    border: 1px solid rgba(127, 127, 127, 0.35);
+    border-radius: 6px;
+    color: inherit;
+    flex: 1;
+    font: inherit;
+    font-size: 12.5px;
+    height: 30px;
+    padding: 0 8px;
+
+    option { background: #1d1f23; color: #e9eaec; }
+  }
 }
 
 // =====================================================================================

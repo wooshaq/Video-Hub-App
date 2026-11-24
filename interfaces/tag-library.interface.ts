@@ -29,6 +29,8 @@ export interface TagLibrary {
   paneWidth?: number;
   recentTags?: string[];
   bookmarks?: { name: string, active: string[], excluded: string[] }[];
+  rittStripped?: boolean;                          // WsQ: the tree lives in the .ritt (Ritt mode)
+  rittExtras?: Record<string, { collapsed?: boolean, badge?: TagBadgeMode }>;   // VHA-only bits per Ritt tag
 }
 
 export function NewTagLibrary(): TagLibrary {

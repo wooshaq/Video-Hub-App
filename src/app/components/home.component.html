@@ -302,9 +302,15 @@
 
       @if (tagLib.rittSyncFile) {
         <label class="ws-row">
-          <span class="ws-lbl">{{ 'WSQ.rittSyncAuto' | translate }}</span>
-          <input type="checkbox" [ngModel]="tagLib.rittSyncAuto" (ngModelChange)="tagLib.rittSyncAuto = $event">
+          <span class="ws-lbl">{{ 'WSQ.rittRating' | translate }}</span>
+          <select class="ws-select" [ngModel]="tagLib.rittRatingTag" (ngModelChange)="tagLib.rittRatingTag = $event">
+            <option [ngValue]="null">{{ 'WSQ.rittRatingNone' | translate }}</option>
+            @for (t of tagLib.ratingCandidates(); track t.id) {
+              <option [ngValue]="t.rittId">{{ t.icon ? t.icon + ' ' : '' }}{{ t.name }}</option>
+            }
+          </select>
         </label>
+        <p class="ws-hint">{{ 'WSQ.rittRatingHint' | translate }}</p>
         <div class="ws-row">
           <button class="ws-btn primary" [disabled]="tagLib.rittSyncing" (click)="tagLib.rittSyncNow()">
             {{ (tagLib.rittSyncing ? 'WSQ.rittSyncBusy' : 'WSQ.rittSyncNow') | translate }}
@@ -1103,12 +1109,15 @@
                               || settingsButtons['showRelatedVideosTray'].toggled
                               || settingsButtons['showTagTray'].toggled
                             )
-                      ) + 'px - ' + tagBarHeight + 'px)',
-          'margin-top': tagBarHeight ? (tagBarHeight + (
+                      ) + 'px + ' + (settingsButtons['showFolders'].toggled
+                                         && (appState.currentView === 'showThumbnails' ||
+                                             appState.currentView === 'showFiles' ||
+                                             appState.currentView === 'showClips') ? 30 : 0) + 'px)',
+          '--wsq-top': (tagBarHeight + (
                                          settingsButtons['showFolders'].toggled
                                          && (appState.currentView === 'showThumbnails' ||
                                              appState.currentView === 'showFiles' ||
-                                             appState.currentView === 'showClips') ? 30 : 0)) + 'px' : null
+                                             appState.currentView === 'showClips') ? 30 : 0)) + 'px'
         }"
 
       [enableUnequalChildrenSizes]="appState.currentView === 'showFullView'"
@@ -1116,6 +1125,7 @@
       [ngClass]="{
           'gallery-container-full-width': settingsButtons['hideSidebar'].toggled,
           'gallery-container-dark-mode': settingsButtons['darkMode'].toggled,
+          'wsq-glass-scroll': true,
           'gallery-showing-breadcrumbs': settingsButtons['showFolders'].toggled
                                          && (appState.currentView === 'showThumbnails' ||
                                              appState.currentView === 'showFiles' ||
@@ -1533,7 +1543,7 @@
             @if (codeOf(it)) { <span class="wsq-d-code">{{ codeOf(it) }}</span> }
             <span class="wsq-d-grow"></span>
             <div class="wsq-d-stars" role="group" aria-label="Ocena">
-              @for (n of [1, 2, 3, 4, 5]; track n) {
+              @for (n of starLevels(); track n) {
                 <button
                   class="wsq-star"
                   [ngClass]="{ lit: starsOf(it) >= n }"

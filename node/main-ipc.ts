@@ -12,7 +12,7 @@ import { createDotPlsFile, writeVhaFileToDisk } from './main-support';
 import { replaceThumbnailWithNewImage } from './main-extract';
 import { closeWatcher, startWatcher, extractAnyMissingThumbs, removeThumbnailsNotInHub, checkCovers, prioritizeView, setWorkerCount } from './main-extract-async';
 import { readRittDatabase } from './ritt-import';
-import { syncWithRitt, commitRittSnapshot } from './ritt-sync';
+import { syncWithRitt, commitRittSnapshot, rittMtime } from './ritt-sync';
 import { folderIconData } from './folder-icons';
 
 /**
@@ -160,6 +160,10 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
       })
       .catch(e => event.sender.send('wsq-ritt-sync-result', { ok: false, error: String(e) }))
       .finally(() => { rittSyncBusy = false; });
+  });
+
+  ipc.on('wsq-ritt-mtime', (event, file: string) => {
+    event.sender.send('wsq-ritt-mtime-result', rittMtime(file));
   });
 
   ipc.on('wsq-ritt-pick-sync', (event) => {

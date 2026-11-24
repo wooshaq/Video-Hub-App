@@ -142,8 +142,19 @@ export class TagLibraryService {
         this.rittSyncing = false;
         const msg = this.applyRittSync(res);
         this.rittSyncDone.next(msg);
-        if (res && res.ok) {
+        if (res && res.ok && res.error !== 'ritt-running') {
           this.rittCommit.next();   // home saves the hub and confirms (wsq-ritt-commit)
+        }
+        if (this.rittRerun || this.rittDirty) {
+          this.rittRerun = false;
+          this.markRittDirty();
+        }
+      });
+    });
+    (window as any).myElectron.receiveFromMain('wsq-ritt-mtime-result', (mtime: number) => {
+      this.zone.run(() => {
+        if (mtime && mtime !== this.rittMtime) {
+          this.rittSyncNow();
         }
       });
     });
@@ -156,14 +167,29 @@ export class TagLibraryService {
   }
 
   // ===========================================================================================
-  // WsQ: two-way tag sync with a Ritt database (node/ritt-sync.ts)
+  // WsQ: the Ritt database as THE tag database (node/ritt-sync.ts)
+  //   Ritt keeps the tag tree, tag properties, tags + notes of files and folders.
+  //   VHA keeps only what Ritt cannot hold (thumbnails ...) and tags of files Ritt does not know.
   // ===========================================================================================
 
   rittSyncing = false;
   rittSyncDone = new Subject<{ ok: boolean, text: string }>();
   rittCommit = new Subject<void>();
   rittLastSync = '';
+  rittRootOf: (inputSource: number | string) => string = () => '';
+  /** a sync result was applied in this session: VHA knows the Ritt data */
+  rittSessionSynced = false;
   private rittDirty = false;
+  private rittApplying = false;
+  private rittRerun = false;
+  private rittTimer: any;
+  private rittMtime = 0;
+  private rittFileSig = new Map<string, string>();     // hash -> tags+notes as last synced
+  private rittFolderSig = new Map<string, string>();   // folder -> tags as last synced
+
+  get rittMode(): boolean {
+    return !!this.rittSyncFile;
+  }
 
   get rittSyncFile(): string {
     try { return localStorage.getItem('wsq.rittSyncFile') || ''; } catch { return ''; }
@@ -173,146 +199,268 @@ export class TagLibraryService {
     try {
       if (f) { localStorage.setItem('wsq.rittSyncFile', f); } else { localStorage.removeItem('wsq.rittSyncFile'); }
     } catch { }
+    if (!f) {
+      // leaving Ritt mode: VHA keeps everything itself again
+      this.lib.rittStripped = false;
+      this.rittSessionSynced = false;
+      this.rittFileSig.clear();
+      this.rittFolderSig.clear();
+      this.imageElementService.finalArrayNeedsSaving = true;
+      this.scheduleSave();
+    }
   }
 
-  get rittSyncAuto(): boolean {
-    try { return localStorage.getItem('wsq.rittSyncAuto') !== '0'; } catch { return true; }
+  /** rittId of the tag whose children are the rating levels (1st child = 1 star ...) */
+  get rittRatingTag(): number | null {
+    try {
+      const v = localStorage.getItem('wsq.rittRatingTag');
+      return v ? Number(v) : null;
+    } catch { return null; }
   }
 
-  set rittSyncAuto(v: boolean) {
-    try { localStorage.setItem('wsq.rittSyncAuto', v ? '1' : '0'); } catch { }
+  set rittRatingTag(id: number | null) {
+    try {
+      if (id === null || id === undefined || isNaN(id as any)) { localStorage.removeItem('wsq.rittRatingTag'); } else { localStorage.setItem('wsq.rittRatingTag', String(id)); }
+    } catch { }
+    this.libVersion++;
+  }
+
+  /** the rating levels (tag names), empty when no rating group is set */
+  ratingLevels(): string[] {
+    const id = this.rittRatingTag;
+    if (id === null) { return []; }
+    const node = this.findNode(n => n.rittId === id);
+    return node && node.children ? node.children.filter(c => c.type !== 'separator').map(c => c.name) : [];
+  }
+
+  /** tags that have children -- candidates for the rating group */
+  ratingCandidates(): TagNode[] {
+    const out: TagNode[] = [];
+    const walk = (nodes: TagNode[]) => nodes.forEach(n => {
+      if (n.type !== 'separator' && n.rittId !== undefined && n.children && n.children.some(c => c.type !== 'separator')) { out.push(n); }
+      if (n.children) { walk(n.children); }
+    });
+    walk(this.lib.roots);
+    return out;
+  }
+
+  private findNode(test: (n: TagNode) => boolean): TagNode | null {
+    let found: TagNode = null;
+    const walk = (nodes: TagNode[]) => nodes.some(n => {
+      if (test(n)) { found = n; return true; }
+      return n.children ? walk(n.children) : false;
+    });
+    walk(this.lib.roots);
+    return found;
   }
 
   pickRittSyncFile(): void {
     (window as any).myElectron.sendToMain('wsq-ritt-pick-sync');
   }
 
-  /** a tag or an assignment changed -- the next automatic sync will run */
+  /** something changed in VHA -- write it to Ritt shortly */
   markRittDirty(): void {
+    if (this.rittApplying || !this.rittMode) {
+      return;
+    }
     this.rittDirty = true;
+    clearTimeout(this.rittTimer);
+    this.rittTimer = setTimeout(() => this.rittSyncNow(), 1500);
   }
 
-  /** automatic sync: after a hub is opened, and every few minutes when VHA has changes */
-  rittAutoTick(force = false): void {
-    if (this.rittSyncFile && this.rittSyncAuto && !this.rittSyncing && (force || this.rittDirty)) {
-      this.rittSyncNow();
+  /** periodic check: Ritt changed the file -> read it */
+  rittPoll(): void {
+    if (this.rittMode && !this.rittSyncing) {
+      (window as any).myElectron.sendToMain('wsq-ritt-mtime', this.rittSyncFile);
     }
+  }
+
+  private rittSig(tags: string[] | undefined, notes: string | undefined): string {
+    return (tags || []).slice().sort().join('\u0001') + '\u0002' + (notes || '');
   }
 
   rittSyncNow(): void {
     const file = this.rittSyncFile;
-    if (!file || this.rittSyncing || !this.loaded) {
+    if (!file || !this.loaded) {
+      return;
+    }
+    if (this.rittSyncing) {
+      this.rittRerun = true;
       return;
     }
     this.rittSyncing = true;
     this.rittDirty = false;
+    const treeKnown = this.rittSessionSynced || !this.lib.rittStripped;
+
     const tags: any[] = [];
     const walk = (nodes: TagNode[], parent: TagNode | null) => nodes.forEach(n => {
-      if (n.type !== 'separator') {
-        tags.push({
-          key: n.id, rittId: n.rittId, name: n.name, icon: n.icon || '', color: n.color || '',
-          aliases: n.aliases || [], parentKey: parent ? parent.id : null,
-        });
-      }
+      tags.push({
+        key: n.id, rittId: n.rittId, parentKey: parent ? parent.id : null,
+        name: n.name || '', icon: n.icon || '', color: n.color || '', aliases: n.aliases || [], notes: n.notes || '',
+        hidden: !!n.hidden, encapsulate: !!n.encapsulate, badge: !!n.badge, hotkey: n.hotkey || '',
+        inherit: n.inherit === undefined ? null : n.inherit, separator: n.type === 'separator',
+      });
       if (n.children) {
-        walk(n.children, n.type === 'separator' ? parent : n);
+        walk(n.children, n);
       }
     });
     walk(this.lib.roots, null);
+
     const idOf = new Map<string, string>();
     this.byName.forEach((n, name) => idOf.set(name, n.id));
     const files = this.imageElementService.imageElements
       .filter(i => !i.deleted && i.cleanName !== '*FOLDER*')
-      .map(i => ({
-        hash: i.hash,
-        segs: [...(i.partialPath || '').split('/').filter(x => x !== ''), i.fileName],
-        tags: (i.tags || []).map(t => idOf.get(t)).filter(x => !!x),
-      }));
+      .map(i => {
+        const unknown = (i as any).rittManaged && !this.rittSessionSynced;
+        return {
+          hash: i.hash,
+          root: this.rittRootOf(i.inputSource),
+          segs: [...(i.partialPath || '').split('/').filter(x => x !== ''), i.fileName],
+          tags: unknown ? null : (i.tags || []).map(t => idOf.get(t)).filter(x => !!x),
+          notes: unknown ? null : (i.notes || ''),
+        };
+      });
     const folderSet = new Set<string>(Object.keys(this.folderTags));
     this.imageElementService.imageElements.forEach(i => { if (!i.deleted) { this.folderAncestors(i.partialPath).forEach(f => folderSet.add(f)); } });
     const folders = Array.from(folderSet).filter(f => f && f !== '/').map(f => ({
-      path: f, tags: (this.folderTags[f] || []).map(t => idOf.get(t)).filter(x => !!x),
+      path: f,
+      tags: (!this.rittSessionSynced && !(f in this.folderTags)) ? null : (this.folderTags[f] || []).map(t => idOf.get(t)).filter(x => !!x),
     }));
-    (window as any).myElectron.sendToMain('wsq-ritt-sync', { rittFile: file, tags, files, folders });
+    (window as any).myElectron.sendToMain('wsq-ritt-sync', { rittFile: file, treeKnown, tags, files, folders });
   }
 
-  /** apply what the sync decided; returns a short report */
+  /** apply the result: the tag tree, tags and notes of paired files and folders */
   private applyRittSync(res: any): { ok: boolean, text: string } {
     if (!res || !res.ok) {
       return { ok: false, text: 'Ritt: ' + ((res && res.error) || 'błąd synchronizacji') };
     }
-    const byKey = new Map<string, TagNode>();
-    const byRitt = new Map<number, TagNode>();
-    const walk = (nodes: TagNode[]) => nodes.forEach(n => {
-      byKey.set(n.id, n);
-      if (n.rittId !== undefined) { byRitt.set(n.rittId, n); }
-      if (n.children) { walk(n.children); }
-    });
-    walk(this.lib.roots);
-
-    // tags deleted in Ritt
-    (res.deletedKeys || []).forEach((k: string) => {
-      const n = byKey.get(k);
-      if (n) { this.deleteNode(n); byKey.delete(k); }
-    });
-    this.reindex();
-
-    // tag list: ids, properties, new tags
-    const nameOf = new Map<number, string>();
-    (res.tags || []).forEach((t: any) => {
-      let node = (t.key && byKey.get(t.key)) || byRitt.get(t.rittId);
-      if (!node) {
-        const parent = t.parentRittId !== null ? byRitt.get(t.parentRittId) : null;
-        node = this.newNode(this.byName.has(t.name) ? this.uniqueName(t.name + ' (Ritt)') : t.name);
-        if (parent) {
-          parent.children = parent.children || [];
-          parent.children.push(node);
-        } else {
-          this.lib.roots.push(node);
+    this.rittApplying = true;
+    try {
+      // ---------- the tree ----------
+      const byKey = new Map<string, TagNode>();
+      const byRitt = new Map<number, TagNode>();
+      const walk = (nodes: TagNode[]) => nodes.forEach(n => {
+        byKey.set(n.id, n);
+        if (n.rittId !== undefined) { byRitt.set(n.rittId, n); }
+        if (n.children) { walk(n.children); }
+      });
+      walk(this.lib.roots);
+      const extras: Record<string, any> = this.lib.rittExtras || {};
+      const renamed = new Map<string, string>();
+      const roots: TagNode[] = [];
+      const placed = new Map<number, TagNode>();
+      const used = new Set<string>();
+      (res.tags || []).forEach((t: any) => {
+        let node = (t.key && byKey.get(t.key)) || byRitt.get(t.rittId);
+        if (node && used.has(node.id)) { node = null; }
+        if (!node) {
+          node = { id: this.uuid(), name: t.name };
+          const x = extras[String(t.rittId)];
+          if (x && x.collapsed) { node.collapsed = true; }
+          if (x && x.badge) { node.badge = x.badge; }
         }
-        this.reindex();
-      } else if (t.name && t.name !== node.name && !this.byName.has(t.name)) {
-        this.renameTag(node, t.name);
-      }
-      if (!t.pending) { node.rittId = t.rittId; }
-      if ((t.icon || '') !== (node.icon || '')) { if (t.icon) { node.icon = t.icon; } else { delete node.icon; } }
-      if ((t.color || '') !== (node.color || '')) { if (t.color) { node.color = t.color; } else { delete node.color; } }
-      const al = (t.aliases || []).join(';');
-      if (al !== (node.aliases || []).join(';')) { if (al) { node.aliases = t.aliases.slice(); } else { delete node.aliases; } }
-      byRitt.set(t.rittId, node);
-      nameOf.set(t.rittId, node.name);
-    });
+        used.add(node.id);
+        if (node.type !== 'separator' && node.name && t.name && node.name !== t.name) { renamed.set(node.name, t.name); }
+        if (t.separator) { node.type = 'separator'; node.name = ''; } else { delete node.type; node.name = t.name; }
+        const set = (k: string, v: any) => { if (v === undefined || v === null || v === '' || v === false || (Array.isArray(v) && !v.length)) { delete (node as any)[k]; } else { (node as any)[k] = v; } };
+        set('icon', t.icon);
+        set('color', t.color);
+        set('aliases', t.aliases && t.aliases.slice());
+        set('notes', t.notes);
+        set('hidden', t.hidden);
+        set('encapsulate', t.encapsulate);
+        set('hotkey', t.hotkey);
+        set('inherit', t.inherit === null ? undefined : t.inherit);
+        if (t.badge) { node.badge = node.badge || (t.icon ? 'icon' : 'name'); } else { delete node.badge; }
+        if (!t.pending) { node.rittId = t.rittId; } else { delete node.rittId; }
+        node.children = [];
+        placed.set(t.rittId, node);
+        const parent = t.parentRittId !== null ? placed.get(t.parentRittId) : null;
+        (parent ? parent.children : roots).push(node);
+      });
+      const clean = (nodes: TagNode[]) => nodes.forEach(n => { if (n.children && !n.children.length) { delete n.children; } else if (n.children) { clean(n.children); } });
+      clean(roots);
+      this.lib.roots = roots;
+      this.reindex();
 
-    // assignments
-    const byHash = new Map<string, ImageElement>();
-    this.imageElementService.imageElements.forEach(i => byHash.set(i.hash, i));
-    (res.fileTags || []).forEach((f: any) => {
-      const item = byHash.get(f.hash);
-      if (item) {
-        item.tags = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
+      // renamed tags: files Ritt does not know still use the old name
+      if (renamed.size) {
+        this.imageElementService.imageElements.forEach(i => {
+          if (i.tags && i.tags.some(t => renamed.has(t))) { i.tags = i.tags.map(t => renamed.get(t) || t); }
+        });
+        Object.keys(this.folderTags).forEach(f => { this.folderTags[f] = this.folderTags[f].map(t => renamed.get(t) || t); });
       }
-    });
-    (res.folderTags || []).forEach((f: any) => {
-      const names = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
-      if (names.length) { this.folderTags[f.path] = names; } else { delete this.folderTags[f.path]; }
-    });
-    this.rebuildManualTagCounts();
-    this.imageElementService.finalArrayNeedsSaving = true;
-    this.touchLib();
-    this.touchData();
-    this.saveNow();
-    this.rittDirty = false;
+
+      // ---------- tags + notes of paired files / folders ----------
+      const nameOf = new Map<number, string>();
+      placed.forEach((n, id) => { if (n.type !== 'separator') { nameOf.set(id, n.name); } });
+      const byHash = new Map<string, ImageElement>();
+      this.imageElementService.imageElements.forEach(i => byHash.set(i.hash, i));
+      this.rittFileSig.clear();
+      (res.files || []).forEach((f: any) => {
+        const item = byHash.get(f.hash);
+        if (!item) { return; }
+        const names = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
+        item.tags = names.length ? names : undefined;
+        item.notes = f.notes || undefined;
+        this.rittFileSig.set(f.hash, this.rittSig(item.tags, item.notes));
+      });
+      this.rittFolderSig.clear();
+      (res.folders || []).forEach((f: any) => {
+        const names = f.tags.map((id: number) => nameOf.get(id)).filter((x: string) => !!x);
+        if (names.length) { this.folderTags[f.path] = names; } else { delete this.folderTags[f.path]; }
+        this.rittFolderSig.set(f.path, names.slice().sort().join('\u0001'));
+      });
+      this.rittSessionSynced = true;
+      this.syncWithHub();
+      this.rebuildManualTagCounts();
+      this.effCache = new WeakMap();
+      this.imageElementService.finalArrayNeedsSaving = true;
+      this.libVersion++;
+      this.touchData();
+      this.changed.next();
+      this.saveNow();
+    } finally {
+      this.rittApplying = false;
+    }
+    if (res.mtime) { this.rittMtime = res.mtime; }
 
     const s = res.stats || {};
     this.rittLastSync = new Date().toLocaleTimeString().slice(0, 5);
-    const parts = [
-      'pliki: ' + (s.pairedFiles || 0),
-      '→ VHA: ' + (s.toVha || 0),
-      '→ Ritt: ' + (res.error === 'ritt-running' ? 'czeka (Ritt otwarty)' : (s.toRitt || 0)),
-    ];
-    if (s.newTagsVha || s.newTagsRitt) { parts.push('nowe tagi: ' + (s.newTagsVha || 0) + ' / ' + (s.newTagsRitt || 0)); }
-    if (s.deletedTags) { parts.push('usunięte tagi: ' + s.deletedTags); }
+    const parts = ['pliki w Ritt: ' + (s.pairedFiles || 0)];
+    if (res.error === 'ritt-running') { parts.push('Ritt jest otwarty — zapiszę później'); }
+    if (s.unknownFiles) { parts.push('pliki z tagami, których Ritt nie zna: ' + s.unknownFiles); }
     return { ok: true, text: 'Ritt: ' + parts.join(' · ') };
+  }
+
+  /** hub saving in Ritt mode: files whose data is in Ritt are saved without tags / notes */
+  itemForSaving(e: ImageElement): ImageElement {
+    if (!this.rittMode || !this.rittSessionSynced) {
+      return e;
+    }
+    const sig = this.rittFileSig.get(e.hash);
+    const copy: any = { ...e };
+    if (sig !== undefined && sig === this.rittSig(e.tags, e.notes)) {
+      delete copy.tags;
+      delete copy.notes;
+      copy.rittManaged = true;
+    } else {
+      delete copy.rittManaged;
+    }
+    return copy;
+  }
+
+  folderTagsForSaving(): Record<string, string[]> {
+    const all = this.getFolderTagsForSaving();
+    if (!this.rittMode || !this.rittSessionSynced) {
+      return all;
+    }
+    const out: Record<string, string[]> = {};
+    Object.keys(all).forEach(f => {
+      const sig = this.rittFolderSig.get(f);
+      if (sig === undefined || sig !== all[f].slice().sort().join('\u0001')) { out[f] = all[f]; }
+    });
+    return out;
   }
 
   /** emits the parsed Ritt database after the user picked a file */
@@ -335,12 +483,32 @@ export class TagLibraryService {
       return;
     }
     clearTimeout(this.saveTimer);
-    (window as any).myElectron.sendToMain('save-tag-library', JSON.parse(JSON.stringify(this.lib)));
+    const copy: TagLibrary = JSON.parse(JSON.stringify(this.lib));
+    if (this.rittMode && (this.rittSessionSynced || this.lib.rittStripped)) {
+      // Ritt mode: the tree is in the .ritt -- keep only what Ritt has no place for
+      if (this.rittSessionSynced) {
+        const extras: Record<string, any> = {};
+        const walk = (nodes: TagNode[]) => nodes.forEach(n => {
+          if (n.rittId !== undefined && (n.collapsed || (n.badge && n.badge !== 'icon' && n.badge !== 'name'))) {
+            extras[String(n.rittId)] = { collapsed: n.collapsed || undefined, badge: n.badge };
+          }
+          if (n.children) { walk(n.children); }
+        });
+        walk(this.lib.roots);
+        copy.rittExtras = extras;
+      }
+      copy.roots = [];
+      copy.rittStripped = true;
+    }
+    (window as any).myElectron.sendToMain('save-tag-library', copy);
   }
 
   /** call after a hub (.vha2) is opened */
   onHubLoaded(folderTags: Record<string, string[]> | undefined): void {
     this.folderTags = folderTags ? JSON.parse(JSON.stringify(folderTags)) : {};
+    this.rittSessionSynced = false;
+    this.rittFileSig.clear();
+    this.rittFolderSig.clear();
     this.active = [];
     this.excluded = [];
     this.related = [];
@@ -410,14 +578,14 @@ export class TagLibraryService {
     this.countsCache.key = '';
     if (save) {
       this.scheduleSave();
-      this.rittDirty = true;
+      this.markRittDirty();
     }
     this.changed.next();
   }
 
   /** assignments changed */
   touchData(): void {
-    this.rittDirty = true;
+    this.markRittDirty();
     this.dataVersion++;
     this.filterVersion++;
     this.countsCache.key = '';

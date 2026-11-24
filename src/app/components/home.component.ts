@@ -856,7 +856,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       this.tagLib.onHubLoaded(finalObject.folderTags);
       this.applyWsqLayoutDefaults();
       // WsQ: two-way tag sync with Ritt -- once after the hub is opened
-      setTimeout(() => this.tagLib.rittAutoTick(true), 4000);
+      setTimeout(() => this.tagLib.rittSyncNow(), 1500);
 
       // WsQ: files never checked for cover art (hubs made before this version) -- check them once, in the background
       // and rescan the folders that are not watched, so renamed / changed / new files are noticed on every hub open
@@ -1014,6 +1014,44 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     });
 
     // WsQ: cover art from file metadata
+    // WsQ: scrollbars grow when the cursor comes near (one rAF per mouse move, outside Angular)
+    this.zone.runOutsideAngular(() => {
+      let near: Element = null;
+      let pending: MouseEvent = null;
+      const scrollable = new WeakMap<Element, boolean>();
+      const isScrollable = (el: Element): boolean => {
+        let v = scrollable.get(el);
+        if (v === undefined) {
+          const oy = getComputedStyle(el).overflowY;
+          v = oy === 'auto' || oy === 'scroll';
+          scrollable.set(el, v);
+        }
+        return v && el.scrollHeight > el.clientHeight + 1;
+      };
+      const check = () => {
+        const e = pending;
+        pending = null;
+        let el = e.target as Element;
+        let hit: Element = null;
+        for (let i = 0; el && el !== document.documentElement && i < 40; i++, el = el.parentElement) {
+          if (isScrollable(el)) {
+            const r = el.getBoundingClientRect();
+            if (r.right - e.clientX <= 22 && r.right - e.clientX >= 0) { hit = el; }
+            break;
+          }
+        }
+        if (hit !== near) {
+          if (near) { near.classList.remove('wsq-sb-near'); }
+          if (hit) { hit.classList.add('wsq-sb-near'); }
+          near = hit;
+        }
+      };
+      document.addEventListener('mousemove', (e: MouseEvent) => {
+        if (!pending) { requestAnimationFrame(check); }
+        pending = e;
+      }, { passive: true });
+    });
+
     // WsQ: Ritt sync -- report, and an automatic run every 3 minutes when VHA has changes
     this.tagLib.rittSyncDone.subscribe(r => {
       this.rittSyncReport = r.text;
@@ -1025,7 +1063,12 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       (window as any).myElectron.sendToMain('wsq-ritt-commit', this.getFinalObjectForSaving());
     });
     clearInterval(this.rittTimer);
-    this.rittTimer = setInterval(() => this.tagLib.rittAutoTick(), 3 * 60 * 1000);
+    this.rittTimer = setInterval(() => this.tagLib.rittPoll(), 15 * 1000);   // Ritt changed the file -> read it
+    this.tagLib.rittRootOf = (src: number | string) => {
+      const f = this.sourceFolderService.selectedSourceFolder[src as any];
+      const p: string = f && (f as any).path ? (f as any).path : '';
+      return (p.split(/[\\/]/).filter(Boolean).pop() || '').toLowerCase();
+    };
 
     (window as any).myElectron.receiveFromMain('wsq-thumb-ready', (hash: string) => {
       this.tagLib.thumbReady.set(hash, Date.now());
@@ -1391,14 +1434,14 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       const propsToReturn: FinalObject = {
         addTags: this.autoTagsSaveService.getAddTags(),
         hubName: this.appState.hubName,
-        images: this.imageElementService.imageElements,
+        images: this.imageElementService.imageElements.map(e => this.tagLib.itemForSaving(e)),
         // TODO -- rename `selectedSourceFolder` and make sure to update `finalArrayNeedsSaving` when inputDirs changes
         inputDirs: this.sourceFolderService.selectedSourceFolder,
         numOfFolders: this.appState.numOfFolders,
         removeTags: this.autoTagsSaveService.getRemoveTags(),
         screenshotSettings: this.currentScreenshotSettings,
         tagColors: this.manualTagsService.getTagColors(),
-        folderTags: this.tagLib.getFolderTagsForSaving(),
+        folderTags: this.tagLib.folderTagsForSaving(),
         version: 3,
       };
       return propsToReturn;
@@ -4001,11 +4044,34 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     return rest.join(' – ');   // only the film title -- never the actress or the code
   }
 
+  /** WsQ: with a Ritt rating group the stars are tags of that group (1st child = 1 star ...) */
+  starLevels(): number[] {
+    const levels = this.tagLib.ratingLevels();
+    const n = levels.length || 5;
+    return Array.from({ length: n }, (_, i) => i + 1);
+  }
+
   starsOf(item: ImageElement): number {
+    const levels = this.tagLib.ratingLevels();
+    if (levels.length) {
+      const tags = item && item.tags ? item.tags : [];
+      const i = levels.findIndex(l => tags.includes(l));
+      return i < 0 ? 0 : i + 1;
+    }
     return item && item.stars ? Math.max(0, Math.round(item.stars - 0.5)) : 0;
   }
 
   setStars(item: ImageElement, n: number): void {
+    const levels = this.tagLib.ratingLevels();
+    if (levels.length) {
+      const targets = this.wsqTargets().length > 1 ? this.wsqTargets() : [item];
+      const turnOff = this.starsOf(item) === n;
+      levels.forEach(l => this.tagLib.removeTagFrom(targets, l));
+      if (!turnOff) {
+        this.tagLib.addTagTo(targets, levels[n - 1]);
+      }
+      return;
+    }
     const value = (this.starsOf(item) === n ? 0.5 : n + 0.5) as any;
     this.imageElementService.HandleEmission({ index: item.index, stars: value });
   }
@@ -4071,6 +4137,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     if ((item.notes || '') !== t) {
       item.notes = t || undefined;
       this.imageElementService.finalArrayNeedsSaving = true;
+      this.tagLib.markRittDirty();
     }
   }
 

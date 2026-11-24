@@ -103,6 +103,7 @@ import { TagLibraryService } from './tag-library.service';
   position: relative;
 }
 .tfb.dark { --bg: var(--g-bg, #181818); --fg: var(--g-tx, #e0e0e0); --dim: var(--g-tx3, #8a8a8a); --chip: var(--g-s2, #232323); --border: var(--g-line, #2e2e2e); --accent: var(--wsq-accent); --red: #e06a6a; font-family: var(--g-font); }
+.tfb.dark { background: rgba(17, 18, 20, 0.62); -webkit-backdrop-filter: blur(14px) saturate(1.35); backdrop-filter: blur(14px) saturate(1.35); border-bottom-color: rgba(255, 255, 255, 0.06); }
 .tfb.dark .chip { color: var(--g-tx2); }
 .tfb.dark .chip:hover { color: var(--g-tx); border-color: var(--g-line2); }
 .tfb.dark .chip.active { background: rgba(var(--wsq-accent-rgb), .16); color: var(--g-tx); border-color: var(--accent); }
