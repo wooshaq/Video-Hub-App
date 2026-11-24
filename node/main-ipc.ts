@@ -310,6 +310,90 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
   });
 
   /**
+   * WsQ: delete files from the right-click menu (one or the whole selection) -- asks first, then trash / delete one by one
+   */
+  ipc.on('wsq-delete-files', (event, jobs: { fullPath: string, item: ImageElement }[], dangerousDelete: boolean, texts: any): void => {
+    const list = (jobs || []).filter(j => j && j.fullPath);
+    if (!list.length) {
+      return;
+    }
+    const names = list.slice(0, 8).map(j => '• ' + path.basename(j.fullPath)).join('\n')
+      + (list.length > 8 ? '\n… +' + (list.length - 8) : '');
+    dialog.showMessageBox(win, {
+      type: 'warning',
+      buttons: [texts.yes, texts.no],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+      title: texts.title,
+      message: texts.message,
+      detail: names,
+    }).then(async (res) => {
+      if (res.response !== 0) {
+        return;
+      }
+      for (const j of list) {
+        try {
+          if (dangerousDelete) {
+            await fs.promises.unlink(j.fullPath);
+          } else {
+            await trash(j.fullPath);
+          }
+          notifyFileDeleted(event, j.fullPath, j.item);
+        } catch (e) {
+          console.log('ERROR:', j.fullPath + ' was NOT deleted', e);
+        }
+      }
+    }).catch(() => { });
+  });
+
+  /**
+   * WsQ: the system "Properties" window of a file (Windows); elsewhere: show it in the file manager
+   */
+  ipc.on('wsq-file-properties', (event, fullPath: string): void => {
+    if (!fullPath) {
+      return;
+    }
+    if (process.platform !== 'win32') {
+      shell.showItemInFolder(fullPath);
+      return;
+    }
+    // the dialog lives as long as the process that opened it -> keep PowerShell alive until no window of it is left
+    const script = [
+      '$ErrorActionPreference = "SilentlyContinue"',
+      'Add-Type -TypeDefinition @"',
+      'using System; using System.Runtime.InteropServices;',
+      'public static class WsqWin {',
+      '  public delegate bool EnumProc(IntPtr h, IntPtr p);',
+      '  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr p);',
+      '  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);',
+      '  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);',
+      '  public static bool Has(uint me) { bool f = false; EnumWindows((h, p) => { uint pid; GetWindowThreadProcessId(h, out pid);',
+      '    if (pid == me && IsWindowVisible(h)) { f = true; return false; } return true; }, IntPtr.Zero); return f; }',
+      '}',
+      '"@',
+      '$sh = New-Object -ComObject Shell.Application',
+      '$it = $sh.NameSpace($env:WSQ_DIR).ParseName($env:WSQ_NAME)',
+      'if ($it) { $it.InvokeVerb("properties") }',
+      'Start-Sleep -Seconds 3',
+      '$n = 0',
+      'while ([WsqWin]::Has([uint32]$PID) -and $n -lt 7200) { Start-Sleep -Milliseconds 500; $n++ }',
+    ].join('\r\n');
+    const encoded = Buffer.from(script, 'utf16le').toString('base64');
+    try {
+      const { spawn } = require('child_process');
+      const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded], {
+        env: { ...process.env, WSQ_DIR: path.dirname(fullPath), WSQ_NAME: path.basename(fullPath) },
+        detached: true,
+        stdio: 'ignore',
+      });
+      child.unref();
+    } catch (e) {
+      shell.showItemInFolder(fullPath);
+    }
+  });
+
+  /**
    * Helper function for `delete-video-file`
    * @param event
    * @param fileToDelete

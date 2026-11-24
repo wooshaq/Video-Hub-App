@@ -1,5 +1,9 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.33
+- **Menu kontekstowe → Przenieś do kosza:** zawsze dostępne (bez włączania w ustawieniach), działa na pojedynczy plik albo na całe zaznaczenie (liczba w nawiasie), z potwierdzeniem i listą plików. Gdy w ustawieniach jest włączone „usuwanie z pominięciem kosza”, pozycja zmienia się na „Usuń trwale”.
+- **Menu kontekstowe → Właściwości:** otwiera systemowe okno właściwości pliku Windows.
+
 ### Nowe w wsq.32
 - **Poprawka brakujących okładek przy generowaniu równoległym:** kolejka okładek i kolejka miniatur mogły naraz wyciągać okładkę z tego samego pliku — jedna drugiej kasowała plik tymczasowy i plik dostawał „brak okładki”. Teraz jeden plik = jedno wyciąganie naraz. Gdy dysk nie zdąży odpowiedzieć (timeout przy dużym obciążeniu), okładka jest ponawiana później (do 3 razy), a nie oznaczana na stałe jako brak. Odczyt metadanych max 2 procesy naraz, dłuższy limit czasu.
 - **Szybszy start dużego huba:** pomiar kształtu okładek nie odświeża już całego okna przy każdym obrazku, pasek postępu odświeża się max 4× na sekundę, ikony folderów są czytane po kawałku (okno nie zamarza).

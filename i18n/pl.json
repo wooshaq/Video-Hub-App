@@ -770,6 +770,15 @@
     "dupTitle": "Duble – filmy z tym samym kodem JAV ({{codes}} kodów, {{files}} plików). Klik pokazuje tylko je, pogrupowane.",
     "settingsSpeed": "Szybkość generowania",
     "setWorkers": "Równoległe procesy (okładki, paski klatek, odczyt plików)",
-    "setWorkersHint": "Więcej procesów = szybciej, ale większe obciążenie procesora i dysku. Na dysku HDD zwykle najlepiej 2–3, na SSD/NVMe 4–6. Zmiana działa od razu, także w trakcie generowania."
+    "setWorkersHint": "Więcej procesów = szybciej, ale większe obciążenie procesora i dysku. Na dysku HDD zwykle najlepiej 2–3, na SSD/NVMe 4–6. Zmiana działa od razu, także w trakcie generowania.",
+    "fileProperties": "Właściwości",
+    "delMenu": "Przenieś do kosza",
+    "delMenuForever": "Usuń trwale",
+    "delTitle": "Usuwanie plików",
+    "delMessage": "Przenieść do kosza {{n}} plik(ów)?",
+    "delMessageForever": "Usunąć TRWALE {{n}} plik(ów)? Tego nie da się cofnąć.",
+    "delYes": "Przenieś do kosza",
+    "delYesForever": "Usuń trwale",
+    "delNo": "Anuluj"
   }
 }

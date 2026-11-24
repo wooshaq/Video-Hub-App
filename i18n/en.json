@@ -770,6 +770,15 @@
     "dupTitle": "Duplicates – films with the same JAV code ({{codes}} codes, {{files}} files). Click shows only them, grouped.",
     "settingsSpeed": "Generation speed",
     "setWorkers": "Parallel processes (covers, filmstrips, reading files)",
-    "setWorkersHint": "More processes = faster, but more CPU and disk load. On an HDD 2–3 is usually best, on SSD/NVMe 4–6. Applies right away, also while generating."
+    "setWorkersHint": "More processes = faster, but more CPU and disk load. On an HDD 2–3 is usually best, on SSD/NVMe 4–6. Applies right away, also while generating.",
+    "fileProperties": "Properties",
+    "delMenu": "Move to trash",
+    "delMenuForever": "Delete permanently",
+    "delTitle": "Deleting files",
+    "delMessage": "Move {{n}} file(s) to the trash?",
+    "delMessageForever": "PERMANENTLY delete {{n}} file(s)? This cannot be undone.",
+    "delYes": "Move to trash",
+    "delYesForever": "Delete permanently",
+    "delNo": "Cancel"
   }
 }

@@ -2462,6 +2462,37 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   /**
    * Deletes a file (moves to recycling bin / trash) or dangerously deletes (bypassing trash)
    */
+  /** WsQ: right-click -> delete (the whole selection when in selection mode), with a confirmation */
+  deleteFilesNow(): void {
+    const items = (this.batchTaggingMode
+      ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
+      : [this.currentRightClickedItem])
+      .filter(el => el && el.cleanName !== '*FOLDER*' && this.sourceFolderService.sourceFolderConnected[el.inputSource]);
+    if (!items.length) {
+      return;
+    }
+    const dangerously: boolean = this.settingsButtons['dangerousDelete'].toggled;
+    const jobs = items.map(el => ({ fullPath: this.filePathService.getPathFromImageElement(el), item: el }));
+    const t = (k: string, p?: any) => this.translate.instant(k, p);
+    (window as any).myElectron.sendToMain('wsq-delete-files', jobs, dangerously, {
+      title: t('WSQ.delTitle'),
+      message: t(dangerously ? 'WSQ.delMessageForever' : 'WSQ.delMessage', { n: items.length }),
+      yes: t(dangerously ? 'WSQ.delYesForever' : 'WSQ.delYes'),
+      no: t('WSQ.delNo'),
+    });
+  }
+
+  fileProperties(): void {
+    const el = this.currentRightClickedItem;
+    if (el && el.cleanName !== '*FOLDER*' && this.sourceFolderService.sourceFolderConnected[el.inputSource]) {
+      (window as any).myElectron.sendToMain('wsq-file-properties', this.filePathService.getPathFromImageElement(el));
+    }
+  }
+
+  get rightClickCount(): number {
+    return this.batchTaggingMode ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted).length : 1;
+  }
+
   deleteThisFile(item: ImageElement): void {
     const base: string = this.sourceFolderService.selectedSourceFolder[item.inputSource].path;
     const dangerously: boolean = this.settingsButtons['dangerousDelete'].toggled;

@@ -107,14 +107,16 @@
           [ngClass]="{ 'right-click-disabled': !copiedTags.length }">{{ 'WSQ.pasteTags' | translate }}</li>
       <li (click)="refreshCoverNow()">                          {{ 'WSQ.refreshCover' | translate }}</li>
       <li (click)="checkAllCoversNow()">                        {{ 'WSQ.checkAllCovers'      | translate }}</li>
-    @if (settingsButtons['showDeleteOption'].toggled) {
       <li
-        (click)="deleteThisFile(currentRightClickedItem)"
+        (click)="fileProperties()"
+        [ngClass]="{ 'right-click-disabled': !sourceFolderService.sourceFolderConnected[currentRightClickedItem.inputSource] }"
+      >                                                         {{ 'WSQ.fileProperties' | translate }}</li>
+      <li
+        (click)="deleteFilesNow()"
         class="right-click-delete"
         [ngClass]="{ 'right-click-disabled': !sourceFolderService.sourceFolderConnected[currentRightClickedItem.inputSource] }"
       >
-                                                                {{ 'RIGHTCLICK.delete'      | translate }}</li>
-    }
+        {{ (settingsButtons['dangerousDelete'].toggled ? 'WSQ.delMenuForever' : 'WSQ.delMenu') | translate }}@if (rightClickCount > 1) { ({{ rightClickCount }}) }</li>
     </ul>
   </div>
 }
