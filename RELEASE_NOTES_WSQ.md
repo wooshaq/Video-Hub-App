@@ -1,5 +1,8 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.31
+- **Kształt kafelków z okładek JAV:** stała proporcja miniatur liczy się teraz tylko z okładek plików z kodem JAV (te, które wyglądały dobrze), a nie ze wszystkich okładek huba — koniec z obniżonymi kafelkami. Inne okładki decydują tylko wtedy, gdy w hubie nie ma żadnych JAV.
+
 ### Nowe w wsq.30
 - **Stały kształt kafelków:** proporcje miniatur bierze się z okładek całego huba (np. JAV) i są takie same w każdym folderze i w widoku folderów — przechodzenie między folderami już nie przeskalowuje siatki. Kształt jest zapamiętywany, więc od startu programu jest od razu właściwy.
 

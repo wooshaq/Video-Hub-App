@@ -1,3 +1,4 @@
+import { javCode } from './tag-library/jav-code';
 import type { AfterViewChecked, AfterViewInit, ElementRef, OnInit } from '@angular/core';
 import { ChangeDetectorRef, NgZone, signal, viewChild } from '@angular/core';
 import { Component, HostListener } from '@angular/core';
@@ -3334,7 +3335,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     const allCovered = (this.imageElementService.imageElements || []).filter(e => e && !e.deleted && e.cover > 0);
     const known: number[] = [];
     let toLoad = 0;
-    [...viewCovered, ...allCovered].forEach(e => {
+    const javFirst = allCovered.filter(e => javCode(e.fileName)).concat(allCovered.filter(e => !javCode(e.fileName)));
+    [...javFirst, ...viewCovered].forEach(e => {
       if (e.coverAspect) {
         return;
       }
@@ -3343,7 +3345,9 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
         this.measureCover(e);
       }
     });
-    allCovered.forEach(e => {
+    // WsQ: JAV covers decide (the folder where they look right); other covers only when the hub has no JAV covers
+    const javCovered = allCovered.filter(e => e.coverAspect && javCode(e.fileName));
+    (javCovered.length ? javCovered : allCovered).forEach(e => {
       if (e.coverAspect) {
         known.push(e.coverAspect);
       }
