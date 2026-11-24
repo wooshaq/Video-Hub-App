@@ -2,7 +2,7 @@
  * Cover art from file metadata (WsQ):
  *   - MKV attachments with an image mimetype (cover_land.jpg, cover.jpg, small_cover.jpg, ...)
  *   - attached pictures (MP4/M4V `covr`, MKV/MP3 style attached_pic streams)
- * The cover is saved as `vha-<hub>/covers/<hash>.jpg` (max 960 px wide) and becomes the main thumbnail.
+ * The cover is saved as `vha-<hub>/covers/<hash>.jpg` (max COVER_MAX_W px wide) and becomes the main thumbnail.
  */
 
 import * as path from 'path';
@@ -12,6 +12,9 @@ const { execFile } = require('child_process');
 
 const ffmpegPath = require('ffmpeg-static').replace('app.asar', 'app.asar.unpacked');
 const ffprobePath = require('@ffprobe-installer/ffprobe').path.replace('app.asar', 'app.asar.unpacked');
+
+// WsQ: covers are only shown as tiles (a bit bigger than at 4 tiles per row) -- no need to keep them bigger
+export const COVER_MAX_W = 480;
 
 interface CoverCandidate {
   index: number;
@@ -100,7 +103,7 @@ async function extractCoverOnce(fullPath: string, hash: string, coversDir: strin
   }
 
   let failed = false;
-  const scale = ['-vf', 'scale=w=min(960\\,iw):h=-2', '-q:v', '3', '-frames:v', '1'];
+  const scale = ['-vf', 'scale=w=min(' + COVER_MAX_W + '\\,iw):h=-2:flags=lanczos', '-q:v', '3', '-frames:v', '1'];
 
   for (const c of candidates) {
     try {
@@ -129,4 +132,88 @@ async function extractCoverOnce(fullPath: string, hash: string, coversDir: strin
     }
   }
   return failed ? null : false;
+}
+
+/** WsQ: width of a JPEG from its SOF marker (no decoding); 0 if unknown */
+function jpegWidth(file: string): number {
+  let fd;
+  try {
+    fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(256 * 1024);
+    const len = fs.readSync(fd, buf, 0, buf.length, 0);
+    if (len < 4 || buf[0] !== 0xFF || buf[1] !== 0xD8) {
+      return 0;
+    }
+    let i = 2;
+    while (i + 9 < len) {
+      if (buf[i] !== 0xFF) {
+        i++;
+        continue;
+      }
+      const marker = buf[i + 1];
+      if (marker === 0xFF) {
+        i++;
+        continue;
+      }
+      if (marker >= 0xC0 && marker <= 0xCF && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+        return buf.readUInt16BE(i + 7);
+      }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  } catch { } finally {
+    if (fd !== undefined) { try { fs.closeSync(fd); } catch { } }
+  }
+  return 0;
+}
+
+/**
+ * WsQ: covers saved by older versions (up to 960 px) -> scale down to COVER_MAX_W, once per hub, in the background
+ */
+let shrinkRunning = '';
+export async function shrinkOldCovers(coversDir: string, progress?: (done: number, total: number) => void): Promise<void> {
+  const marker = path.join(coversDir, '.wsq-max-' + COVER_MAX_W);
+  shrinkRunning = coversDir;   // also stops a run for a previously opened hub
+  if (!fs.existsSync(coversDir) || fs.existsSync(marker)) {
+    shrinkRunning = '';
+    return;
+  }
+  let files: string[] = [];
+  try {
+    files = fs.readdirSync(coversDir).filter((f: string) => f.toLowerCase().endsWith('.jpg'));
+  } catch {
+    shrinkRunning = '';
+    return;
+  }
+  let ok = true;
+  let n = 0;
+  for (const f of files) {
+    n++;
+    if (progress && (n % 25 === 0 || n === files.length)) {
+      progress(n, files.length);
+    }
+    if (shrinkRunning !== coversDir) {
+      return;   // another hub was opened
+    }
+    const file = path.join(coversDir, f);
+    if (jpegWidth(file) <= COVER_MAX_W) {
+      continue;
+    }
+    const tmp = file + '.small.jpg';
+    try {
+      await run(ffmpegPath, ['-y', '-v', 'error', '-i', file,
+        '-vf', 'scale=w=' + COVER_MAX_W + ':h=-2:flags=lanczos', '-q:v', '3', '-frames:v', '1', tmp], 60000);
+      if (fs.existsSync(tmp) && fs.statSync(tmp).size > 0) {
+        fs.renameSync(tmp, file);
+      }
+    } catch (e) {
+      ok = false;
+      try { fs.unlinkSync(tmp); } catch { }
+    }
+      }
+  if (ok) {
+    try { fs.writeFileSync(marker, ''); } catch { }
+  }
+  if (shrinkRunning === coversDir) {
+    shrinkRunning = '';
+  }
 }

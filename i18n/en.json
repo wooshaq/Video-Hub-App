@@ -803,6 +803,7 @@
     "rittSyncRules": "VHA changes reach the .ritt after ~1.5 s; Ritt changes are checked every 15 s. While Ritt is open VHA does not write the file — it does once Ritt is closed. A copy of the .ritt is made before every write (10 newest, folder ritt-backups next to the hub). Turning this off makes VHA keep tags itself again.",
     "rittRating": "Stars = tags of group",
     "rittRatingNone": "— do not use (VHA stars) —",
-    "rittRatingHint": "Pick the tag whose sub-tags are your ratings. 1st sub-tag = 1 star, 2nd = 2 stars etc. Clicking the stars sets that tag (and removes the previous rating)."
+    "rittRatingHint": "Pick the tag whose sub-tags are your ratings. 1st sub-tag = 1 star, 2nd = 2 stars etc. Clicking the stars sets that tag (and removes the previous rating).",
+    "coverShrink": "Scaling down covers"
   }
 }

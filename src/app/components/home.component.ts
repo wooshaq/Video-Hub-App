@@ -480,7 +480,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     this.tagLib.hoverDelay = this.wsqHoverDelay;
     (window as any).myElectron.sendToMain('wsq-set-workers', this.wsqWorkers);
     this.translate.setDefaultLang('en');
-    this.changeLanguage('en');
+    this.changeLanguage('pl' as SupportedLanguage);
 
     // Ritt-style tag library
     this.tagLib.init();
@@ -1083,6 +1083,17 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       });
     });
 
+    // WsQ: old covers being scaled down (extraction waits for it)
+    (window as any).myElectron.receiveFromMain('wsq-cover-shrink', (done: number, total: number) => {
+      this.zone.run(() => {
+        this.coverShrinkDone = done;
+        this.coverShrinkTotal = total;
+        if (!total) {
+          this.coverVersion++;
+        }
+      });
+    });
+
     (window as any).myElectron.receiveFromMain('cover-result', (hash: string, stamp: number) => {
       this.zone.run(() => {
         let touched = false;
@@ -1127,6 +1138,8 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   coverVersion = 0;
+  coverShrinkDone = 0;    // WsQ: old covers scaled down so far
+  coverShrinkTotal = 0;
   private lastProgPaint = 0;
   private lastProgStage: any = '';
 
@@ -2433,6 +2446,14 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
    * List of locales is here: https://github.com/electron/electron/blob/master/docs/api/locales.md
    */
   setOrRestoreLanguage(chosenLanguage: SupportedLanguage, locale: string): void {
+    // WsQ: Polish by default -- switched once on update, later the language chosen in Settings stays
+    let polishSet = false;
+    try { polishSet = localStorage.getItem('wsq-lang-pl-v1') === '1'; } catch { }
+    if (!polishSet || !chosenLanguage) {
+      try { localStorage.setItem('wsq-lang-pl-v1', '1'); } catch { }
+      this.changeLanguage('pl' as SupportedLanguage);
+      return;
+    }
     if (chosenLanguage) {
       this.changeLanguage(chosenLanguage);
     } else if (<any>locale.substring(0, 2)) {

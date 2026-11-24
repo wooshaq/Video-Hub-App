@@ -803,6 +803,7 @@
     "rittSyncRules": "Zmiany z VHA trafiają do .ritt po ok. 1,5 s; zmiany z Ritta VHA sprawdza co 15 s. Gdy Ritt jest otwarty, VHA nie zapisuje do pliku — zrobi to, kiedy Ritt zostanie zamknięty. Przed każdym zapisem robiona jest kopia .ritt (10 ostatnich, folder ritt-backups obok huba). Wyłączenie przywraca zapisywanie tagów w VHA.",
     "rittRating": "Gwiazdki = tagi z grupy",
     "rittRatingNone": "— nie używaj (gwiazdki VHA) —",
-    "rittRatingHint": "Wybierz tag, którego podtagi to Twoje oceny. 1. podtag = 1 gwiazdka, 2. = 2 gwiazdki itd. Kliknięcie gwiazdek nadaje odpowiedni tag (i zdejmuje poprzednią ocenę)."
+    "rittRatingHint": "Wybierz tag, którego podtagi to Twoje oceny. 1. podtag = 1 gwiazdka, 2. = 2 gwiazdki itd. Kliknięcie gwiazdek nadaje odpowiedni tag (i zdejmuje poprzednią ocenę).",
+    "coverShrink": "Zmniejszanie okładek"
   }
 }

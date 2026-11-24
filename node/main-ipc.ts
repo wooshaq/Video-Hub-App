@@ -113,7 +113,7 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
       title: 'Ritt',
       filters: [
         { name: 'Ritt', extensions: ['ritt'] },
-        { name: 'All files', extensions: ['*'] },
+        { name: 'Wszystkie pliki', extensions: ['*'] },
       ],
       properties: ['openFile']
     }).then(result => {
@@ -415,34 +415,50 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
       return;
     }
     // the dialog lives as long as the process that opened it -> keep PowerShell alive until no window of it is left
+    // SHObjectProperties = the same "Properties" window as in Explorer (no localized verb names involved);
+    // the window is brought to the front, otherwise Windows may open it behind VHA
     const script = [
-      '$ErrorActionPreference = "SilentlyContinue"',
+      '$ErrorActionPreference = "Stop"',
       'Add-Type -TypeDefinition @"',
-      'using System; using System.Runtime.InteropServices;',
-      'public static class WsqWin {',
+      'using System; using System.Runtime.InteropServices; using System.Threading;',
+      'public static class WsqProps {',
       '  public delegate bool EnumProc(IntPtr h, IntPtr p);',
+      '  [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern bool SHObjectProperties(IntPtr hwnd, uint type, string obj, string page);',
       '  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr p);',
       '  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);',
       '  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);',
-      '  public static bool Has(uint me) { bool f = false; EnumWindows((h, p) => { uint pid; GetWindowThreadProcessId(h, out pid);',
-      '    if (pid == me && IsWindowVisible(h)) { f = true; return false; } return true; }, IntPtr.Zero); return f; }',
+      '  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);',
+      '  [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);',
+      '  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);',
+      '  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);',
+      '  static IntPtr Find(uint me) { IntPtr r = IntPtr.Zero; EnumWindows((h, p) => { uint pid; GetWindowThreadProcessId(h, out pid);',
+      '    if (pid == me && IsWindowVisible(h)) { r = h; return false; } return true; }, IntPtr.Zero); return r; }',
+      '  public static void Run(string file) {',
+      '    uint me = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;',
+      '    if (!SHObjectProperties(IntPtr.Zero, 2, file, null)) { return; }',
+      '    IntPtr w = IntPtr.Zero;',
+      '    for (int i = 0; i < 100 && w == IntPtr.Zero; i++) { Thread.Sleep(50); w = Find(me); }',
+      '    if (w == IntPtr.Zero) { return; }',
+      '    ShowWindow(w, 5);',
+      '    if (!SetForegroundWindow(w)) { keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero); SetForegroundWindow(w); }',
+      '    BringWindowToTop(w);',
+      '    for (int i = 0; i < 14400 && Find(me) != IntPtr.Zero; i++) { Thread.Sleep(250); }',
+      '  }',
       '}',
       '"@',
-      '$sh = New-Object -ComObject Shell.Application',
-      '$it = $sh.NameSpace($env:WSQ_DIR).ParseName($env:WSQ_NAME)',
-      'if ($it) { $it.InvokeVerb("properties") }',
-      'Start-Sleep -Seconds 3',
-      '$n = 0',
-      'while ([WsqWin]::Has([uint32]$PID) -and $n -lt 7200) { Start-Sleep -Milliseconds 500; $n++ }',
+      '[WsqProps]::Run($env:WSQ_FILE)',
     ].join('\r\n');
-    const encoded = Buffer.from(script, 'utf16le').toString('base64');
     try {
+      const scriptFile = path.join(require('os').tmpdir(), 'vha-wsq-properties.ps1');
+      fs.writeFileSync(scriptFile, '﻿' + script, 'utf8');
       const { spawn } = require('child_process');
-      const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded], {
-        env: { ...process.env, WSQ_DIR: path.dirname(fullPath), WSQ_NAME: path.basename(fullPath) },
+      const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-STA', '-File', scriptFile], {
+        env: { ...process.env, WSQ_FILE: fullPath },
+        windowsHide: true,
         detached: true,
         stdio: 'ignore',
       });
+      child.on('error', () => shell.showItemInFolder(fullPath));
       child.unref();
     } catch (e) {
       shell.showItemInFolder(fullPath);

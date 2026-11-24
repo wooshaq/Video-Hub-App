@@ -21,7 +21,8 @@ import { sendFinalObjectToAngular, setUpDirectoryWatchers, upgradeToVersion3, wr
 import { FinalObject } from './interfaces/final-object.interface';
 import { SettingsObject } from './interfaces/settings-object.interface';
 import { WizardOptions } from './interfaces/wizard-options.interface';
-import { preventSleep, resetAllQueues } from './node/main-extract-async';
+import { preventSleep, resetAllQueues, pauseCoverWork, resumeCoverWork } from './node/main-extract-async';
+import { shrinkOldCovers } from './node/main-covers';
 
 // Variables
 const pathToAppData = app.getPath('appData');
@@ -310,6 +311,16 @@ function openThisDamnFile(pathToVhaFile: string): void {
       GLOBALS.selectedSourceFolders = finalObject.inputDirs;
 
       sendFinalObjectToAngular(finalObject, GLOBALS);
+
+      // WsQ: covers from older versions were up to 960 px wide -> scale them down first, then go on with the extraction
+      const pause = pauseCoverWork();
+      const sender = GLOBALS.angularApp.sender;
+      shrinkOldCovers(path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'covers'), (done, total) => {
+        try { sender.send('wsq-cover-shrink', done, total); } catch { }
+      }).catch(() => { }).finally(() => {
+        try { sender.send('wsq-cover-shrink', 0, 0); } catch { }
+        resumeCoverWork(pause);
+      });
 
       setUpDirectoryWatchers(finalObject.inputDirs, finalObject.images);
     }

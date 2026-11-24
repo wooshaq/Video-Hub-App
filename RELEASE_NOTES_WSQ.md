@@ -1,5 +1,11 @@
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
+### Nowe w wsq.37
+- **Mniejsze okładki:** nowe okładki są zapisywane od razu w szerokości max 480 px (wcześniej do 960 px) – to trochę więcej niż kafelek przy 4 miniaturach w rzędzie.
+- **Zmniejszanie starych okładek:** po otwarciu huba program najpierw przeskalowuje już zapisane okładki do 480 px (postęp na dolnym pasku), a dopiero potem wraca do wyciągania okładek i miniatur. Robi to raz na hub.
+- **„Właściwości” w menu pod prawym przyciskiem** otwierają systemowe okno Właściwości pliku (to samo co w Eksploratorze) na wierzchu.
+- **Domyślnie po polsku:** po aktualizacji program raz przełącza się na polski (później obowiązuje język wybrany w Ustawieniach).
+
 ### Nowe w wsq.36
 - **Ritt jako baza tagów VHA** (Ustawienia → Ritt → wybierz plik .ritt). Plik .ritt trzyma wszystko, co Ritt umie: drzewo tagów (kolejność, zagnieżdżenie, separatory), ustawienia tagów (ikona, kolor, aliasy, notatki, ukrycie, „pokazuj w podtagach”, plakietka, skrót 0–9, dziedziczenie), tagi plików i folderów oraz **notatki plików, folderów i tagów**. VHA nie trzyma już własnej kopii tych danych — w hubie zostają tylko miniatury, okładki, informacje o filmach i tagi plików, których Ritt nie zna.
   - Zmiany z VHA trafiają do .ritt po ok. 1,5 s, zmiany z Ritta VHA sprawdza co 15 s.

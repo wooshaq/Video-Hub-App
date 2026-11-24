@@ -1713,6 +1713,9 @@
     </span>
     <span class="st-mid">
       <span>{{ numberOfVideosFound | number }} {{ 'WSQ.items' | translate }} · {{ 'WSQ.selected' | translate }} {{ selectedCount() }}</span>
+      @if (coverShrinkTotal) {
+        <span class="st-prog">{{ 'WSQ.coverShrink' | translate }} {{ coverShrinkDone | number }} / {{ coverShrinkTotal | number }}<span class="st-bar"><span [ngStyle]="{ width: (coverShrinkDone * 100 / coverShrinkTotal) + '%' }"></span></span></span>
+      }
       @if (importStage !== 'done') {
         <span class="st-prog">{{ progressString }}<span class="st-bar"><span [ngStyle]="{ width: (extractionPercent || 0) + '%' }"></span></span></span>
       }

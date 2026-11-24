@@ -82,6 +82,19 @@ export function setWorkerCount(n: number): void {
   console.log('parallel workers:', workerCount);
 }
 
+// WsQ: hold the cover + thumbnail work (e.g. while old covers are scaled down), then go on
+let pauseToken = 0;
+export function pauseCoverWork(): number {
+  [thumbQueue, coverQueue].forEach(q => q && q.pause());
+  return ++pauseToken;
+}
+export function resumeCoverWork(token: number): void {
+  if (token !== pauseToken) {
+    return;   // a newer pause (another hub opened) is in charge
+  }
+  [thumbQueue, coverQueue].forEach(q => q && q.resume());
+}
+
 // changed files queue (WsQ) -- files already in the hub whose size / modification time changed
 let changedQueue;        // QueueObject - accepts `{ fullPath, inputSource, partialPath, fileName }`
 
@@ -126,6 +139,7 @@ export function resetAllQueues(): void {
     changedQueue.kill();
   }
 
+  pauseToken++;   // WsQ: fresh queues are not paused
   coverQueue = async.queue(coverQueueRunner, workerCount);
   changedQueue = async.queue(changedQueueRunner, 1);
 
