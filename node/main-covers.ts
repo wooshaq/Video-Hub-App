@@ -12,6 +12,7 @@ const { execFile } = require('child_process');
 
 const ffmpegPath = require('ffmpeg-static').replace('app.asar', 'app.asar.unpacked');
 const ffprobePath = require('@ffprobe-installer/ffprobe').path.replace('app.asar', 'app.asar.unpacked');
+import { readCoverFast, scaledJpeg } from './main-covers-fast';
 
 // WsQ: covers are only shown as tiles (a bit bigger than at 4 tiles per row) -- no need to keep them bigger
 export const COVER_MAX_W = 480;
@@ -86,6 +87,29 @@ export function extractCover(fullPath: string, hash: string, coversDir: string):
 
 async function extractCoverOnce(fullPath: string, hash: string, coversDir: string): Promise<boolean | null> {
   const target = path.join(coversDir, hash + '.jpg');
+
+  // WsQ: fast way first -- read the picture straight from the MKV / MP4, no ffprobe / ffmpeg
+  const fast = readCoverFast(fullPath);
+  if (fast === null) {
+    try { fs.unlinkSync(target); } catch { }
+    return false;
+  }
+  if (fast) {
+    const jpg = scaledJpeg(fast, COVER_MAX_W);
+    if (jpg) {
+      try {
+        if (!fs.existsSync(coversDir)) {
+          fs.mkdirSync(coversDir, { recursive: true });
+        }
+        const tmp = target + '.part';
+        fs.writeFileSync(tmp, jpg);
+        fs.renameSync(tmp, target);
+        return true;
+      } catch (e) { }
+    }
+    // a picture nativeImage cannot read (webp, ...) -> ffmpeg below
+  }
+
   let candidates: CoverCandidate[] = [];
   try {
     candidates = await findCovers(fullPath);

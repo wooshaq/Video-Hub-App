@@ -791,12 +791,17 @@ export class TagPaneComponent implements OnDestroy {
   }
 
   dragEnd(): void {
+    clearTimeout(this.expandTimer);
+    this.expandId = '';
     this.draggedNode = null;
     this.dropTargetId = '';
     this.dropZone = '';
   }
 
   dragOver(event: DragEvent, row: FlatRow): void {
+    if (this.draggedNode) {
+      this.autoScroll(event);
+    }
     if (!this.draggedNode || this.draggedNode === row.node || this.lib.isAncestor(this.draggedNode, row.node)) {
       return;
     }
@@ -817,6 +822,46 @@ export class TagPaneComponent implements OnDestroy {
     }
     this.dropTargetId = row.node.id;
     this.dropZone = zone;
+    // WsQ: hold over a closed group -> it opens, so the tag can go between its children
+    if (zone === 'child' && row.hasChildren && row.node.collapsed) {
+      if (this.expandId !== row.node.id) {
+        clearTimeout(this.expandTimer);
+        this.expandId = row.node.id;
+        const n = row.node;
+        this.expandTimer = setTimeout(() => {
+          if (this.draggedNode && this.expandId === n.id) {
+            n.collapsed = false;
+            this.lib.touchLib();
+          }
+        }, 650);
+      }
+    } else if (this.expandId) {
+      clearTimeout(this.expandTimer);
+      this.expandId = '';
+    }
+  }
+
+  private expandTimer: any;
+  private expandId = '';
+
+  /** WsQ: while dragging near the top / bottom edge of the tree, scroll it (faster closer to the edge) */
+  private autoScroll(event: DragEvent): void {
+    const tree = (event.currentTarget as HTMLElement).closest('.tp-tree') as HTMLElement;
+    if (!tree) {
+      return;
+    }
+    const r = tree.getBoundingClientRect();
+    const edge = Math.min(60, r.height / 4);
+    const y = event.clientY;
+    let dy = 0;
+    if (y < r.top + edge) {
+      dy = -Math.ceil(((r.top + edge - y) / edge) * 18);
+    } else if (y > r.bottom - edge) {
+      dy = Math.ceil(((y - (r.bottom - edge)) / edge) * 18);
+    }
+    if (dy) {
+      tree.scrollTop += dy;
+    }
   }
 
   drop(event: DragEvent, row: FlatRow): void {
@@ -831,6 +876,7 @@ export class TagPaneComponent implements OnDestroy {
   dragOverEmpty(event: DragEvent): void {
     if (this.draggedNode) {
       event.preventDefault();
+      this.autoScroll(event);
       this.dropTargetId = '';
       this.dropZone = '';
     }

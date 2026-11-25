@@ -1,3 +1,7 @@
+### Nowe w wsq.44
+- Szybkie okładki: z MKV (załączniki) i MP4/M4V/MOV (covr) obrazek jest czytany prosto z pliku i skalowany w programie — bez ffprobe/ffmpeg i bez plików tymczasowych (milisekundy zamiast sekund na plik). Inne formaty i nietypowe obrazki (np. webp) idą starą drogą.
+- Przeciąganie tagów między grupami: zwinięta grupa rozwija się po przytrzymaniu nad nią tagu, a lista przewija się sama przy górnej/dolnej krawędzi.
+
 ### Nowe w wsq.43
 - Bezpiecznik pasków klatek: każdy pasek jest robiony do pliku tymczasowego i sprawdzany (czy się czyta i czy klatki nie są czarne), zanim zastąpi stary. Zły pasek jest od razu robiony ponownie (do 3 prób: dłuższy czas dla ffmpeg i przesunięte klatki), zanim wątek weźmie następny plik. Pliki, z których nie dało się zrobić dobrego paska, widać w okienku zadań.
 - Limity czasu ffmpeg rosną z liczbą równoległych procesów (przy kilku naraz pasek nie jest już ucinany na czarno).
