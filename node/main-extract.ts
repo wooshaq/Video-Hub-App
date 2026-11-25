@@ -113,6 +113,7 @@ const generateScreenshotStripArgs = (
   args.push(
     '-frames', '1',
     '-filter_complex', allFramesFiltered + outputFrames + 'hstack=inputs=' + totalCount,
+    '-q:v', '4',   // WsQ: JPEG quality 4 (default was much blurrier) -- ~1.7x bigger files
     '-y', '-f', 'image2',
     savePath
   );

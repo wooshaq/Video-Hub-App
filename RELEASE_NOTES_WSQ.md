@@ -1,3 +1,6 @@
+### Nowe w wsq.49
+- Lepsza jakość pasków klatek: JPEG z jakością 4 zamiast domyślnej ffmpeg (wyraźnie mniej rozmycia i plam, pliki ok. 1,7× większe). Dotyczy nowych pasków — stare można przerobić z menu kontekstowego „Wygeneruj paski klatek ponownie”.
+
 ### Nowe w wsq.48
 - Menu kontekstowe: „Wygeneruj paski od nowa — dokładnie (stara metoda)”. Działa na kliknięty plik, zaznaczenie albo cały folder (kafelek folderu). Szybka metoda (klatki kluczowe) potrafi trafiać w ściemnienia między scenami — tą opcją robi się takie paski starym, dokładnym sposobem.
 - „Wygeneruj paski klatek ponownie” działa też na kafelku folderu (wszystkie pliki w środku).
