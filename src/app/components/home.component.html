@@ -1751,6 +1751,12 @@
         } @empty {
           <div class="st-job-none">{{ 'WSQ.jobsNone' | translate }}</div>
         }
+        @if (failedStrips.length) {
+          <div class="st-jobs-failed">{{ 'WSQ.stripsFailed' | translate : { n: failedStrips.length } }}</div>
+          @for (f of failedStrips; track f) {
+            <div class="st-job"><span class="st-job-step bad">✕</span><span class="st-job-name" [title]="f">{{ f }}</span></div>
+          }
+        }
       </div>
     }
     <span class="st-right" [ngStyle]="{ width: detailsWidth + 'px' }">

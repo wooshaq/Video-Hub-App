@@ -819,6 +819,8 @@
     "verifyFolder": "Sprawdź paski w tym folderze",
     "verifyRunning": "Sprawdzam paski: {{d}} / {{n}}",
     "verifyDoneOk": "Paski klatek w porządku ({{n}} plików).",
-    "verifyDoneBad": "Złe paski klatek: {{b}} z {{n}} — generuję je od nowa."
+    "verifyDoneBad": "Złe paski klatek: {{b}} z {{n}} — generuję je od nowa.",
+    "stripsFailed": "Nie udało się zrobić poprawnego paska (po 3 próbach): {{n}}",
+    "jobWait": "czeka na okładki"
   }
 }

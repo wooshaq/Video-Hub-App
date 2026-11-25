@@ -607,3 +607,13 @@
     &:hover { border-color: var(--wsq-accent); }
   }
 }
+
+.st-jobs-failed {
+  border-top: 1px solid var(--g-line, #2a2d33);
+  color: #e88a8a;
+  font-weight: 600;
+  margin-top: 6px;
+  padding: 8px 4px 4px;
+}
+
+.st-job-step.bad { background: rgba(224, 106, 106, 0.2); color: #f0a0a0; }

@@ -819,6 +819,8 @@
     "verifyFolder": "Check filmstrips in this folder",
     "verifyRunning": "Checking filmstrips: {{d}} / {{n}}",
     "verifyDoneOk": "Filmstrips are fine ({{n}} files).",
-    "verifyDoneBad": "Bad filmstrips: {{b}} of {{n}} — generating them again."
+    "verifyDoneBad": "Bad filmstrips: {{b}} of {{n}} — generating them again.",
+    "stripsFailed": "No usable filmstrip after 3 tries: {{n}}",
+    "jobWait": "waiting for covers"
   }
 }

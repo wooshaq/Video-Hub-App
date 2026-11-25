@@ -24,6 +24,7 @@
 const fs = require('fs');
 import * as path from 'path';
 const spawn = require('child_process').spawn;
+const { nativeImage } = require('electron');
 
 const ffmpegPath = require('ffmpeg-static').replace('app.asar', 'app.asar.unpacked');
 
@@ -82,6 +83,7 @@ const generateScreenshotStripArgs = (
   screenshotHeight: number,
   numberOfScreenshots: number,
   savePath: string,
+  shift = 0,   // WsQ: retry with every frame moved by this fraction of the step
 ): string[] => {
 
   let current = 0;
@@ -98,7 +100,7 @@ const generateScreenshotStripArgs = (
 
   // make the magic filter
   while (current < totalCount) {
-    const time = (current + 1) * step; // +1 so we don't pick the 0th frame
+    const time = Math.max(0, Math.min(duration - 0.5, (current + 1 + shift) * step)); // +1 so we don't pick the 0th frame
     args.push('-ss', time.toString(), '-i', pathToVideo);
     allFramesFiltered += '[' + current + ':V]' + fancyScaleFilter + '[' + current + '];';
     outputFrames += '[' + current + ']';
@@ -107,6 +109,7 @@ const generateScreenshotStripArgs = (
   args.push(
     '-frames', '1',
     '-filter_complex', allFramesFiltered + outputFrames + 'hstack=inputs=' + totalCount,
+    '-y', '-f', 'image2',
     savePath
   );
 
@@ -304,12 +307,9 @@ export function extractAll(
       if (filmstripExists) {
         return true;
       } else {
-
-        const ffmpegArgs: string [] = generateScreenshotStripArgs(
-          pathToVideo, duration, screenshotHeight, numOfScreens, filmstripSavePath
+        return makeCheckedFilmstrip(                                                      // (5) WsQ: checked
+          pathToVideo, duration, screenshotHeight, numOfScreens, filmstripSavePath, maxRunTime.filmstrip, currentElement.fileName
         );
-
-        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.filmstrip, 'filmstrip');       // (5)
       }
     })
     .then((filmstripSuccess: boolean) => {
@@ -539,4 +539,113 @@ function spawn_ffmpeg_and_run(
 
   });
 
+}
+
+
+// ========================================================================================
+//         WsQ: filmstrip safeguard
+//   The strip is written to a temporary file, checked (readable, frames not black), and only
+//   then put in place. A bad result is made again right away -- with more time (several
+//   ffmpeg run at once on a busy disk) and with the frames moved a bit (black scene, broken
+//   keyframe). The best attempt wins; if none is usable the strip stays missing.
+// ========================================================================================
+
+let parallelWorkers = 1;
+export function setParallelWorkersForTimeouts(n: number): void {
+  parallelWorkers = Math.max(1, n || 1);
+}
+
+/** frames of the strip that are not black; -1 = missing / unreadable */
+export function stripGoodFrames(file: string, frames: number): number {
+  try {
+    if (!fs.existsSync(file) || fs.statSync(file).size < 200) {
+      return -1;
+    }
+    const img = nativeImage.createFromPath(file);
+    if (img.isEmpty()) {
+      return -1;
+    }
+    const n = Math.max(1, frames || 1);
+    const w = Math.max(n * 8, Math.min(n * 24, 480));
+    const small = img.resize({ width: w, quality: 'good' });
+    const size = small.getSize();
+    const bmp: Buffer = small.toBitmap();   // BGRA
+    const colW = size.width / n;
+    const bright = new Array(n).fill(0);
+    const total = new Array(n).fill(0);
+    for (let y = 0; y < size.height; y++) {
+      for (let x = 0; x < size.width; x++) {
+        const i = (y * size.width + x) * 4;
+        const f = Math.min(n - 1, Math.floor(x / colW));
+        total[f]++;
+        if (bmp[i] > 28 || bmp[i + 1] > 28 || bmp[i + 2] > 28) {
+          bright[f]++;
+        }
+      }
+    }
+    let good = 0;
+    for (let f = 0; f < n; f++) {
+      if (total[f] && bright[f] / total[f] >= 0.02) {
+        good++;
+      }
+    }
+    return good;
+  } catch (e) {
+    return -1;
+  }
+}
+
+function makeCheckedFilmstrip(
+  pathToVideo: string, duration: number, height: number, screens: number,
+  savePath: string, baseTimeout: number, name: string
+): Promise<boolean> {
+  const busy = 1 + (parallelWorkers - 1) * 0.75;   // several ffmpeg at once -> each one is slower
+  const attempts = [
+    { shift: 0, time: baseTimeout * busy },
+    { shift: 0.25, time: baseTimeout * busy * 4 },
+    { shift: -0.25, time: baseTimeout * busy * 6 },
+  ];
+  let best = -1;
+  let bestFile = '';
+  const tmpOf = (k: number) => savePath + '.try' + k + '.jpg';
+  const cleanup = () => attempts.forEach((a, k) => { if (tmpOf(k) !== bestFile) { try { fs.unlinkSync(tmpOf(k)); } catch (e) { } } });
+
+  const run = (k: number): Promise<boolean> => {
+    if (k >= attempts.length) {
+      const ok = best >= Math.ceil(screens / 2);
+      if (ok) {
+        try { fs.renameSync(bestFile, savePath); } catch (e) { return Promise.resolve(false); }
+      } else {
+        console.log('FILMSTRIP UNUSABLE after ' + attempts.length + ' tries: ' + name);
+        try { GLOBALS.angularApp.sender.send('wsq-strip-failed', name); } catch (e) { }
+      }
+      bestFile = '';
+      cleanup();
+      return Promise.resolve(ok);
+    }
+    const tmp = tmpOf(k);
+    try { fs.unlinkSync(tmp); } catch (e) { }
+    const args = generateScreenshotStripArgs(pathToVideo, duration, height, screens, tmp, attempts[k].shift);
+    return spawn_ffmpeg_and_run(args, attempts[k].time, 'filmstrip').then(() => {
+      const good = stripGoodFrames(tmp, screens);
+      if (good > best) {
+        if (bestFile) { try { fs.unlinkSync(bestFile); } catch (e) { } }
+        best = good;
+        bestFile = tmp;
+      } else {
+        try { fs.unlinkSync(tmp); } catch (e) { }
+      }
+      if (good === screens) {                       // all frames fine -> done
+        try { fs.renameSync(tmp, savePath); } catch (e) { return false; }
+        bestFile = '';
+        cleanup();
+        return true;
+      }
+      if (k === 0) {
+        console.log('filmstrip check: ' + Math.max(0, good) + '/' + screens + ' good frames, trying again: ' + name);
+      }
+      return run(k + 1);
+    });
+  };
+  return run(0);
 }

@@ -1075,6 +1075,12 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       (hashes || []).forEach(h => this.thumbsMissing.add(h));
       this.bumpMissing();
     });
+    (window as any).myElectron.receiveFromMain('wsq-strip-failed', (name: string) => {
+      this.zone.run(() => {
+        this.failedStrips = [name, ...this.failedStrips.filter(n => n !== name)].slice(0, 50);
+      });
+    });
+
     (window as any).myElectron.receiveFromMain('wsq-verify-progress', (done: number, total: number, bad: number, finished: boolean) => {
       this.zone.run(() => {
         this.verifyText = finished
@@ -1217,7 +1223,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   jobStepLabel(step: string): string {
-    return this.translate.instant(step === 'cover' ? 'WSQ.jobCover' : step === 'filmstrip' ? 'WSQ.jobFilmstrip' : 'WSQ.jobCheck');
+    return this.translate.instant(step === 'cover' ? 'WSQ.jobCover' : step === 'wait' ? 'WSQ.jobWait' : step === 'filmstrip' ? 'WSQ.jobFilmstrip' : 'WSQ.jobCheck');
   }
 
   jobSeconds(since: number): string {
@@ -1230,6 +1236,7 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   verifyText = '';
+  failedStrips: string[] = [];
 
   /** files below the open folder (whole hub outside folder view) */
   private filesOfOpenFolder(): ImageElement[] {

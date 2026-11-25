@@ -1,3 +1,8 @@
+### Nowe w wsq.43
+- Bezpiecznik pasków klatek: każdy pasek jest robiony do pliku tymczasowego i sprawdzany (czy się czyta i czy klatki nie są czarne), zanim zastąpi stary. Zły pasek jest od razu robiony ponownie (do 3 prób: dłuższy czas dla ffmpeg i przesunięte klatki), zanim wątek weźmie następny plik. Pliki, z których nie dało się zrobić dobrego paska, widać w okienku zadań.
+- Limity czasu ffmpeg rosną z liczbą równoległych procesów (przy kilku naraz pasek nie jest już ucinany na czarno).
+- Najpierw okładki, potem miniatury i paski: dopóki kolejka okładek ma pracę, wątki pasków czekają (status „czeka na okładki”).
+
 ## Video Hub App 3 – wersja WsQ (na bazie oficjalnego v3.3.0)
 
 ### Nowe w wsq.42

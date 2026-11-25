@@ -13,7 +13,7 @@ import { GLOBALS } from './main-globals';
 
 import type { ImageElement, ImageElementPlus } from '../interfaces/final-object.interface';
 import { acceptableFiles } from './main-filenames';
-import { extractAll } from './main-extract';
+import { extractAll, stripGoodFrames, setParallelWorkersForTimeouts } from './main-extract';
 import { extractCover } from './main-covers';
 import { sendCurrentProgress, insertTemporaryFieldsSingle, extractMetadataAsync, cleanUpFileName } from './main-support';
 
@@ -79,6 +79,7 @@ export function setWorkerCount(n: number): void {
   if (metadataQueue) {
     metadataQueue.concurrency = Math.min(2, workerCount);   // metadata is quick; more readers only fight over the disk
   }
+  setParallelWorkersForTimeouts(workerCount);
   console.log('parallel workers:', workerCount);
 }
 
@@ -238,7 +239,30 @@ function noteQueued(hash: string): void {
   }
 }
 
+/**
+ * WsQ: covers first -- while the cover queue has work, thumbnail / filmstrip workers wait.
+ * Covers are quick; without this both fight over the disk and ffmpeg runs out of time,
+ * which is how broken (black / missing) filmstrips came out. Waits at most 15 min.
+ */
 function thumbQueueRunner(element: ImageElement, queueDone): void {
+  const start = Date.now();
+  const busy = () => coverQueue && (coverQueue.length() + coverQueue.running()) > 0 && !coverQueue.paused;
+  if (!busy()) {
+    thumbQueueRunnerInner(element, queueDone);
+    return;
+  }
+  setActive('t:' + element.hash, element, 'wait');
+  const tick = () => {
+    if (!busy() || Date.now() - start > 15 * 60 * 1000) {
+      thumbQueueRunnerInner(element, queueDone);
+    } else {
+      setTimeout(tick, 400);
+    }
+  };
+  setTimeout(tick, 400);
+}
+
+function thumbQueueRunnerInner(element: ImageElement, queueDone): void {
   // WsQ: watchdog -- one broken file must never stop the whole queue
   let finished = false;
   setActive('t:' + element.hash, element, 'check');
@@ -282,16 +306,7 @@ function thumbQueueRunner(element: ImageElement, queueDone): void {
         GLOBALS.selectedSourceFolders[element.inputSource].path,
         screenshotOutputFolder,
         GLOBALS.screenshotSettings,
-        () => {
-          // WsQ: a filmstrip that came out missing or all black gets one more try
-          if (filmstripBad(element.hash) && !retriedStrips.has(element.hash)) {
-            retriedStrips.add(element.hash);
-            try { fs.unlinkSync(path.join(screenshotOutputFolder, 'filmstrips', element.hash + '.jpg')); } catch (e) { }
-            console.log('filmstrip bad, retrying once:', element.fileName);
-            thumbQueue.push(element);
-          }
-          done();
-        },
+        done,   // WsQ: the filmstrip is checked (and remade if needed) inside extractAll
         hasCover
       );
   };
@@ -1014,29 +1029,10 @@ export function regenerateFilmstrips(elements: ImageElement[]): void {
 
 const retriedStrips = new Set<string>();
 
-export function filmstripBad(hash: string): boolean {
+export function filmstripBad(hash: string, screens = 10): boolean {
   const file = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'filmstrips', hash + '.jpg');
-  try {
-    if (!fs.existsSync(file) || fs.statSync(file).size < 200) {
-      return true;
-    }
-    const img = nativeImage.createFromPath(file);
-    if (img.isEmpty()) {
-      return true;
-    }
-    const small = img.resize({ width: 96, quality: 'good' });
-    const bmp: Buffer = small.toBitmap();   // BGRA
-    let bright = 0;
-    const px = bmp.length / 4;
-    for (let i = 0; i < bmp.length; i += 4) {
-      if (bmp[i] > 28 || bmp[i + 1] > 28 || bmp[i + 2] > 28) {
-        bright++;
-      }
-    }
-    return px === 0 || bright / px < 0.01;
-  } catch (e) {
-    return true;
-  }
+  const n = Math.max(1, screens || 10);
+  return stripGoodFrames(file, n) < Math.ceil(n / 2);
 }
 
 /**
@@ -1052,7 +1048,7 @@ export function verifyFilmstrips(elements: ImageElement[]): void {
   const step = () => {
     const end = Math.min(list.length, i + 20);
     for (; i < end; i++) {
-      if (filmstripBad(list[i].hash)) {
+      if (filmstripBad(list[i].hash, list[i].screens)) {
         bad.push(list[i]);
       }
     }
@@ -1062,6 +1058,7 @@ export function verifyFilmstrips(elements: ImageElement[]): void {
       return;
     }
     send(true);
+    console.log('filmstrip verify:', list.length, 'checked,', bad.length, 'bad');
     if (bad.length) {
       bad.forEach(el => retriedStrips.delete(el.hash));
       regenerateFilmstrips(bad);
