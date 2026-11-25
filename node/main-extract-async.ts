@@ -13,7 +13,7 @@ import { GLOBALS } from './main-globals';
 
 import type { ImageElement, ImageElementPlus } from '../interfaces/final-object.interface';
 import { acceptableFiles } from './main-filenames';
-import { extractAll, stripGoodFrames, setParallelWorkersForTimeouts, skipExtraction, unskipExtraction } from './main-extract';
+import { extractAll, stripGoodFrames, setParallelWorkersForTimeouts, skipExtraction, unskipExtraction, forceExactFilmstrip } from './main-extract';
 import { extractCover } from './main-covers';
 import { sendCurrentProgress, insertTemporaryFieldsSingle, extractMetadataAsync, cleanUpFileName } from './main-support';
 
@@ -1034,9 +1034,12 @@ export function prioritizeView(hashes: string[], partialPrefix: string): void {
 /**
  * WsQ: right-click -> make the filmstrips (and the frame thumbnail) again for these files, first in the queue
  */
-export function regenerateFilmstrips(elements: ImageElement[]): void {
+export function regenerateFilmstrips(elements: ImageElement[], exact = false): void {
   const out = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName);
   (elements || []).filter(el => el && el.hash && el.cleanName !== '*FOLDER*').reverse().forEach(el => {
+    if (exact) {
+      forceExactFilmstrip(el.hash);
+    }
     ['filmstrips', 'thumbnails'].forEach(dir => {
       try { fs.unlinkSync(path.join(out, dir, el.hash + '.jpg')); } catch (e) { }
     });

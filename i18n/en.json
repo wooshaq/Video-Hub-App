@@ -823,6 +823,8 @@
     "stripsFailed": "No usable filmstrip after 3 tries: {{n}}",
     "jobWait": "waiting for covers",
     "jobSkip": "Skip this file (stop and go to the next one)",
-    "jobSkipped": "Skipped: {{name}}"
+    "jobSkipped": "Skipped: {{name}}",
+    "regenExact": "Generate filmstrips again — exact (old way)",
+    "regenExactHint": "Slower, but every frame is taken at its exact time (no fades between scenes)"
   }
 }

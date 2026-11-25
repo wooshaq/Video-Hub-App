@@ -66,8 +66,8 @@ export function setUpIpcMessages(ipc, win, pathToAppData, systemMessages) {
     verifyFilmstrips(elements || []);
   });
 
-  ipc.on('wsq-regen-filmstrips', (event, elements: ImageElement[]) => {
-    regenerateFilmstrips(elements || []);
+  ipc.on('wsq-regen-filmstrips', (event, elements: ImageElement[], exact?: boolean) => {
+    regenerateFilmstrips(elements || [], !!exact);
   });
 
   ipc.on('wsq-set-workers', (event, n: number) => {

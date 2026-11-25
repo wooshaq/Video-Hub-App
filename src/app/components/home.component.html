@@ -107,6 +107,8 @@
           [ngClass]="{ 'right-click-disabled': !copiedTags.length }">{{ 'WSQ.pasteTags' | translate }}</li>
       <li (click)="refreshCoverNow()">                          {{ 'WSQ.refreshCover' | translate }}</li>
       <li (click)="regenFilmstripsNow()">                       {{ 'WSQ.regenFilmstrips' | translate }}@if (rightClickCount > 1) { ({{ rightClickCount }}) }</li>
+      <li (click)="regenFilmstripsNow(true)"
+          title="{{ 'WSQ.regenExactHint' | translate }}">        {{ 'WSQ.regenExact' | translate }}@if (rightClickCount > 1) { ({{ rightClickCount }}) }</li>
       <li (click)="verifyFilmstrips()">                         {{ 'WSQ.verifyFilmstrips' | translate }}</li>
       <li (click)="checkAllCoversNow()">                        {{ 'WSQ.checkAllCovers'      | translate }}</li>
       <li

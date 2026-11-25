@@ -1293,18 +1293,34 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
     this.verifyFilmstrips(this.filesOfOpenFolder());
   }
 
-  /** right-click -> make the filmstrips again (whole selection in selection mode) */
-  regenFilmstripsNow(): void {
-    const items = (this.batchTaggingMode
-      ? this.imageElementService.imageElements.filter(e => e.selected && !e.deleted)
-      : [this.currentRightClickedItem])
-      .filter(el => el && el.cleanName !== '*FOLDER*');
+  /** files the context menu acts on: the selection, the files inside a folder tile, or the clicked file */
+  private rightClickFiles(): ImageElement[] {
+    const el = this.currentRightClickedItem;
+    let list: ImageElement[];
+    if (this.batchTaggingMode) {
+      list = this.imageElementService.imageElements.filter(e => e.selected && !e.deleted);
+    } else if (el && el.cleanName === '*FOLDER*') {
+      const pre = ((el.partialPath || '') + '/' + el.fileName).replace(/^\/+|\/+$/g, '').toLowerCase();
+      list = this.imageElementService.imageElements.filter(e => {
+        const p = (e.partialPath || '').replace(/^\/+|\/+$/g, '').toLowerCase();
+        return !e.deleted && e.cleanName !== '*FOLDER*' && (p === pre || p.startsWith(pre + '/'));
+      });
+    } else {
+      list = el ? [el] : [];
+    }
+    return list.filter(e => e && e.cleanName !== '*FOLDER*');
+  }
+
+  /** right-click -> make the filmstrips again (whole selection in selection mode, all files of a folder tile);
+   *  exact = the old, slower way (every frame at its exact time) */
+  regenFilmstripsNow(exact = false): void {
+    const items = this.rightClickFiles();
     if (!items.length) {
       return;
     }
     items.forEach(el => this.thumbsMissing.add(el.hash));
     this.bumpMissing();
-    (window as any).myElectron.sendToMain('wsq-regen-filmstrips', items);
+    (window as any).myElectron.sendToMain('wsq-regen-filmstrips', items, exact);
     this.modalService.openSnackbar(this.translate.instant('WSQ.regenQueued', { n: items.length }), 2000);
   }
   private lastProgPaint = 0;

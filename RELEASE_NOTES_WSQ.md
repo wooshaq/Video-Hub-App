@@ -1,3 +1,7 @@
+### Nowe w wsq.48
+- Menu kontekstowe: „Wygeneruj paski od nowa — dokładnie (stara metoda)”. Działa na kliknięty plik, zaznaczenie albo cały folder (kafelek folderu). Szybka metoda (klatki kluczowe) potrafi trafiać w ściemnienia między scenami — tą opcją robi się takie paski starym, dokładnym sposobem.
+- „Wygeneruj paski klatek ponownie” działa też na kafelku folderu (wszystkie pliki w środku).
+
 ### Nowe w wsq.47
 - Pomijanie pliku: w okienku „Teraz przerabiane” przy każdym zadaniu jest przycisk ⏭. Zatrzymuje ffmpeg dla tego pliku (bez kolejnych prób) i wątek od razu bierze następny. Plik zostaje bez paska — można go później zrobić z menu kontekstowego.
 - Zły pasek = brak pliku / nie da się go odczytać / WSZYSTKIE klatki czarne. Pojedyncze czarne klatki (np. 1–2 z 20) są w porządku — taki pasek zostaje i nie jest robiony od nowa (dotyczy też „Sprawdź paski”).

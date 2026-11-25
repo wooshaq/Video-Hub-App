@@ -511,6 +511,12 @@ export function unskipExtraction(hash: string): void {
   skippedOwners.delete(hash);
 }
 
+// WsQ: files to be made the exact (old, slower) way -- "generate again (exact)" in the context menu
+const exactOwners = new Set<string>();
+export function forceExactFilmstrip(hash: string): void {
+  exactOwners.add(hash);
+}
+
 export function isSkipped(hash: string): boolean {
   return skippedOwners.has(hash);
 }
@@ -641,7 +647,7 @@ function makeCheckedFilmstrip(
   const busy = 1 + (parallelWorkers - 1) * 0.75;   // several ffmpeg at once -> each one is slower
   // first the fast way (keyframes only); if that is not good, the exact way with more time and moved frames
   const attempts = [
-    { shift: 0, time: baseTimeout * busy, fast: duration / (screens + 1) >= 30 },   // frames at least 30 s apart -- keyframes (every 2-10 s) stay close to the exact time
+    { shift: 0, time: baseTimeout * busy, fast: !exactOwners.has(owner) && duration / (screens + 1) >= 30 },   // frames at least 30 s apart -- keyframes (every 2-10 s) stay close to the exact time
     { shift: 0, time: baseTimeout * busy * 3, fast: false },
     { shift: 0.25, time: baseTimeout * busy * 6, fast: false },
   ];
@@ -650,6 +656,7 @@ function makeCheckedFilmstrip(
   const tmpOf = (k: number) => savePath + '.try' + k + '.jpg';
   const cleanup = () => attempts.forEach((a, k) => { if (tmpOf(k) !== bestFile) { try { fs.unlinkSync(tmpOf(k)); } catch (e) { } } });
 
+  exactOwners.delete(owner);
   const run = (k: number): Promise<boolean> => {
     if (owner && skippedOwners.has(owner)) {   // skipped by hand -- leave no half-made files
       bestFile = '';
