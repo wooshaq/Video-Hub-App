@@ -1747,6 +1747,9 @@
             <span class="st-job-step" [ngClass]="j.step">{{ jobStepLabel(j.step) }}</span>
             <span class="st-job-name" [title]="j.folder + '/' + j.name">{{ j.name }}</span>
             <span class="st-job-time">{{ jobSeconds(j.since) }}</span>
+            <button class="st-job-skip" (click)="skipJob(j)" title="{{ 'WSQ.jobSkip' | translate }}" aria-label="Pomiń">
+              <svg viewBox="0 0 16 16"><path d="M3 3.5l6 4.5-6 4.5zM11 3.5v9" /></svg>
+            </button>
           </div>
         } @empty {
           <div class="st-job-none">{{ 'WSQ.jobsNone' | translate }}</div>

@@ -293,7 +293,7 @@ export function extractAll(
           pathToVideo, screenshotHeight, duration, thumbnailSavePath
         );
 
-        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.thumb, 'thumb');               // (3)
+        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.thumb, 'thumb', fileHash);               // (3)
       }
     })
     .then((thumbSuccess: boolean) => {
@@ -312,7 +312,7 @@ export function extractAll(
         return true;
       } else {
         return makeCheckedFilmstrip(                                                      // (5) WsQ: checked
-          pathToVideo, duration, screenshotHeight, numOfScreens, filmstripSavePath, maxRunTime.filmstrip, currentElement.fileName
+          pathToVideo, duration, screenshotHeight, numOfScreens, filmstripSavePath, maxRunTime.filmstrip, currentElement.fileName, fileHash
         );
       }
     })
@@ -338,7 +338,7 @@ export function extractAll(
           pathToVideo, duration, clipHeight, clipSnippets, snippetLength, clipSavePath
         );
 
-        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.clip, 'clip');                 // (7)
+        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.clip, 'clip', fileHash);                 // (7)
       }
 
     })
@@ -359,7 +359,7 @@ export function extractAll(
       } else {
         const ffmpegArgs: string[] = extractFirstFrameArgs(clipSavePath, clipThumbSavePath);
 
-        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.clipThumb, 'clip thumb');      // (9)
+        return spawn_ffmpeg_and_run(ffmpegArgs, maxRunTime.clipThumb, 'clip thumb', fileHash);      // (9)
       }
     })
     .then((success: boolean) => {
@@ -495,10 +495,31 @@ function scaleAndPadString(width: number, height: number): string {
  * @param maxRunningTime  maximum time to run ffmpeg
  * @param description     log for console.log
  */
+// WsQ: "skip this file" from the jobs window -- running ffmpeg of that file is killed, nothing new is started
+const ownerProcs = new Map<string, Set<any>>();
+const skippedOwners = new Set<string>();
+
+export function skipExtraction(hash: string): void {
+  skippedOwners.add(hash);
+  const set = ownerProcs.get(hash);
+  if (set) {
+    set.forEach(p => { try { p.kill(); } catch (e) { } });
+  }
+}
+
+export function unskipExtraction(hash: string): void {
+  skippedOwners.delete(hash);
+}
+
+export function isSkipped(hash: string): boolean {
+  return skippedOwners.has(hash);
+}
+
 function spawn_ffmpeg_and_run(
   args: string[],
   maxRunningTime: number,
-  description: string
+  description: string,
+  owner = ''
 ): Promise<boolean> {
 
   return new Promise((resolve, reject) => {
@@ -506,7 +527,21 @@ function spawn_ffmpeg_and_run(
     // Uncomment things in this method (and the `performance` import) to check how long extraction takes
     // const t0: number = performance.now();
 
+    if (owner && skippedOwners.has(owner)) {
+      return resolve(false);
+    }
+
     const ffmpeg_process = spawn(ffmpegPath, args);
+    if (owner) {
+      if (!ownerProcs.has(owner)) { ownerProcs.set(owner, new Set()); }
+      ownerProcs.get(owner).add(ffmpeg_process);
+      const forget = () => {
+        const set = ownerProcs.get(owner);
+        if (set) { set.delete(ffmpeg_process); if (!set.size) { ownerProcs.delete(owner); } }
+      };
+      ffmpeg_process.on('exit', forget);
+      ffmpeg_process.on('error', forget);
+    }
 
     const killProcessTimeout = setTimeout(() => {
       if (!ffmpeg_process.killed) {
@@ -601,7 +636,7 @@ export function stripGoodFrames(file: string, frames: number): number {
 
 function makeCheckedFilmstrip(
   pathToVideo: string, duration: number, height: number, screens: number,
-  savePath: string, baseTimeout: number, name: string
+  savePath: string, baseTimeout: number, name: string, owner = ''
 ): Promise<boolean> {
   const busy = 1 + (parallelWorkers - 1) * 0.75;   // several ffmpeg at once -> each one is slower
   // first the fast way (keyframes only); if that is not good, the exact way with more time and moved frames
@@ -616,6 +651,11 @@ function makeCheckedFilmstrip(
   const cleanup = () => attempts.forEach((a, k) => { if (tmpOf(k) !== bestFile) { try { fs.unlinkSync(tmpOf(k)); } catch (e) { } } });
 
   const run = (k: number): Promise<boolean> => {
+    if (owner && skippedOwners.has(owner)) {   // skipped by hand -- leave no half-made files
+      bestFile = '';
+      cleanup();
+      return Promise.resolve(false);
+    }
     if (k >= attempts.length) {
       const ok = best >= Math.ceil(screens / 2);
       if (ok) {
@@ -631,7 +671,7 @@ function makeCheckedFilmstrip(
     const tmp = tmpOf(k);
     try { fs.unlinkSync(tmp); } catch (e) { }
     const args = generateScreenshotStripArgs(pathToVideo, duration, height, screens, tmp, attempts[k].shift, attempts[k].fast);
-    return spawn_ffmpeg_and_run(args, attempts[k].time, 'filmstrip').then(() => {
+    return spawn_ffmpeg_and_run(args, attempts[k].time, 'filmstrip', owner).then(() => {
       const good = stripGoodFrames(tmp, screens);
       if (good > best) {
         if (bestFile) { try { fs.unlinkSync(bestFile); } catch (e) { } }

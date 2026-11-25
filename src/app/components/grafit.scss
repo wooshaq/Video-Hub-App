@@ -617,3 +617,21 @@
 }
 
 .st-job-step.bad { background: rgba(224, 106, 106, 0.2); color: #f0a0a0; }
+
+.st-job-skip {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--g-fg-dim, #9a9ea6);
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  height: 20px;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+  width: 22px;
+  svg { fill: currentColor; height: 11px; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.4; width: 11px; }
+  &:hover { background: rgba(224, 106, 106, 0.16); border-color: rgba(224, 106, 106, 0.4); color: #f0a0a0; }
+}

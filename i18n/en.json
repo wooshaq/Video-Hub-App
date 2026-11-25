@@ -821,6 +821,8 @@
     "verifyDoneOk": "Filmstrips are fine ({{n}} files).",
     "verifyDoneBad": "Bad filmstrips: {{b}} of {{n}} — generating them again.",
     "stripsFailed": "No usable filmstrip after 3 tries: {{n}}",
-    "jobWait": "waiting for covers"
+    "jobWait": "waiting for covers",
+    "jobSkip": "Skip this file (stop and go to the next one)",
+    "jobSkipped": "Skipped: {{name}}"
   }
 }

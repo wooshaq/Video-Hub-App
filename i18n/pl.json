@@ -821,6 +821,8 @@
     "verifyDoneOk": "Paski klatek w porządku ({{n}} plików).",
     "verifyDoneBad": "Złe paski klatek: {{b}} z {{n}} — generuję je od nowa.",
     "stripsFailed": "Nie udało się zrobić poprawnego paska (po 3 próbach): {{n}}",
-    "jobWait": "czeka na okładki"
+    "jobWait": "czeka na okładki",
+    "jobSkip": "Pomiń ten plik (zatrzymaj i przejdź do następnego)",
+    "jobSkipped": "Pominięto: {{name}}"
   }
 }

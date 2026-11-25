@@ -13,7 +13,7 @@ import { GLOBALS } from './main-globals';
 
 import type { ImageElement, ImageElementPlus } from '../interfaces/final-object.interface';
 import { acceptableFiles } from './main-filenames';
-import { extractAll, stripGoodFrames, setParallelWorkersForTimeouts } from './main-extract';
+import { extractAll, stripGoodFrames, setParallelWorkersForTimeouts, skipExtraction, unskipExtraction } from './main-extract';
 import { extractCover } from './main-covers';
 import { sendCurrentProgress, insertTemporaryFieldsSingle, extractMetadataAsync, cleanUpFileName } from './main-support';
 
@@ -214,7 +214,7 @@ function setActive(key: string, el: { fileName?: string, partialPath?: string, f
     const name = el.fileName || (el.fullPath ? path.basename(el.fullPath) : key);
     const folder = el.partialPath || (el.fullPath ? path.dirname(el.fullPath) : '');
     const prev = activeJobs.get(key);
-    activeJobs.set(key, { name, folder, step, since: prev ? prev.since : Date.now() });
+    activeJobs.set(key, { key, name, folder, step, since: prev ? prev.since : Date.now() } as any);
   }
   sendActive();
 }
@@ -244,17 +244,41 @@ function noteQueued(hash: string): void {
  * Covers are quick; without this both fight over the disk and ffmpeg runs out of time,
  * which is how broken (black / missing) filmstrips came out. Waits at most 15 min.
  */
+const jobDone = new Map<string, () => void>();   // WsQ: key of an active job -> finish it now (skip)
+
+/** WsQ: "skip" in the jobs window -- stop working on this file and go on with the next one */
+export function skipJob(key: string): void {
+  const hash = key.slice(2);
+  if (key.startsWith('t:')) {
+    skipExtraction(hash);
+  }
+  const fin = jobDone.get(key);
+  const job: any = activeJobs.get(key);
+  if (fin) {
+    console.log('skipped by hand:', key);
+    fin();
+    try { GLOBALS.angularApp.sender.send('wsq-job-skipped', job ? job.name : ''); } catch (e) { }
+  }
+}
+
 function thumbQueueRunner(element: ImageElement, queueDone): void {
   const start = Date.now();
+  unskipExtraction(element.hash);   // a new run of this file (e.g. "generate again")
+  let called = false;
+  const once = () => { if (!called) { called = true; jobDone.delete('t:' + element.hash); queueDone(); } };
+  jobDone.set('t:' + element.hash, () => { setActive('t:' + element.hash, element, null); once(); });
   const busy = () => coverQueue && (coverQueue.length() + coverQueue.running()) > 0 && !coverQueue.paused;
   if (!busy()) {
-    thumbQueueRunnerInner(element, queueDone);
+    thumbQueueRunnerInner(element, once);
     return;
   }
   setActive('t:' + element.hash, element, 'wait');
   const tick = () => {
+    if (called) {
+      return;   // skipped while waiting
+    }
     if (!busy() || Date.now() - start > 15 * 60 * 1000) {
-      thumbQueueRunnerInner(element, queueDone);
+      thumbQueueRunnerInner(element, once);
     } else {
       setTimeout(tick, 400);
     }
@@ -839,7 +863,11 @@ function coverOf(element: ImageElement): Promise<boolean> {
 
 function coverQueueRunner(job: { fullPath: string, hash: string, tries?: number }, queueDone): void {
   setActive('c:' + job.hash, job, 'cover');
-  const done = () => { setActive('c:' + job.hash, job, null); queueDone(); };
+  let called = false;
+  const done = () => {
+    if (!called) { called = true; jobDone.delete('c:' + job.hash); setActive('c:' + job.hash, job, null); queueDone(); }
+  };
+  jobDone.set('c:' + job.hash, done);
   extractCover(job.fullPath, job.hash, coversFolder())
     .then((has: boolean | null) => {
       if (has === null) {

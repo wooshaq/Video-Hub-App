@@ -1075,6 +1075,12 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
       (hashes || []).forEach(h => this.thumbsMissing.add(h));
       this.bumpMissing();
     });
+    (window as any).myElectron.receiveFromMain('wsq-job-skipped', (name: string) => {
+      this.zone.run(() => {
+        this.modalService.openSnackbar(this.translate.instant('WSQ.jobSkipped', { name }), 2500);
+      });
+    });
+
     (window as any).myElectron.receiveFromMain('wsq-strip-failed', (name: string) => {
       this.zone.run(() => {
         this.failedStrips = [name, ...this.failedStrips.filter(n => n !== name)].slice(0, 50);
@@ -1179,7 +1185,14 @@ export class HomeComponent implements OnInit, AfterViewInit, AfterViewChecked {
   thumbsMissing = new Set<string>();
   missingVersion = 0;
   private missingTimer: any;
-  activeJobs: { name: string, folder: string, step: string, since: number }[] = [];
+  activeJobs: { key: string, name: string, folder: string, step: string, since: number }[] = [];
+
+  /** WsQ: the program is stuck on this file -> stop it and go on with the next one */
+  skipJob(j: { key: string }): void {
+    if (j && j.key) {
+      (window as any).myElectron.sendToMain('wsq-skip-job', j.key);
+    }
+  }
   queuedThumbs = 0;
   queuedCovers = 0;
   jobsOpen = false;
