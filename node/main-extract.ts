@@ -84,6 +84,7 @@ const generateScreenshotStripArgs = (
   numberOfScreenshots: number,
   savePath: string,
   shift = 0,   // WsQ: retry with every frame moved by this fraction of the step
+  fast = false, // WsQ: decode only the nearest keyframe (no decoding up to the exact time) -- ~5x faster
 ): string[] => {
 
   let current = 0;
@@ -101,6 +102,9 @@ const generateScreenshotStripArgs = (
   // make the magic filter
   while (current < totalCount) {
     const time = Math.max(0, Math.min(duration - 0.5, (current + 1 + shift) * step)); // +1 so we don't pick the 0th frame
+    if (fast) {
+      args.push('-threads', '1', '-skip_frame', 'nokey', '-noaccurate_seek');
+    }
     args.push('-ss', time.toString(), '-i', pathToVideo);
     allFramesFiltered += '[' + current + ':V]' + fancyScaleFilter + '[' + current + '];';
     outputFrames += '[' + current + ']';
@@ -600,10 +604,11 @@ function makeCheckedFilmstrip(
   savePath: string, baseTimeout: number, name: string
 ): Promise<boolean> {
   const busy = 1 + (parallelWorkers - 1) * 0.75;   // several ffmpeg at once -> each one is slower
+  // first the fast way (keyframes only); if that is not good, the exact way with more time and moved frames
   const attempts = [
-    { shift: 0, time: baseTimeout * busy },
-    { shift: 0.25, time: baseTimeout * busy * 4 },
-    { shift: -0.25, time: baseTimeout * busy * 6 },
+    { shift: 0, time: baseTimeout * busy, fast: duration >= 180 },   // short clips: few keyframes (empty or repeated frames)
+    { shift: 0, time: baseTimeout * busy * 3, fast: false },
+    { shift: 0.25, time: baseTimeout * busy * 6, fast: false },
   ];
   let best = -1;
   let bestFile = '';
@@ -625,7 +630,7 @@ function makeCheckedFilmstrip(
     }
     const tmp = tmpOf(k);
     try { fs.unlinkSync(tmp); } catch (e) { }
-    const args = generateScreenshotStripArgs(pathToVideo, duration, height, screens, tmp, attempts[k].shift);
+    const args = generateScreenshotStripArgs(pathToVideo, duration, height, screens, tmp, attempts[k].shift, attempts[k].fast);
     return spawn_ffmpeg_and_run(args, attempts[k].time, 'filmstrip').then(() => {
       const good = stripGoodFrames(tmp, screens);
       if (good > best) {

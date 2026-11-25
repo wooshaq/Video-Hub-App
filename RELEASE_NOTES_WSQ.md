@@ -1,3 +1,6 @@
+### Nowe w wsq.45
+- Szybsze paski klatek: dla filmów od 3 minut ffmpeg dekoduje tylko najbliższą klatkę kluczową każdego kadru (jeden wątek na kadr) zamiast dekodować wszystko do dokładnego czasu — ok. 5× szybciej (H.264 1080p: 2,6 s → 0,5 s, HEVC: 5,6 s → 1,2 s). Gdy taki pasek nie przejdzie kontroli, robiony jest od razu starym, dokładnym sposobem.
+
 ### Nowe w wsq.44
 - Szybkie okładki: z MKV (załączniki) i MP4/M4V/MOV (covr) obrazek jest czytany prosto z pliku i skalowany w programie — bez ffprobe/ffmpeg i bez plików tymczasowych (milisekundy zamiast sekund na plik). Inne formaty i nietypowe obrazki (np. webp) idą starą drogą.
 - Przeciąganie tagów między grupami: zwinięta grupa rozwija się po przytrzymaniu nad nią tagu, a lista przewija się sama przy górnej/dolnej krawędzi.
