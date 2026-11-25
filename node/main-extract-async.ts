@@ -1060,7 +1060,7 @@ const retriedStrips = new Set<string>();
 export function filmstripBad(hash: string, screens = 10): boolean {
   const file = path.join(GLOBALS.selectedOutputFolder, 'vha-' + GLOBALS.hubName, 'filmstrips', hash + '.jpg');
   const n = Math.max(1, screens || 10);
-  return stripGoodFrames(file, n) < Math.ceil(n / 2);
+  return stripGoodFrames(file, n) < 1;   // missing, unreadable or every frame black
 }
 
 /**

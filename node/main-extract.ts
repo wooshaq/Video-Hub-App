@@ -657,7 +657,7 @@ function makeCheckedFilmstrip(
       return Promise.resolve(false);
     }
     if (k >= attempts.length) {
-      const ok = best >= Math.ceil(screens / 2);
+      const ok = best >= 1;   // at least one real frame -- a few black ones are fine
       if (ok) {
         try { fs.renameSync(bestFile, savePath); } catch (e) { return Promise.resolve(false); }
       } else {
@@ -680,14 +680,14 @@ function makeCheckedFilmstrip(
       } else {
         try { fs.unlinkSync(tmp); } catch (e) { }
       }
-      if (good === screens) {                       // all frames fine -> done
+      if (good >= 1) {                              // bad = missing / unreadable / ALL frames black
         try { fs.renameSync(tmp, savePath); } catch (e) { return false; }
         bestFile = '';
         cleanup();
         return true;
       }
       if (k === 0) {
-        console.log('filmstrip check: ' + Math.max(0, good) + '/' + screens + ' good frames, trying again: ' + name);
+        console.log('filmstrip check: ' + (good < 0 ? 'missing' : 'all ' + screens + ' frames black') + ', trying again: ' + name);
       }
       return run(k + 1);
     });

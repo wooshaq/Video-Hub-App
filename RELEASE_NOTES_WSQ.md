@@ -1,5 +1,6 @@
 ### Nowe w wsq.47
 - Pomijanie pliku: w okienku „Teraz przerabiane” przy każdym zadaniu jest przycisk ⏭. Zatrzymuje ffmpeg dla tego pliku (bez kolejnych prób) i wątek od razu bierze następny. Plik zostaje bez paska — można go później zrobić z menu kontekstowego.
+- Zły pasek = brak pliku / nie da się go odczytać / WSZYSTKIE klatki czarne. Pojedyncze czarne klatki (np. 1–2 z 20) są w porządku — taki pasek zostaje i nie jest robiony od nowa (dotyczy też „Sprawdź paski”).
 
 ### Nowe w wsq.46
 - Szybki pasek (klatki kluczowe) tylko gdy kadry są co najmniej 30 s od siebie (np. 20 kadrów → filmy od ok. 10,5 min). Odstępy zostają równe, bez powtórzonych klatek; krótsze filmy idą dokładnym sposobem.
