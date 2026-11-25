@@ -606,7 +606,7 @@ function makeCheckedFilmstrip(
   const busy = 1 + (parallelWorkers - 1) * 0.75;   // several ffmpeg at once -> each one is slower
   // first the fast way (keyframes only); if that is not good, the exact way with more time and moved frames
   const attempts = [
-    { shift: 0, time: baseTimeout * busy, fast: duration >= 180 },   // short clips: few keyframes (empty or repeated frames)
+    { shift: 0, time: baseTimeout * busy, fast: duration / (screens + 1) >= 30 },   // frames at least 30 s apart -- keyframes (every 2-10 s) stay close to the exact time
     { shift: 0, time: baseTimeout * busy * 3, fast: false },
     { shift: 0.25, time: baseTimeout * busy * 6, fast: false },
   ];

@@ -1,3 +1,6 @@
+### Nowe w wsq.46
+- Szybki pasek (klatki kluczowe) tylko gdy kadry są co najmniej 30 s od siebie (np. 20 kadrów → filmy od ok. 10,5 min). Odstępy zostają równe, bez powtórzonych klatek; krótsze filmy idą dokładnym sposobem.
+
 ### Nowe w wsq.45
 - Szybsze paski klatek: dla filmów od 3 minut ffmpeg dekoduje tylko najbliższą klatkę kluczową każdego kadru (jeden wątek na kadr) zamiast dekodować wszystko do dokładnego czasu — ok. 5× szybciej (H.264 1080p: 2,6 s → 0,5 s, HEVC: 5,6 s → 1,2 s). Gdy taki pasek nie przejdzie kontroli, robiony jest od razu starym, dokładnym sposobem.
 
